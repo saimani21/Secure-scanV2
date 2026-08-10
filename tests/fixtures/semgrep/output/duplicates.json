@@ -1,0 +1,29 @@
+{
+  "results": [
+    {
+      "check_id": "securescan.python.subprocess-shell-true",
+      "path": "worker.py",
+      "start": {"line": 9, "col": 3},
+      "end": {"line": 9, "col": 35},
+      "extra": {
+        "message": "Avoid shell=True.",
+        "severity": "WARNING",
+        "metadata": {},
+        "fingerprint": "first"
+      }
+    },
+    {
+      "check_id": "securescan.python.subprocess-shell-true",
+      "path": "/workspace/source/worker.py",
+      "start": {"line": 9, "col": 3},
+      "end": {"line": 9, "col": 35},
+      "extra": {
+        "message": "A scanner message that does not define identity.",
+        "severity": "WARNING",
+        "metadata": {},
+        "fingerprint": "second"
+      }
+    }
+  ],
+  "errors": []
+}

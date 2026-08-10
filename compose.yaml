@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${SECURESCAN_POSTGRES_DB:-securescan}
+      POSTGRES_USER: ${SECURESCAN_POSTGRES_USER:-securescan}
+      POSTGRES_PASSWORD: ${SECURESCAN_POSTGRES_PASSWORD:-securescan-dev-only}
+    ports:
+      - "127.0.0.1:${SECURESCAN_POSTGRES_PORT:-55432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    volumes:
+      - securescan_pg:/var/lib/postgresql/data
+
+volumes:
+  securescan_pg:

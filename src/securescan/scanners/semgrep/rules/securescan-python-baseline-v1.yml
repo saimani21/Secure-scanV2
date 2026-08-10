@@ -1,0 +1,52 @@
+rules:
+  - id: securescan.python.dangerous-eval
+    message: Avoid eval because it can execute attacker-controlled Python code.
+    severity: ERROR
+    languages:
+      - python
+    metadata:
+      category: security
+      confidence: high
+      cwe:
+        - CWE-95
+      owasp:
+        - A03:2021
+      technology:
+        - python
+    pattern: eval(...)
+
+  - id: securescan.python.subprocess-shell-true
+    message: Avoid shell=True because untrusted command input can cause command injection.
+    severity: WARNING
+    languages:
+      - python
+    metadata:
+      category: security
+      confidence: high
+      cwe:
+        - CWE-78
+      owasp:
+        - A03:2021
+      technology:
+        - python
+    pattern: subprocess.$FUNC(..., shell=True, ...)
+
+  - id: securescan.python.unsafe-yaml-load
+    message: Use yaml.safe_load or SafeLoader when parsing YAML.
+    severity: WARNING
+    languages:
+      - python
+    metadata:
+      category: security
+      confidence: medium
+      cwe:
+        - CWE-502
+      owasp:
+        - A08:2021
+      technology:
+        - python
+        - pyyaml
+    patterns:
+      - pattern: yaml.load(...)
+      - pattern-not: yaml.load(..., Loader=yaml.SafeLoader, ...)
+      - pattern-not: yaml.load(..., Loader=SafeLoader, ...)

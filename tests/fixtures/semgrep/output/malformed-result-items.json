@@ -1,0 +1,17 @@
+{
+  "results": [
+    "not-an-object",
+    {
+      "check_id": "",
+      "path": "/home/private/repository/secret.py",
+      "start": {"line": true, "col": 1},
+      "end": {"line": 2, "col": 1},
+      "extra": {
+        "message": "source-code-secret",
+        "severity": "ERROR",
+        "metadata": {}
+      }
+    }
+  ],
+  "errors": []
+}

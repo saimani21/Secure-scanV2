@@ -1,0 +1,35 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+.env
+*.db
+*.sqlite3
+data/artifacts/sha256/
+*.pyc
+data/artifacts/
+
+# Additional Python packaging metadata
+*.egg-info/
+
+# Environment variants
+.env.*
+!.env.example
+
+# Reproducible compiled Enry helper
+tools/enry-helper/bin/
+
+# Editor / OS metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~

@@ -1,0 +1,23 @@
+{
+  "version": "1.171.0",
+  "results": [
+    {
+      "check_id": "securescan.python.dangerous-eval",
+      "path": "app.py",
+      "start": {"line": 3, "col": 5},
+      "end": {"line": 3, "col": 18},
+      "extra": {
+        "message": "Avoid eval because it can execute attacker-controlled Python code.",
+        "severity": "ERROR",
+        "metadata": {"category": "security", "cwe": ["CWE-95"]}
+      }
+    }
+  ],
+  "errors": [
+    {
+      "type": "Syntax error",
+      "message": "private scanner diagnostic",
+      "path": "/workspace/source/broken.py"
+    }
+  ]
+}

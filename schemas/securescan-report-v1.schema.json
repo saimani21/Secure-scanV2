@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://securescan.local/schemas/securescan-report-v1.schema.json",
+  "title": "SecureScan Report v1",
+  "type": "object",
+  "required": ["schema_version", "run_id", "target", "status", "executions", "observations", "analysis_gaps", "generated_at"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "run_id": {"type": "string", "format": "uuid"},
+    "target": {"type": "object"},
+    "status": {"type": "string"},
+    "executions": {"type": "array"},
+    "observations": {"type": "array"},
+    "analysis_gaps": {"type": "array"},
+    "generated_at": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}

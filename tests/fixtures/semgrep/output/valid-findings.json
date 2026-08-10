@@ -1,0 +1,26 @@
+{
+  "version": "1.171.0",
+  "results": [
+    {
+      "check_id": "securescan.python.dangerous-eval",
+      "path": "/workspace/source/app.py",
+      "start": {"line": 3, "col": 5},
+      "end": {"line": 3, "col": 18},
+      "extra": {
+        "message": "Avoid eval because it can execute attacker-controlled Python code.",
+        "severity": "ERROR",
+        "metadata": {
+          "category": "security",
+          "confidence": "high",
+          "cwe": ["CWE-95"],
+          "owasp": ["A03:2021"],
+          "technology": ["python"],
+          "ignored": "not-public"
+        },
+        "fingerprint": "scanner-owned-and-untrusted",
+        "metavars": {"$X": {"abstract_content": "source-code-secret"}}
+      }
+    }
+  ],
+  "errors": []
+}

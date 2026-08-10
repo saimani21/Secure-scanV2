@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "securescan-core"
+version = "0.1.0"
+description = "SecureScan execution and evidence kernel"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "SecureScan Project" }]
+dependencies = [
+  "alembic>=1.14,<2",
+  "fastapi>=0.115,<1",
+  "jsonschema>=4.23,<5",
+  "pydantic>=2.10,<3",
+  "pydantic-settings>=2.7,<3",
+  "sqlalchemy>=2.0,<3",
+  "typer>=0.15,<1",
+  "uvicorn>=0.34,<1",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg[binary]>=3.2,<4"]
+dev = [
+  "httpx>=0.28,<1",
+  "pytest>=8.3,<10",
+  "pytest-cov>=6,<8",
+  "ruff>=0.9,<1",
+]
+
+[project.scripts]
+securescan = "securescan.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["securescan*"]
+
+[tool.setuptools.package-data]
+"securescan.scanners.semgrep" = ["rules/*.yml"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+markers = [
+  "docker: integration tests requiring an explicitly configured local Docker image",
+  "postgres: integration tests requiring an explicitly configured PostgreSQL test database",
+  "semgrep: integration tests requiring an explicitly configured local Semgrep image",
+  "release: complete Core v0.1 release-validation integration tests",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]

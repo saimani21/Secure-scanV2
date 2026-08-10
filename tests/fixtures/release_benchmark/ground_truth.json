@@ -1,0 +1,23 @@
+{
+  "benchmark_id": "securescan-core-v0.1-three-rule-python",
+  "expected_clean_finding_count": 0,
+  "expected_finding_count": 3,
+  "expected_findings": [
+    {
+      "relative_path": "eval_case.py",
+      "rule_id": "securescan.python.dangerous-eval",
+      "start_line": 5
+    },
+    {
+      "relative_path": "shell_case.py",
+      "rule_id": "securescan.python.subprocess-shell-true",
+      "start_line": 7
+    },
+    {
+      "relative_path": "yaml_case.py",
+      "rule_id": "securescan.python.unsafe-yaml-load",
+      "start_line": 7
+    }
+  ],
+  "schema_version": "1.0.0"
+}
