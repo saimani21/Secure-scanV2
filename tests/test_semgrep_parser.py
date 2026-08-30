@@ -29,12 +29,18 @@ def _manifest(*paths: str) -> RepositoryManifest:
     )
 
 
-def _parse(raw: bytes, manifest: RepositoryManifest | None = None):
+def _parse(
+    raw: bytes,
+    manifest: RepositoryManifest | None = None,
+    *,
+    maximum_findings: int = 100_000,
+):
     return parse_semgrep_output(
         raw,
         manifest or _manifest("app.py", "worker.py", "broken.py"),
         scanner_id="semgrep-ce",
         scanner_version="1.171.0",
+        maximum_findings=maximum_findings,
     )
 
 
@@ -57,6 +63,7 @@ def test_parser_normalizes_valid_findings_and_severity() -> None:
     assert parsed.accepted_result_count == 4
     assert finding.path == "app.py"
     assert finding.native_severity == "high"
+    assert finding.message == "Semgrep security rule matched"
     assert finding.cwe_ids == ["CWE-95"]
     assert finding.properties["start_column"] == 5
     assert "metavars" not in finding.properties
@@ -99,6 +106,27 @@ def test_parser_rejects_malformed_top_level_documents() -> None:
     for document in documents:
         with pytest.raises(SemgrepOutputMalformedError):
             _parse(document)
+
+
+@pytest.mark.parametrize(
+    "document",
+    (
+        b'{"results": [], "results": [], "errors": []}',
+        b'{"results": [{"extra": {"severity": "ERROR", "severity": "INFO"}}], '
+        b'"errors": []}',
+    ),
+)
+def test_parser_rejects_duplicate_json_object_keys(document: bytes) -> None:
+    with pytest.raises(SemgrepOutputMalformedError):
+        _parse(document)
+
+
+@pytest.mark.parametrize("constant", (b"NaN", b"Infinity", b"-Infinity"))
+def test_parser_rejects_non_finite_json_numbers(constant: bytes) -> None:
+    document = b'{"results": [], "errors": [], "unknown": ' + constant + b"}"
+
+    with pytest.raises(SemgrepOutputMalformedError):
+        _parse(document)
 
 
 def test_parser_rejects_or_gaps_malformed_individual_results() -> None:
@@ -182,13 +210,26 @@ def test_parser_computes_stable_securescan_fingerprints() -> None:
     assert first.findings[0].fingerprint != third.findings[0].fingerprint
 
 
-def test_parser_bounds_findings_messages_metadata_and_diagnostics() -> None:
+def test_parser_ignores_untrusted_finding_messages() -> None:
     document = json.loads(_fixture("valid-findings.json"))
-    document["results"][0]["extra"]["message"] = "x" * 8_193
+    document["results"][0]["extra"].pop("message")
+
+    parsed = _parse(json.dumps(document).encode())
+
+    assert parsed.accepted_result_count == 1
+    assert parsed.findings[0].message == "Semgrep security rule matched"
+
+
+def test_parser_bounds_safe_cwe_metadata_and_diagnostics() -> None:
+    document = json.loads(_fixture("valid-findings.json"))
+    document["results"][0]["extra"]["message"] = "untrusted scanner message"
     bounded_metadata_finding = json.loads(_fixture("valid-findings.json"))["results"][0]
     bounded_metadata_finding["check_id"] = "securescan.python.bounded-metadata"
     bounded_metadata_finding["start"]["line"] = 20
     bounded_metadata_finding["end"]["line"] = 20
+    bounded_metadata_finding["extra"]["metadata"]["cwe"] = [
+        f"CWE-{index}" for index in reversed(range(1, 101))
+    ] + ["not-a-cwe", "CWE-0", "CWE-1\u0007"]
     bounded_metadata_finding["extra"]["metadata"]["technology"] = [
         f"technology-{index:03d}" for index in reversed(range(100))
     ]
@@ -202,13 +243,28 @@ def test_parser_bounds_findings_messages_metadata_and_diagnostics() -> None:
 
     parsed = _parse(json.dumps(document).encode())
 
-    assert parsed.rejected_result_count == 1
-    metadata = parsed.findings[0].properties["metadata"]
-    assert len(metadata["technology"]) == 64
-    assert metadata["technology"] == sorted(metadata["technology"])
-    assert metadata["references"] == ["safe-reference"]
+    assert parsed.rejected_result_count == 0
+    metadata = parsed.findings[1].properties["metadata"]
+    assert set(metadata) == {"cwe"}
+    assert len(metadata["cwe"]) == 64
+    assert metadata["cwe"] == sorted(metadata["cwe"])
     assert len(parsed.analysis_gaps) == 101
     assert parsed.analysis_gaps[-1].code == "SEMGREP_DIAGNOSTIC_LIMIT"
+
+
+def test_parser_finding_limit_truncation_produces_analysis_gap() -> None:
+    document = json.loads(_fixture("valid-findings.json"))
+    second = json.loads(_fixture("valid-findings.json"))["results"][0]
+    second["check_id"] = "securescan.python.second"
+    second["start"]["line"] = 30
+    second["end"]["line"] = 30
+    document["results"].append(second)
+
+    parsed = _parse(json.dumps(document).encode(), maximum_findings=1)
+
+    assert len(parsed.findings) == 1
+    assert parsed.rejected_result_count == 1
+    assert parsed.analysis_gaps[0].code == "SEMGREP_FINDING_LIMIT"
 
 
 def test_parser_public_errors_hide_json_paths_source_and_credentials() -> None:

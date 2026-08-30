@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
@@ -53,11 +54,16 @@ def _job(payload: dict | None = None) -> JobRecord:
     )
 
 
-def _result(return_code: int = 0) -> CancellableProcessResult:
+def _result(
+    return_code: int = 0,
+    *,
+    stdout: bytes = b"",
+    stderr: bytes = b"private stderr",
+) -> CancellableProcessResult:
     return CancellableProcessResult(
         return_code=return_code,
-        stdout=b"",
-        stderr=b"private stderr",
+        stdout=stdout,
+        stderr=stderr,
         duration_ms=25,
         timed_out=False,
         output_limit_exceeded=False,
@@ -73,10 +79,14 @@ class _FakeDockerExecutor:
         *,
         return_code: int = 0,
         error: Exception | None = None,
+        stdout: bytes = b"",
+        stderr: bytes = b"private stderr",
     ) -> None:
         self.output = output
         self.return_code = return_code
         self.error = error
+        self.stdout = stdout
+        self.stderr = stderr
         self.requests = []
         self.snapshot_files: tuple[str, ...] = ()
 
@@ -93,7 +103,11 @@ class _FakeDockerExecutor:
             raise self.error
         if self.output is not None:
             (request.output_directory / "semgrep-results.json").write_bytes(self.output)
-        return _result(self.return_code)
+        return _result(
+            self.return_code,
+            stdout=self.stdout,
+            stderr=self.stderr,
+        )
 
     def start(self, request):
         raise AssertionError("Synchronous adapter test must use execute")
@@ -160,11 +174,13 @@ def test_adapter_uses_offline_trusted_command_only(tmp_path: Path) -> None:
     assert request.arguments[-1] == "/workspace/source"
     assert "--metrics=off" in request.arguments
     assert "--no-rewrite-rule-ids" in request.arguments
+    assert "--quiet" in request.arguments
+    assert "--strict" not in request.arguments
     serialized = " ".join(request.arguments)
     assert all(value not in serialized for value in ("config=auto", "p/remote", "token"))
 
 
-def test_adapter_returns_findings_raw_artifact_and_deterministic_digest(
+def test_adapter_returns_findings_in_sanitized_artifact_with_golden_digest(
     tmp_path: Path,
 ) -> None:
     raw = (FIXTURES / "valid-findings.json").read_bytes()
@@ -174,12 +190,160 @@ def test_adapter_returns_findings_raw_artifact_and_deterministic_digest(
     outcome = adapter.execute(_job())
     report = outcome.report_json
     artifact_data = report["executions"][0]["artifacts"][0]
+    artifact = ArtifactRecord.model_validate(artifact_data)
+    evidence_bytes = store.read(artifact)
+    evidence = json.loads(evidence_bytes)
 
     assert len(report["observations"]) == 1
-    assert artifact_data["sha256"] == hashlib.sha256(raw).hexdigest()
-    assert artifact_data["size_bytes"] == len(raw)
+    assert artifact_data["sanitized"] is True
+    assert artifact_data["sha256"] == (
+        "4cb708cbde935e5dfad653ae4aee10138d7fe9f0728a75fd753959651c1f6f2c"
+    )
+    assert hashlib.sha256(evidence_bytes).hexdigest() == (
+        "4cb708cbde935e5dfad653ae4aee10138d7fe9f0728a75fd753959651c1f6f2c"
+    )
+    assert artifact_data["size_bytes"] == len(evidence_bytes)
     assert artifact_data["media_type"] == "application/json"
-    assert store.read(ArtifactRecord.model_validate(artifact_data)) == raw
+    assert evidence_bytes != raw
+    assert evidence == {
+        "results": [
+            {
+                "end": {"column": 18, "line": 3},
+                "fingerprint": (
+                    "cbdd3555ad0fab1e38bf05936f72ba66b926d11954dea62997dda9c1fe3eaedb"
+                ),
+                "metadata": {"cwe": ["CWE-95"]},
+                "path": "app.py",
+                "rule_id": "securescan.python.dangerous-eval",
+                "severity": "high",
+                "start": {"column": 5, "line": 3},
+            }
+        ],
+        "ruleset": {"id": "securescan-python-baseline-v1", "version": "1"},
+        "scanner_id": "semgrep-ce",
+        "schema_version": "securescan-semgrep-sanitized-v1",
+        "summary": {
+            "accepted_findings": 1,
+            "analysis_gaps": 0,
+            "duplicate_findings": 0,
+            "rejected_findings": 0,
+        },
+    }
+
+
+def test_adapter_sanitized_artifact_is_semantically_deterministic(
+    tmp_path: Path,
+) -> None:
+    first_root = tmp_path / "first"
+    second_root = tmp_path / "second"
+    first_root.mkdir()
+    second_root.mkdir()
+    first_raw = (FIXTURES / "valid-findings.json").read_bytes()
+    second_document = json.loads(first_raw)
+    second_document["unknown-upstream-field"] = {"ignored": True}
+    second_raw = json.dumps(second_document, sort_keys=True).encode("utf-8")
+
+    first_adapter, _, first_store, _ = _adapter(
+        first_root,
+        _FakeDockerExecutor(first_raw),
+        _repository(first_root),
+    )
+    second_adapter, _, second_store, _ = _adapter(
+        second_root,
+        _FakeDockerExecutor(second_raw),
+        _repository(second_root),
+    )
+
+    first_report = first_adapter.execute(_job()).report_json
+    second_report = second_adapter.execute(_job()).report_json
+    first_record = ArtifactRecord.model_validate(
+        first_report["executions"][0]["artifacts"][0]
+    )
+    second_record = ArtifactRecord.model_validate(
+        second_report["executions"][0]["artifacts"][0]
+    )
+
+    assert first_record.sha256 == second_record.sha256
+    assert first_store.read(first_record) == second_store.read(second_record)
+
+
+def test_adapter_sanitized_artifact_contains_only_deduplicated_findings(
+    tmp_path: Path,
+) -> None:
+    repository = _repository(tmp_path)
+    (repository / "worker.py").write_text(
+        "subprocess.run(command, shell=True)\n",
+        encoding="utf-8",
+    )
+    adapter, _, store, _ = _adapter(
+        tmp_path,
+        _FakeDockerExecutor((FIXTURES / "duplicates.json").read_bytes()),
+        repository,
+    )
+
+    report = adapter.execute(_job()).report_json
+    artifact = ArtifactRecord.model_validate(
+        report["executions"][0]["artifacts"][0]
+    )
+    evidence = json.loads(store.read(artifact))
+
+    assert len(report["observations"]) == 1
+    assert len(evidence["results"]) == 1
+    assert evidence["summary"]["accepted_findings"] == 1
+    assert evidence["summary"]["duplicate_findings"] == 1
+
+
+def test_adapter_never_persists_untrusted_native_or_process_content(
+    tmp_path: Path,
+) -> None:
+    sentinels = (
+        "SOURCE_SENTINEL_DO_NOT_PERSIST_9371",
+        "ABSTRACT_CONTENT_SENTINEL_DO_NOT_PERSIST_7412",
+        "MESSAGE_SENTINEL_DO_NOT_PERSIST_4721",
+        "STDOUT_SENTINEL_DO_NOT_PERSIST_1842",
+        "STDERR_SENTINEL_DO_NOT_PERSIST_8153",
+        "DIAGNOSTIC_SENTINEL_DO_NOT_PERSIST_6409",
+        "METAVARIABLE_SENTINEL_DO_NOT_PERSIST_2527",
+        "UNKNOWN_FIELD_SENTINEL_DO_NOT_PERSIST_9834",
+    )
+    document = json.loads((FIXTURES / "valid-findings.json").read_bytes())
+    extra = document["results"][0]["extra"]
+    extra["message"] = sentinels[2]
+    extra["lines"] = sentinels[0]
+    extra["abstract_content"] = sentinels[1]
+    extra["metavars"] = {"$X": {"abstract_content": sentinels[6]}}
+    extra["metadata"]["unknown"] = sentinels[7]
+    document["unknown"] = sentinels[7]
+    document["errors"] = [{"type": "Syntax error", "message": sentinels[5]}]
+    raw = json.dumps(document).encode("utf-8")
+    executor = _FakeDockerExecutor(
+        raw,
+        stdout=sentinels[3].encode(),
+        stderr=sentinels[4].encode(),
+    )
+    adapter, _, store, _ = _adapter(tmp_path, executor, _repository(tmp_path))
+
+    outcome = adapter.execute(_job())
+    report = outcome.report_json
+    artifact = ArtifactRecord.model_validate(
+        report["executions"][0]["artifacts"][0]
+    )
+    durable_outputs = (
+        json.dumps(report, sort_keys=True, default=str).encode("utf-8"),
+        store.read(artifact),
+        json.dumps(outcome.tool_execution.warning_json, sort_keys=True).encode("utf-8"),
+    )
+
+    assert outcome.final_status is JobStatus.PARTIAL
+    assert report["observations"][0]["message"] == "Semgrep security rule matched"
+    assert report["observations"][0]["properties"]["metadata"] == {
+        "cwe": ["CWE-95"]
+    }
+    assert all(
+        sentinel.encode("utf-8") not in durable_output
+        for sentinel in sentinels
+        for durable_output in durable_outputs
+    )
 
 
 def test_adapter_returns_partial_result_for_valid_output_with_errors(

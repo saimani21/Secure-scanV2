@@ -44,6 +44,7 @@ from securescan.scanners.semgrep.ruleset import (
     SEMGREP_RULES_FILENAME,
     TrustedSemgrepRuleset,
 )
+from securescan.scanners.semgrep.sanitizer import build_sanitized_semgrep_evidence
 from securescan.worker.models import (
     WorkerExecutionOutcome,
     WorkerFailedExecution,
@@ -60,6 +61,7 @@ _SEMGREP_ARGUMENTS = (
     "--json",
     "--metrics=off",
     "--disable-version-check",
+    "--quiet",
     "--no-git-ignore",
     "--jobs=1",
     "--no-rewrite-rule-ids",
@@ -351,11 +353,16 @@ class SemgrepScannerAdapter:
             scanner_version=self.tool_version,
             maximum_findings=self._plan.maximum_findings,
         )
+        sanitized_evidence = build_sanitized_semgrep_evidence(
+            parsed,
+            scanner_id=self.adapter_id,
+            ruleset=self._ruleset,
+        )
         artifact = self._artifact_store.put(
-            raw_json,
+            sanitized_evidence,
             kind=ArtifactKind.SANITIZED_NATIVE_REPORT,
             media_type="application/json",
-            sanitized=False,
+            sanitized=True,
         )
         finished_at = self._clock()
         has_gaps = bool(parsed.analysis_gaps)

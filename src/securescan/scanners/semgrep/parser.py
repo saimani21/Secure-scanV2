@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import stat
 import unicodedata
 from pathlib import Path, PurePosixPath
@@ -23,15 +24,11 @@ from securescan.workspaces.models import RepositoryManifest
 
 _SOURCE_PREFIX = "/workspace/source/"
 _MAX_RULE_ID_LENGTH = 512
-_MAX_MESSAGE_LENGTH = 8_192
-_MAX_METADATA_STRING_LENGTH = 1_024
 _MAX_METADATA_ITEMS = 64
 _MAX_STORED_GAPS = 100
 _READ_CHUNK_BYTES = 1024 * 1024
-_METADATA_KEYS = frozenset(
-    {"category", "confidence", "cwe", "owasp", "technology", "references"}
-)
-_LIST_METADATA_KEYS = frozenset({"cwe", "owasp", "technology", "references"})
+_FIXED_FINDING_MESSAGE = "Semgrep security rule matched"
+_CWE_ID_PATTERN = re.compile(r"CWE-[1-9][0-9]{0,5}\Z", re.ASCII)
 _SEVERITY_MAP = {
     "ERROR": "high",
     "WARNING": "medium",
@@ -89,47 +86,21 @@ def _normalize_path(value: object, manifest_paths: set[str], maximum_bytes: int)
     return normalized
 
 
-def _normalize_metadata_value(value: object, *, list_value: bool) -> str | list[str] | None:
-    values: list[object]
-    if list_value:
-        values = list(value) if isinstance(value, list) else [value]
-    else:
-        if not isinstance(value, str):
-            return None
-        values = [value]
-
-    normalized: set[str] = set()
-    for item in values:
-        if (
-            isinstance(item, str)
-            and item
-            and len(item) <= _MAX_METADATA_STRING_LENGTH
-            and not _contains_control_characters(item)
-        ):
-            normalized.add(item.strip())
-    normalized.discard("")
-    if not normalized:
-        return None
-    ordered = sorted(normalized)[:_MAX_METADATA_ITEMS]
-    return ordered if list_value else ordered[0]
-
-
-def _normalize_metadata(value: object) -> dict[str, str | list[str]]:
+def _normalize_metadata(value: object) -> dict[str, list[str]]:
     if value is None:
         return {}
     if not isinstance(value, dict):
         raise SemgrepFindingNormalizationError
-    metadata: dict[str, str | list[str]] = {}
-    for key in sorted(_METADATA_KEYS):
-        if key not in value:
-            continue
-        normalized = _normalize_metadata_value(
-            value[key],
-            list_value=key in _LIST_METADATA_KEYS,
-        )
-        if normalized is not None:
-            metadata[key] = normalized
-    return metadata
+    raw_cwe = value.get("cwe", [])
+    cwe_values = raw_cwe if isinstance(raw_cwe, list) else [raw_cwe]
+    cwe_ids = sorted(
+        {
+            item
+            for item in cwe_values
+            if isinstance(item, str) and _CWE_ID_PATTERN.fullmatch(item) is not None
+        }
+    )[:_MAX_METADATA_ITEMS]
+    return {"cwe": cwe_ids} if cwe_ids else {}
 
 
 def _fingerprint(
@@ -177,7 +148,6 @@ def _normalize_finding(
     end_column = _positive_integer(end.get("col"))
     if (end_line, end_column) < (start_line, start_column):
         raise SemgrepFindingNormalizationError
-    message = _bounded_text(extra.get("message"), _MAX_MESSAGE_LENGTH)
     raw_severity = _bounded_text(extra.get("severity"), 64).upper()
     severity = _SEVERITY_MAP.get(raw_severity, "informational")
     metadata = _normalize_metadata(extra.get("metadata"))
@@ -205,7 +175,7 @@ def _normalize_finding(
         producer=scanner_id,
         observation_type=ObservationType.SOURCE_RULE_MATCH,
         rule_id=rule_id,
-        message=message,
+        message=_FIXED_FINDING_MESSAGE,
         native_severity=severity,
         path=path,
         start_line=start_line,
@@ -257,6 +227,19 @@ def _diagnostic_category(value: object) -> tuple[str, str]:
     return "SEMGREP_UNKNOWN_DIAGNOSTIC", "Semgrep reported an unknown diagnostic"
 
 
+def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON object key")
+        result[key] = value
+    return result
+
+
+def _reject_non_finite_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON number: {value}")
+
+
 def parse_semgrep_output(
     raw_json: bytes,
     manifest: RepositoryManifest,
@@ -282,8 +265,12 @@ def parse_semgrep_output(
     ):
         raise SemgrepOutputMalformedError
     try:
-        document = json.loads(raw_json.decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as exc:
+        document = json.loads(
+            raw_json.decode("utf-8"),
+            object_pairs_hook=_reject_duplicate_keys,
+            parse_constant=_reject_non_finite_constant,
+        )
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
         raise SemgrepOutputMalformedError from exc
     if not isinstance(document, dict):
         raise SemgrepOutputMalformedError
@@ -336,7 +323,6 @@ def parse_semgrep_output(
             item.end_line or 0,
             item.properties.get("end_column", 0),
             item.rule_id,
-            item.message,
         ),
     ):
         assert finding.fingerprint is not None
