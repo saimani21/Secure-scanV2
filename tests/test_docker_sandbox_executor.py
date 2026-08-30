@@ -209,6 +209,12 @@ def test_executor_creates_starts_inspects_and_removes_container(tmp_path: Path) 
         "rm",
         "inspect",
     ]
+    prerequisite_operations = [
+        command[1]
+        for command in runner.commands
+        if command[1] in {"version", "image"}
+    ]
+    assert prerequisite_operations == ["version", "image"]
     assert attached.close_calls == 1
 
 

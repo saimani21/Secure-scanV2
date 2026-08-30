@@ -24,10 +24,17 @@ from securescan.scanners.semgrep.ruleset import (
     TrustedSemgrepRuleset,
     load_baseline_ruleset,
 )
+from securescan.scanners.semgrep.source_binding import (
+    InvalidSemgrepSourceBindingError,
+    SemgrepSourceBindingError,
+    TrustedSemgrepSourceBinding,
+    build_semgrep_source_analyzer_snapshot,
+)
 
 __all__ = [
     "InvalidSemgrepRulesetError",
     "InvalidSemgrepScanPlanError",
+    "InvalidSemgrepSourceBindingError",
     "ParsedSemgrepOutput",
     "SEMGREP_ARGUMENTS",
     "SEMGREP_RESULTS_FILENAME",
@@ -39,10 +46,13 @@ __all__ = [
     "SemgrepOutputMissingError",
     "SemgrepOutputTooLargeError",
     "SemgrepScanPlan",
+    "SemgrepSourceBindingError",
     "SemgrepScannerAdapter",
     "SemgrepSourceResolver",
     "SemgrepWorkspaceCleanupError",
     "TrustedSemgrepRuleset",
+    "TrustedSemgrepSourceBinding",
+    "build_semgrep_source_analyzer_snapshot",
     "create_semgrep_trusted_definition",
     "load_baseline_ruleset",
     "parse_semgrep_output",

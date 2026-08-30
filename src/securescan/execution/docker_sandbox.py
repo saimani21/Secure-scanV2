@@ -741,6 +741,24 @@ class DockerSandboxExecutor:
         if result.return_code != 0:
             raise DockerImageUnavailableError
 
+    def verify_runtime_prerequisites(
+        self,
+        definition: TrustedAdapterDefinition,
+    ) -> None:
+        """Verify Docker and a trusted pinned image without creating a container."""
+        if (
+            not isinstance(definition, TrustedAdapterDefinition)
+            or definition.backend is not SandboxExecutionBackend.DOCKER_SANDBOX
+            or definition.policy.backend
+            is not SandboxExecutionBackend.DOCKER_SANDBOX
+            or definition.test_only
+            or not isinstance(definition.image_reference, str)
+            or _IMAGE_PATTERN.fullmatch(definition.image_reference) is None
+        ):
+            raise InvalidDockerSandboxRequestError
+        self._verify_availability()
+        self._verify_image(definition.image_reference)
+
     def _best_effort_remove(self, container_name: str) -> None:
         with suppress(Exception):
             self._runner.run_control_command(

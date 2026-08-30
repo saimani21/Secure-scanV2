@@ -22,6 +22,14 @@ Status: COMPLETE
 | v0.2.5B | Capability surfaces and RepositoryProfile | COMPLETE |
 | v0.2.6 | Deterministic Source analysis planner | COMPLETE |
 
+### Source Semgrep Integration
+
+| Version | Capability | Status |
+|---|---|---|
+| v0.3A | Semgrep architecture audit | COMPLETE |
+| v0.3B1 | Semgrep confidentiality hardening | COMPLETE |
+| v0.3B2 | Trusted Source Semgrep analyzer | COMPLETE |
+
 ## Source Intelligence Foundation Freeze
 
 Source v0.2.6 is the frozen repository-intelligence foundation.
@@ -55,17 +63,19 @@ Zero findings does not prove absence of vulnerabilities.
 ## Analyzer Registry
 
 At the v0.2.6 foundation freeze, the production Source analyzer registry
-is intentionally empty.
+was intentionally empty. v0.3B2 adds a trusted `python-semgrep-v1`
+declaration that can populate an immutable availability snapshot only after
+the exact Core adapter binding, ruleset provenance, Docker runtime, and local
+digest-pinned image are verified.
 
 Planned scanners are not considered registered or product-supported
 until their adapter acceptance and benchmark gates pass.
 
 ## Next Phase
 
-Source scanner integration.
-
-The first integration target is the existing Semgrep implementation,
-which will be reviewed and connected to the Source v0.2.6 planning layer.
+Source v0.3C execution integration remains deferred. v0.3B2 does not execute
+plan entries, project selected paths, create findings, or claim actual Source
+coverage, benchmarked support, or product support.
 
 ## Known Non-Blocking Maintenance
 
