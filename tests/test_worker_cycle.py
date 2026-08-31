@@ -416,6 +416,23 @@ class _Resolver:
         return self.adapter
 
 
+class _TerminalObserver:
+    def __init__(
+        self,
+        events: list[str],
+        error: Exception | None = None,
+    ) -> None:
+        self.events = events
+        self.error = error
+        self.jobs: list[JobRecord] = []
+
+    def __call__(self, job: JobRecord) -> None:
+        self.events.append("terminal_observer")
+        self.jobs.append(job)
+        if self.error is not None:
+            raise self.error
+
+
 @dataclass(frozen=True, slots=True)
 class _Harness:
     cycle: SingleJobWorkerCycle
@@ -447,6 +464,7 @@ def _harness(
     heartbeat_error: Exception | None = None,
     managed_handle: _ManagedHandle | None = None,
     fake_time: _FakeTime | None = None,
+    terminal_observer: _TerminalObserver | None = None,
 ) -> _Harness:
     events: list[str] = []
     leased = leased_job if leased_job is not None else _job(JobStatus.LEASED)
@@ -518,6 +536,7 @@ def _harness(
         force_kill_grace_seconds=1,
         monotonic_clock=(fake_time.monotonic if fake_time is not None else lambda: 0.0),
         sleeper=fake_time.sleep if fake_time is not None else lambda _seconds: None,
+        terminal_observer=terminal_observer,
     )
     return _Harness(
         cycle,
@@ -580,6 +599,58 @@ def test_successful_execution_commits_succeeded_result() -> None:
     assert harness.failure_commit.requests == []
 
 
+def test_terminal_observer_runs_only_after_success_commit() -> None:
+    events: list[str] = []
+    observer = _TerminalObserver(events)
+    harness = _harness(outcome=_successful_outcome(), terminal_observer=observer)
+    observer.events = harness.events
+
+    result = harness.cycle.run_one_job()
+
+    assert result.disposition is WorkerCycleDisposition.SUCCEEDED
+    assert harness.events[-2:] == ["result_commit", "terminal_observer"]
+    assert [job.status for job in observer.jobs] == [JobStatus.SUCCEEDED]
+
+
+def test_terminal_observer_runs_after_failed_commit_but_not_retry_commit() -> None:
+    terminal = _TerminalObserver([])
+    failed = _harness(
+        outcome=_failed_outcome(retryable=False),
+        terminal_observer=terminal,
+    )
+    terminal.events = failed.events
+
+    failed_result = failed.cycle.run_one_job()
+
+    retry = _TerminalObserver([])
+    pending = _harness(
+        outcome=_failed_outcome(retryable=True),
+        failure_result=_failure_commit_result(retry_scheduled=True),
+        terminal_observer=retry,
+    )
+    retry.events = pending.events
+    pending_result = pending.cycle.run_one_job()
+
+    assert failed_result.disposition is WorkerCycleDisposition.FAILED
+    assert failed.events[-2:] == ["failure_commit", "terminal_observer"]
+    assert [job.status for job in terminal.jobs] == [JobStatus.FAILED]
+    assert pending_result.disposition is WorkerCycleDisposition.RETRY_PENDING
+    assert retry.jobs == []
+    assert pending.events[-1] == "failure_commit"
+
+
+def test_terminal_observer_failure_does_not_change_committed_success() -> None:
+    observer = _TerminalObserver([], RuntimeError("private cleanup path"))
+    harness = _harness(terminal_observer=observer)
+    observer.events = harness.events
+
+    result = harness.cycle.run_one_job()
+
+    assert result.disposition is WorkerCycleDisposition.SUCCEEDED
+    assert result.tool_execution_id == "result-execution-1"
+    assert [job.status for job in observer.jobs] == [JobStatus.SUCCEEDED]
+
+
 def test_partial_execution_commits_partial_result() -> None:
     harness = _harness(
         outcome=_successful_outcome(JobStatus.PARTIAL),
@@ -591,6 +662,22 @@ def test_partial_execution_commits_partial_result() -> None:
     assert result.disposition is WorkerCycleDisposition.PARTIAL
     assert harness.result_commit.requests[0].final_status is JobStatus.PARTIAL
     assert harness.failure_commit.requests == []
+
+
+def test_terminal_observer_runs_after_partial_commit() -> None:
+    observer = _TerminalObserver([])
+    harness = _harness(
+        outcome=_successful_outcome(JobStatus.PARTIAL),
+        result=_result_commit_result(JobStatus.PARTIAL),
+        terminal_observer=observer,
+    )
+    observer.events = harness.events
+
+    result = harness.cycle.run_one_job()
+
+    assert result.disposition is WorkerCycleDisposition.PARTIAL
+    assert harness.events[-2:] == ["result_commit", "terminal_observer"]
+    assert [job.status for job in observer.jobs] == [JobStatus.PARTIAL]
 
 
 def test_retryable_failure_returns_retry_pending() -> None:
@@ -752,6 +839,26 @@ def test_pre_execution_cancellation_is_acknowledged_without_adapter_execution() 
     assert harness.adapter.jobs == []
     assert harness.result_commit.requests == []
     assert harness.failure_commit.requests == []
+
+
+def test_terminal_observer_runs_after_durable_cancellation_acknowledgement() -> None:
+    cancelling = replace(
+        _job(JobStatus.RUNNING),
+        cancel_requested=True,
+        cancel_requested_at=NOW,
+    )
+    observer = _TerminalObserver([])
+    harness = _harness(
+        observations=[cancelling],
+        terminal_observer=observer,
+    )
+    observer.events = harness.events
+
+    result = harness.cycle.run_one_job()
+
+    assert result.disposition is WorkerCycleDisposition.CANCELLED
+    assert harness.events[-2:] == ["acknowledge", "terminal_observer"]
+    assert [job.status for job in observer.jobs] == [JobStatus.CANCELLED]
 
 
 def test_start_racing_with_cancellation_is_acknowledged() -> None:

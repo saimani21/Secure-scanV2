@@ -56,6 +56,12 @@ from securescan.scanners.semgrep.source_execution import (
     SourceSemgrepSubmissionService,
     build_semgrep_source_execution_context,
 )
+from securescan.scanners.semgrep.source_lifecycle import (
+    SourceProjectionLifecycleDisposition,
+    SourceProjectionLifecycleResult,
+    SourceProjectionLifecycleService,
+    SourceProjectionTerminalObserver,
+)
 
 __all__ = [
     "InvalidSemgrepRulesetError",
@@ -91,6 +97,10 @@ __all__ = [
     "SourceExecutionProjectionMismatchError",
     "SourceProjectionExecutionReference",
     "SourceProjectionExecutionReferenceError",
+    "SourceProjectionLifecycleDisposition",
+    "SourceProjectionLifecycleResult",
+    "SourceProjectionLifecycleService",
+    "SourceProjectionTerminalObserver",
     "SourceSemgrepExecutionContextError",
     "SourceSemgrepExecutionContextResolver",
     "SourceSemgrepExecutionResolver",

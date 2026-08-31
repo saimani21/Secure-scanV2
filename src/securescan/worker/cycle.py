@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from contextlib import suppress
 from uuid import UUID
 
 from securescan.domain.enums import JobFailureCategory, JobStatus
+from securescan.domain.job_state import is_terminal_job_status
 from securescan.jobs.cancellation import (
     JobCancellationConflictError,
     JobCancellationError,
@@ -51,6 +53,7 @@ from securescan.worker.models import (
     WorkerJobReader,
     WorkerProcessTerminationError,
     WorkerSuccessfulExecution,
+    WorkerTerminalObserver,
 )
 
 _LEASE_LOSS_ERRORS = (
@@ -85,6 +88,7 @@ class SingleJobWorkerCycle:
         force_kill_grace_seconds: float = 2.0,
         monotonic_clock: Callable[[], float] = time.monotonic,
         sleeper: Callable[[float], None] = time.sleep,
+        terminal_observer: WorkerTerminalObserver | None = None,
     ) -> None:
         if not isinstance(worker_id, str):
             raise WorkerExecutionContractError("worker_id must be a string")
@@ -137,6 +141,9 @@ class SingleJobWorkerCycle:
         self._force_kill_grace_seconds = float(force_kill_grace_seconds)
         self._monotonic_clock = monotonic_clock
         self._sleeper = sleeper
+        if terminal_observer is not None and not callable(terminal_observer):
+            raise WorkerExecutionContractError("terminal_observer must be callable")
+        self._terminal_observer = terminal_observer
 
     def run_one_job(self) -> WorkerCycleResult:
         leased_job = self._leasing_service.lease_next_job(
@@ -517,6 +524,7 @@ class SingleJobWorkerCycle:
             raise WorkerCycleInvariantError(
                 "Cancellation acknowledgement returned inconsistent job state"
             )
+        self._observe_terminal_job(cancelled)
         return self._uncommitted_result(
             WorkerCycleDisposition.CANCELLED,
             active_job,
@@ -642,6 +650,7 @@ class SingleJobWorkerCycle:
             JobStatus.SUCCEEDED: WorkerCycleDisposition.SUCCEEDED,
             JobStatus.PARTIAL: WorkerCycleDisposition.PARTIAL,
         }[outcome.final_status]
+        self._observe_terminal_job(result.job)
         return WorkerCycleResult(
             disposition=disposition,
             job_id=result.job.id,
@@ -685,6 +694,7 @@ class SingleJobWorkerCycle:
             disposition = WorkerCycleDisposition.RETRY_PENDING
         elif result.job.status is JobStatus.FAILED:
             disposition = WorkerCycleDisposition.FAILED
+            self._observe_terminal_job(result.job)
         else:
             raise WorkerCycleInvariantError(
                 "Failure commitment returned an inconsistent terminal status"
@@ -697,6 +707,17 @@ class SingleJobWorkerCycle:
             attempt_number=result.attempt_number,
             tool_execution_id=tool_execution_id,
         )
+
+    def _observe_terminal_job(self, job: JobRecord) -> None:
+        if not is_terminal_job_status(job.status):
+            raise WorkerCycleInvariantError(
+                "Terminal observer received a non-terminal job"
+            )
+        if self._terminal_observer is not None:
+            # Terminal observation is operational follow-up. It must never
+            # rewrite or obscure an already committed job outcome.
+            with suppress(Exception):
+                self._terminal_observer(job)
 
     @staticmethod
     def _validate_commit_identity(

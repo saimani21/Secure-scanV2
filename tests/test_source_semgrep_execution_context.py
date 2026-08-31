@@ -768,6 +768,8 @@ def test_server_submission_correlates_target_digest_before_creating_rows(
     with session_factory() as session:
         assert session.query(AnalysisRunRow).count() == 0
         assert session.query(JobRow).count() == 0
+    _, store, _ = durable_services
+    assert _projection_directories(store) == ()
 
 
 def test_fresh_repository_store_and_resolver_reconstruct_exact_context(

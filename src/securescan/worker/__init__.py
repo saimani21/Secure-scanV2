@@ -28,6 +28,7 @@ from securescan.worker.models import (
     WorkerJobReader,
     WorkerProcessTerminationError,
     WorkerSuccessfulExecution,
+    WorkerTerminalObserver,
 )
 
 __all__ = [
@@ -58,4 +59,5 @@ __all__ = [
     "WorkerExecutionHandle",
     "WorkerProcessTerminationError",
     "WorkerSuccessfulExecution",
+    "WorkerTerminalObserver",
 ]

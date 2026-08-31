@@ -144,6 +144,10 @@ class WorkerHeartbeatRenewer(Protocol):
     ) -> JobRecord: ...
 
 
+class WorkerTerminalObserver(Protocol):
+    def __call__(self, job: JobRecord) -> object: ...
+
+
 class WorkerCycleDisposition(StrEnum):
     IDLE = "idle"
     SUCCEEDED = "succeeded"

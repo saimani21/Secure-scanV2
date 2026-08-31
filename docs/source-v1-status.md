@@ -33,6 +33,7 @@ Status: COMPLETE
 | v0.3C1 | Durable execution context | COMPLETE |
 | v0.3C2 | Deterministic selected-file projection | COMPLETE |
 | v0.3C3 | Trusted projection → Semgrep execution bridge | COMPLETE |
+| v0.3C4 | Terminal projection lifecycle + hostile bridge validation | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -121,17 +122,24 @@ scanner configuration. Selected `.semgrepignore` and `.gitignore` files are
 conservatively rejected before Docker, while unselected ignore, vendor, and
 test files never enter the attempt workspace.
 
-The durable projection is intentionally retained through C3 rather than being
-deleted when the adapter returns. Cleanup after terminal durable result
-commitment remains deferred to v0.3C4 lifecycle hardening.
+v0.3C4 ensures durable Source projections remain available through retry and
+lease windows and become cleanup-eligible only after durable terminal job
+commitment. Projection cleanup failure is operational lifecycle state and does
+not rewrite an already committed analysis result. A trusted terminal observer
+provides best-effort immediate cleanup, while the same lifecycle service can
+reconcile a durable terminal job after worker restart. Reconciliation is
+given only job identity and re-fetches status, payload, run, and adapter truth
+from the job repository before authorizing cleanup. It does not sweep
+unreferenced filesystem directories; garbage collection for a crash before DB
+publication remains deferred to deployment or bounded maintenance design.
 
-v0.3C3 does not yet calculate actual Source coverage or promote `PYTHON_SAST`
+v0.3C4 does not yet calculate actual Source coverage or promote `PYTHON_SAST`
 maturity.
 
 ## Next Phase
 
-Source coverage/result aggregation remains deferred. v0.3C3 does not claim
-actual Source coverage, benchmarked support, or product support.
+Source coverage/result aggregation remains deferred to v0.3D. v0.3C4 does not
+claim actual Source coverage, benchmarked support, or product support.
 
 ## Known Non-Blocking Maintenance
 
