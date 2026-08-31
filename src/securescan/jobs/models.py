@@ -6,6 +6,8 @@ from typing import Any
 
 from securescan.domain.enums import JobStatus
 
+RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX = "__securescan_internal_"
+
 
 @dataclass(frozen=True, slots=True)
 class JobCreate:
@@ -60,3 +62,16 @@ class JobSubmissionResult:
     status: JobStatus
     idempotency_key: str
     created: bool
+
+
+@dataclass(frozen=True, slots=True)
+class ServerOwnedJobSubmissionRequest:
+    run_id: str
+    job_id: str
+    target_id: str
+    adapter_id: str
+    idempotency_key: str
+    payload_json: dict[str, Any]
+    expected_target_content_digest: str
+    priority: int = 100
+    max_attempts: int = 3

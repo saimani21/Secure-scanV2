@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import tempfile
 from pathlib import Path
 
 from securescan.domain.enums import ArtifactKind
 from securescan.domain.models import ArtifactRecord
+
+_SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
 
 
 class ContentAddressedArtifactStore:
@@ -44,6 +47,29 @@ class ContentAddressedArtifactStore:
         data = path.read_bytes()
         actual = hashlib.sha256(data).hexdigest()
         if actual != record.sha256:
+            raise ValueError("Artifact digest mismatch")
+        return data
+
+    def read_by_sha256(
+        self,
+        sha256: str,
+        *,
+        expected_size_bytes: int,
+    ) -> bytes:
+        """Read a content-addressed object without accepting a storage path."""
+        if (
+            not isinstance(sha256, str)
+            or _SHA256_PATTERN.fullmatch(sha256) is None
+            or type(expected_size_bytes) is not int
+            or expected_size_bytes < 0
+        ):
+            raise ValueError("Artifact reference is invalid")
+        path = self.root / "sha256" / sha256[:2] / sha256
+        data = path.read_bytes()
+        if (
+            len(data) != expected_size_bytes
+            or hashlib.sha256(data).hexdigest() != sha256
+        ):
             raise ValueError("Artifact digest mismatch")
         return data
 

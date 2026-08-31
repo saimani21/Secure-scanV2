@@ -50,10 +50,12 @@ from securescan.jobs.leasing import (
     UnsupportedQueueDatabaseError,
 )
 from securescan.jobs.models import (
+    RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX,
     JobCreate,
     JobRecord,
     JobSubmissionRequest,
     JobSubmissionResult,
+    ServerOwnedJobSubmissionRequest,
 )
 from securescan.jobs.repository import (
     DuplicateJobError,
@@ -81,6 +83,8 @@ from securescan.jobs.submission import (
     IdempotencyConflictError,
     JobSubmissionError,
     JobSubmissionService,
+    ReservedJobPayloadError,
+    TargetContentDigestMismatchError,
     TargetNotFoundError,
 )
 
@@ -142,6 +146,10 @@ __all__ = [
     "JobSubmissionRequest",
     "JobSubmissionResult",
     "JobSubmissionService",
+    "RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX",
+    "ReservedJobPayloadError",
+    "ServerOwnedJobSubmissionRequest",
+    "TargetContentDigestMismatchError",
     "TargetNotFoundError",
     "ToolExecutionCommit",
     "UnsupportedQueueDatabaseError",

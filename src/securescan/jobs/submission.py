@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -10,7 +11,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from securescan.domain.enums import JobStatus, RunStatus
 from securescan.domain.job_state import InvalidJobTransition, validate_job_transition
-from securescan.jobs.models import JobSubmissionRequest, JobSubmissionResult
+from securescan.jobs.models import (
+    RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX,
+    JobSubmissionRequest,
+    JobSubmissionResult,
+    ServerOwnedJobSubmissionRequest,
+)
 from securescan.persistence.database import (
     AnalysisRunRow,
     JobRow,
@@ -39,6 +45,16 @@ class IdempotencyConflictError(JobSubmissionError):
         super().__init__(
             f"Idempotency key {idempotency_key!r} was reused for a different submission"
         )
+
+
+class ReservedJobPayloadError(JobSubmissionError, ValueError):
+    def __init__(self) -> None:
+        super().__init__("Reserved internal job payload is not allowed")
+
+
+class TargetContentDigestMismatchError(JobSubmissionError):
+    def __init__(self) -> None:
+        super().__init__("Target content identity does not match the trusted submission")
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,7 +118,7 @@ def _find_submission(
 
 
 def _result_for_existing_submission(
-    request: JobSubmissionRequest,
+    request: JobSubmissionRequest | ServerOwnedJobSubmissionRequest,
     existing: _PersistedSubmission,
 ) -> JobSubmissionResult:
     matches = (
@@ -112,6 +128,12 @@ def _result_for_existing_submission(
         and existing.priority == request.priority
         and existing.max_attempts == request.max_attempts
     )
+    if isinstance(request, ServerOwnedJobSubmissionRequest):
+        matches = (
+            matches
+            and existing.run_id == request.run_id
+            and existing.job_id == request.job_id
+        )
     if not matches:
         raise IdempotencyConflictError(request.idempotency_key)
 
@@ -124,11 +146,69 @@ def _result_for_existing_submission(
     )
 
 
+def _contains_reserved_payload_key(payload: object) -> bool:
+    pending = [payload]
+    visited: set[int] = set()
+    while pending:
+        value = pending.pop()
+        if id(value) in visited:
+            continue
+        visited.add(id(value))
+        if isinstance(value, dict):
+            for key, child in value.items():
+                if isinstance(key, str) and key.startswith(
+                    RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX
+                ):
+                    return True
+                pending.append(child)
+        elif isinstance(value, list):
+            pending.extend(value)
+    return False
+
+
+def _canonical_uuid(value: object) -> bool:
+    if not isinstance(value, str) or len(value) != 36 or value != value.lower():
+        return False
+    try:
+        return str(UUID(value)) == value
+    except ValueError:
+        return False
+
+
 class JobSubmissionService:
     def __init__(self, session_factory: sessionmaker[Session]) -> None:
         self._session_factory = session_factory
 
     def submit(self, request: JobSubmissionRequest) -> JobSubmissionResult:
+        if not isinstance(request, JobSubmissionRequest):
+            raise JobSubmissionError("Job submission request is invalid")
+        if _contains_reserved_payload_key(request.payload_json):
+            raise ReservedJobPayloadError
+        return self._submit(request)
+
+    def submit_server_owned(
+        self,
+        request: ServerOwnedJobSubmissionRequest,
+    ) -> JobSubmissionResult:
+        if (
+            not isinstance(request, ServerOwnedJobSubmissionRequest)
+            or not _canonical_uuid(request.run_id)
+            or not _canonical_uuid(request.job_id)
+            or not isinstance(request.payload_json, dict)
+            or not request.payload_json
+            or any(
+                not isinstance(key, str)
+                or not key.startswith(RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX)
+                for key in request.payload_json
+            )
+        ):
+            raise JobSubmissionError("Server-owned job submission request is invalid")
+        return self._submit(request)
+
+    def _submit(
+        self,
+        request: JobSubmissionRequest | ServerOwnedJobSubmissionRequest,
+    ) -> JobSubmissionResult:
         try:
             with self._session_factory.begin() as session:
                 existing = _find_submission(session, request.idempotency_key)
@@ -138,22 +218,46 @@ class JobSubmissionService:
                     target = session.get(TargetRow, request.target_id)
                     if target is None:
                         raise TargetNotFoundError(request.target_id)
+                    if (
+                        isinstance(request, ServerOwnedJobSubmissionRequest)
+                        and target.content_digest
+                        != request.expected_target_content_digest
+                    ):
+                        raise TargetContentDigestMismatchError
 
-                    run = AnalysisRunRow(
-                        target_id=request.target_id,
-                        status=RunStatus.QUEUED.value,
-                    )
+                    if isinstance(request, ServerOwnedJobSubmissionRequest):
+                        run = AnalysisRunRow(
+                            id=request.run_id,
+                            target_id=request.target_id,
+                            status=RunStatus.QUEUED.value,
+                        )
+                    else:
+                        run = AnalysisRunRow(
+                            target_id=request.target_id,
+                            status=RunStatus.QUEUED.value,
+                        )
                     session.add(run)
                     session.flush()
 
-                    job = JobRow(
-                        run_id=run.id,
-                        adapter_id=request.adapter_id,
-                        idempotency_key=request.idempotency_key,
-                        payload_json=deepcopy(request.payload_json),
-                        priority=request.priority,
-                        max_attempts=request.max_attempts,
-                    )
+                    if isinstance(request, ServerOwnedJobSubmissionRequest):
+                        job = JobRow(
+                            id=request.job_id,
+                            run_id=run.id,
+                            adapter_id=request.adapter_id,
+                            idempotency_key=request.idempotency_key,
+                            payload_json=deepcopy(request.payload_json),
+                            priority=request.priority,
+                            max_attempts=request.max_attempts,
+                        )
+                    else:
+                        job = JobRow(
+                            run_id=run.id,
+                            adapter_id=request.adapter_id,
+                            idempotency_key=request.idempotency_key,
+                            payload_json=deepcopy(request.payload_json),
+                            priority=request.priority,
+                            max_attempts=request.max_attempts,
+                        )
                     session.add(job)
                     session.flush()
 
@@ -173,7 +277,12 @@ class JobSubmissionService:
                         idempotency_key=job.idempotency_key,
                         created=True,
                     )
-        except (TargetNotFoundError, IdempotencyConflictError, InvalidJobTransition):
+        except (
+            TargetNotFoundError,
+            TargetContentDigestMismatchError,
+            IdempotencyConflictError,
+            InvalidJobTransition,
+        ):
             raise
         except IntegrityError as exc:
             try:

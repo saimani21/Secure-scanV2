@@ -29,6 +29,8 @@ Status: COMPLETE
 | v0.3A | Semgrep architecture audit | COMPLETE |
 | v0.3B1 | Semgrep confidentiality hardening | COMPLETE |
 | v0.3B2 | Trusted Source Semgrep analyzer | COMPLETE |
+| v0.3C0 | Source/Semgrep bridge audit | COMPLETE |
+| v0.3C1 | Durable execution context | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -71,11 +73,31 @@ digest-pinned image are verified.
 Planned scanners are not considered registered or product-supported
 until their adapter acceptance and benchmark gates pass.
 
+## Durable Execution Context
+
+v0.3C1 preallocates the run and job UUIDs, writes the immutable canonical
+context to content-addressed storage, and then commits the run, job, fixed
+adapter, target-digest check, and reserved context reference in one existing
+database transaction. No schema migration is required because the job payload
+reference is committed atomically with the job. A database failure can leave
+only an unreferenced content-addressed object; it cannot publish a job without
+its context reference.
+
+The public job boundary rejects the reserved internal payload namespace. A
+trusted resolver verifies the artifact, context digest, durable job identity,
+and current Semgrep binding before returning the typed context.
+
+Source submission retries derive domain-separated UUIDv5 run and job
+identifiers from the idempotency key. These UUIDs are stable identifiers, not
+secrets or authorization. Identical retries reproduce the same canonical
+context and content address, so the artifact store reuses the existing object;
+the existing exact submission comparison still rejects changed semantics.
+
 ## Next Phase
 
-Source v0.3C execution integration remains deferred. v0.3B2 does not execute
-plan entries, project selected paths, create findings, or claim actual Source
-coverage, benchmarked support, or product support.
+Source v0.3C2 projection and execution integration remains deferred. v0.3C1
+does not project selected paths, execute plan entries, create findings, or
+claim actual Source coverage, benchmarked support, or product support.
 
 ## Known Non-Blocking Maintenance
 

@@ -52,6 +52,13 @@ from securescan.source.enums import (
     SourceInputType,
     SourceSupportState,
 )
+from securescan.source.execution_context import (
+    SOURCE_EXECUTION_CONTEXT_SCHEMA_VERSION,
+    InvalidSourceExecutionContextError,
+    SourceExecutionContext,
+    SourceExecutionContextError,
+    SourceExecutionSelectedFile,
+)
 from securescan.source.inventory import (
     InvalidSourceWorkspaceError,
     RepositoryInventory,
@@ -134,6 +141,7 @@ __all__ = [
     "InvalidEnryClientConfigurationError",
     "InvalidEnryFileInputError",
     "InvalidSourceCoverageRequestError",
+    "InvalidSourceExecutionContextError",
     "InvalidSourceLanguageProfilingRequestError",
     "InvalidSourcePlanningRequestError",
     "InvalidSourceSupportPolicyError",
@@ -152,6 +160,9 @@ __all__ = [
     "SourceEnrichmentCorrelationError",
     "SourceEnrichmentError",
     "SourceExecutionStatus",
+    "SourceExecutionContext",
+    "SourceExecutionContextError",
+    "SourceExecutionSelectedFile",
     "SourceFileFlag",
     "SourceFileRecord",
     "SourceFileRole",
@@ -176,6 +187,7 @@ __all__ = [
     "SourceSupportPolicy",
     "SourceSupportPolicyError",
     "SourceSupportState",
+    "SOURCE_EXECUTION_CONTEXT_SCHEMA_VERSION",
     "TrustedEnryHelper",
     "TrustedSourceAnalyzer",
     "TrustedSourceAnalyzerRegistry",

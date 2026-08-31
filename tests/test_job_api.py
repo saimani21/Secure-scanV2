@@ -241,3 +241,36 @@ def test_job_submission_does_not_execute_scanner(
         assert jobs[0].status == JobStatus.QUEUED.value
         assert execution_count == 0
         assert runs[0].report_json is None
+
+
+@pytest.mark.parametrize(
+    "payload_json",
+    (
+        {"__securescan_internal_source_execution__": {}},
+        {"nested": {"__securescan_internal_future__": {}}},
+    ),
+)
+def test_public_api_rejects_reserved_internal_payload_namespace(
+    job_api_context: tuple[TestClient, sessionmaker[Session], str],
+    payload_json: dict,
+) -> None:
+    client, session_factory, target_id = job_api_context
+
+    response = client.post(
+        "/v1/jobs",
+        json={
+            "target_id": target_id,
+            "adapter_id": "semgrep-ce",
+            "idempotency_key": "9" * 64,
+            "payload_json": payload_json,
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == {
+        "code": "RESERVED_JOB_PAYLOAD",
+        "message": "Reserved internal job payload is not allowed",
+    }
+    with session_factory() as session:
+        assert session.query(AnalysisRunRow).count() == 0
+        assert session.query(JobRow).count() == 0
