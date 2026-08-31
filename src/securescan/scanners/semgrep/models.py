@@ -32,6 +32,16 @@ class SemgrepExecutionError(SemgrepAdapterError):
         super().__init__("Semgrep sandbox execution failed")
 
 
+class SemgrepExecutionAuthorizationError(SemgrepAdapterError):
+    def __init__(self) -> None:
+        super().__init__("Source Semgrep execution authorization failed")
+
+
+class SemgrepExecutionInfrastructureError(SemgrepAdapterError):
+    def __init__(self) -> None:
+        super().__init__("Source Semgrep execution input is unavailable")
+
+
 class SemgrepOutputMissingError(SemgrepAdapterError):
     def __init__(self) -> None:
         super().__init__("Semgrep result output is missing")

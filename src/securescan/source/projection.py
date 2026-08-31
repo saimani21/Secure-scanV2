@@ -709,9 +709,16 @@ class SourceProjectionManager:
                 os.close(descriptor)
             raise SourceProjectionOwnershipError from exc
 
-    def _projection_names(self) -> tuple[str, str]:
+    def _projection_names(
+        self,
+        projection_suffix: str | None = None,
+    ) -> tuple[str, str]:
         try:
-            suffix = self._projection_id_factory()
+            suffix = (
+                self._projection_id_factory()
+                if projection_suffix is None
+                else projection_suffix
+            )
         except Exception as exc:
             raise SourceProjectionPublicationError from exc
         if (
@@ -1183,6 +1190,8 @@ class SourceProjectionManager:
         self,
         workspace: PreparedRepositoryWorkspace,
         context: SourceExecutionContext,
+        *,
+        projection_suffix: str | None = None,
     ) -> PreparedSourceProjection:
         trusted_workspace = self._validate_workspace(workspace)
         trusted_context = self._validated_context(context)
@@ -1203,7 +1212,7 @@ class SourceProjectionManager:
         if source_inventory.manifest != trusted_workspace.manifest:
             raise SourceProjectionSourceMutationError
 
-        projection_id, staging_name = self._projection_names()
+        projection_id, staging_name = self._projection_names(projection_suffix)
         base_descriptor: int | None = None
         staging_descriptor: int | None = None
         source_descriptor: int | None = None

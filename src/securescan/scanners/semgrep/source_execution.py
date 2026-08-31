@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid5
 
+from securescan.adapters.trusted_registry import TrustedAdapterDefinition
 from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.domain.enums import ArtifactKind
 from securescan.jobs.models import (
@@ -15,10 +20,17 @@ from securescan.jobs.models import (
     ServerOwnedJobSubmissionRequest,
 )
 from securescan.jobs.submission import JobSubmissionError, JobSubmissionService
+from securescan.scanners.semgrep.adapter import (
+    SemgrepExecutionInput,
+    SemgrepSourceResolver,
+)
+from securescan.scanners.semgrep.models import (
+    SemgrepExecutionAuthorizationError,
+    SemgrepExecutionInfrastructureError,
+)
 from securescan.scanners.semgrep.source_binding import TrustedSemgrepSourceBinding
 from securescan.source.enums import AnalysisCapability
 from securescan.source.execution_context import (
-    SOURCE_EXECUTION_CONTEXT_SCHEMA_VERSION,
     InvalidSourceExecutionContextError,
     SourceExecutionContext,
     SourceExecutionSelectedFile,
@@ -28,6 +40,18 @@ from securescan.source.planning import (
     SourceAnalysisPlan,
     SourceAnalysisPlanEntry,
     SourcePlanAction,
+)
+from securescan.source.projection import (
+    PreparedSourceProjection,
+    SourceProjectionError,
+    SourceProjectionManager,
+    SourceProjectionMissingError,
+    SourceProjectionPublicationError,
+)
+from securescan.workspaces.models import (
+    PreparedRepositoryWorkspace,
+    RepositoryManifest,
+    repository_content_digest,
 )
 
 SOURCE_EXECUTION_PAYLOAD_KEY = (
@@ -41,12 +65,29 @@ _ENVELOPE_FIELDS = frozenset(
         "artifact_sha256",
         "artifact_size_bytes",
         "context_digest",
+        "projection_reference",
+        "schema_version",
+    }
+)
+_PROJECTION_REFERENCE_FIELDS = frozenset(
+    {
+        "context_digest",
+        "projection_digest",
+        "projection_id",
         "schema_version",
     }
 )
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
+_PROJECTION_ID_PATTERN = re.compile(
+    r"securescan-source-projection-[0-9a-f]{16,48}\Z",
+    re.ASCII,
+)
 _ARTIFACT_MEDIA_TYPE = "application/json"
 _MAX_CONTEXT_ARTIFACT_BYTES = 256 * 1024 * 1024
+_ENVELOPE_SCHEMA_VERSION = "0.3C3"
+_PROJECTION_REFERENCE_SCHEMA_VERSION = "0.3C3"
+_PROJECTION_ID_STREAM_VERSION = b"securescan-source-projection-execution-v0.3C3\0"
+_TARGET_CONTROLLED_IGNORE_FILES = frozenset({".gitignore", ".semgrepignore"})
 _SOURCE_RUN_ID_NAMESPACE = UUID("7f736c95-71f8-52a6-921d-32478129cb19")
 _SOURCE_JOB_ID_NAMESPACE = UUID("10e4b295-826a-53f2-91fe-6b2a4b619215")
 
@@ -78,22 +119,102 @@ class SourceExecutionBindingMismatchError(SourceSemgrepExecutionContextError):
         super().__init__("Source execution context binding does not match trusted configuration")
 
 
+class SourceProjectionExecutionReferenceError(SourceSemgrepExecutionContextError):
+    def __init__(self) -> None:
+        super().__init__("Source projection execution reference is invalid")
+
+
+class SourceExecutionProjectionMismatchError(SourceSemgrepExecutionContextError):
+    def __init__(self) -> None:
+        super().__init__("Source execution context and projection do not match")
+
+
+class SourceExecutionAdapterMismatchError(SourceSemgrepExecutionContextError):
+    def __init__(self) -> None:
+        super().__init__("Source execution adapter does not match trusted configuration")
+
+
+@dataclass(frozen=True, slots=True)
+class SourceProjectionExecutionReference:
+    projection_id: str
+    context_digest: str
+    projection_digest: str
+    schema_version: str = _PROJECTION_REFERENCE_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        if (
+            self.schema_version != _PROJECTION_REFERENCE_SCHEMA_VERSION
+            or not isinstance(self.projection_id, str)
+            or _PROJECTION_ID_PATTERN.fullmatch(self.projection_id) is None
+            or not isinstance(self.context_digest, str)
+            or _SHA256_PATTERN.fullmatch(self.context_digest) is None
+            or not isinstance(self.projection_digest, str)
+            or _SHA256_PATTERN.fullmatch(self.projection_digest) is None
+        ):
+            raise SourceProjectionExecutionReferenceError
+
+    def canonical_data(self) -> dict[str, str]:
+        return {
+            "context_digest": self.context_digest,
+            "projection_digest": self.projection_digest,
+            "projection_id": self.projection_id,
+            "schema_version": self.schema_version,
+        }
+
+    def canonical_json(self) -> bytes:
+        return json.dumps(
+            self.canonical_data(),
+            ensure_ascii=False,
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+
+    @classmethod
+    def from_payload_json(
+        cls,
+        payload: object,
+    ) -> SourceProjectionExecutionReference:
+        try:
+            if not isinstance(payload, dict) or set(payload) != (
+                _PROJECTION_REFERENCE_FIELDS
+            ):
+                raise ValueError
+            reference = cls(
+                projection_id=payload["projection_id"],
+                context_digest=payload["context_digest"],
+                projection_digest=payload["projection_digest"],
+                schema_version=payload["schema_version"],
+            )
+            if reference.canonical_data() != payload:
+                raise ValueError
+            return reference
+        except (KeyError, TypeError, ValueError) as exc:
+            raise SourceProjectionExecutionReferenceError from exc
+
+
 @dataclass(frozen=True, slots=True)
 class SourceExecutionEnvelope:
     artifact_sha256: str
     artifact_size_bytes: int
     context_digest: str
-    schema_version: str = SOURCE_EXECUTION_CONTEXT_SCHEMA_VERSION
+    projection_reference: SourceProjectionExecutionReference
+    schema_version: str = _ENVELOPE_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
         if (
-            self.schema_version != SOURCE_EXECUTION_CONTEXT_SCHEMA_VERSION
+            self.schema_version != _ENVELOPE_SCHEMA_VERSION
             or not isinstance(self.artifact_sha256, str)
             or _SHA256_PATTERN.fullmatch(self.artifact_sha256) is None
             or type(self.artifact_size_bytes) is not int
             or not 1 <= self.artifact_size_bytes <= _MAX_CONTEXT_ARTIFACT_BYTES
             or not isinstance(self.context_digest, str)
             or _SHA256_PATTERN.fullmatch(self.context_digest) is None
+            or not isinstance(
+                self.projection_reference,
+                SourceProjectionExecutionReference,
+            )
+            or self.projection_reference.context_digest != self.context_digest
         ):
             raise InvalidSourceSemgrepExecutionRequestError
 
@@ -106,6 +227,9 @@ class SourceExecutionEnvelope:
                 "artifact_sha256": self.artifact_sha256,
                 "artifact_size_bytes": self.artifact_size_bytes,
                 "context_digest": self.context_digest,
+                "projection_reference": (
+                    self.projection_reference.canonical_data()
+                ),
                 "schema_version": self.schema_version,
             }
         }
@@ -131,9 +255,19 @@ class SourceExecutionEnvelope:
                 artifact_sha256=value["artifact_sha256"],
                 artifact_size_bytes=value["artifact_size_bytes"],
                 context_digest=value["context_digest"],
+                projection_reference=(
+                    SourceProjectionExecutionReference.from_payload_json(
+                        value["projection_reference"]
+                    )
+                ),
                 schema_version=value["schema_version"],
             )
-        except (KeyError, TypeError, ValueError) as exc:
+        except (
+            KeyError,
+            SourceProjectionExecutionReferenceError,
+            TypeError,
+            ValueError,
+        ) as exc:
             raise InvalidSourceSemgrepExecutionRequestError from exc
 
 
@@ -269,6 +403,7 @@ def build_semgrep_source_execution_context(
 class SourceSemgrepSubmissionRequest:
     target_id: str
     idempotency_key: str
+    workspace: PreparedRepositoryWorkspace
     profile: RepositoryProfile
     plan: SourceAnalysisPlan
     entry: SourceAnalysisPlanEntry
@@ -330,11 +465,141 @@ class SourceSemgrepExecutionContextResolver:
         return context
 
 
+class SourceSemgrepExecutionResolver:
+    def __init__(
+        self,
+        context_resolver: SourceSemgrepExecutionContextResolver,
+        projection_manager: SourceProjectionManager,
+        binding: TrustedSemgrepSourceBinding,
+    ) -> None:
+        if (
+            not isinstance(
+                context_resolver,
+                SourceSemgrepExecutionContextResolver,
+            )
+            or not isinstance(projection_manager, SourceProjectionManager)
+            or not isinstance(binding, TrustedSemgrepSourceBinding)
+        ):
+            raise InvalidSourceSemgrepExecutionRequestError
+        binding._validate_state()
+        self._context_resolver = context_resolver
+        self._projection_manager = projection_manager
+        self._binding = binding
+
+    def resolve(
+        self,
+        job: JobRecord,
+        definition: TrustedAdapterDefinition,
+    ) -> SemgrepExecutionInput:
+        if (
+            not isinstance(job, JobRecord)
+            or not isinstance(definition, TrustedAdapterDefinition)
+        ):
+            raise InvalidSourceSemgrepExecutionRequestError
+        envelope = SourceExecutionEnvelope.from_payload_json(job.payload_json)
+        context = self._context_resolver.resolve(job)
+        try:
+            self._binding._validate_state()
+            definition_matches = self._binding.matches_definition(definition)
+        except Exception as exc:
+            raise SourceExecutionAdapterMismatchError from exc
+        if (
+            not definition_matches
+            or definition.adapter_id != "semgrep-ce"
+            or job.adapter_id != "semgrep-ce"
+            or context.source_analyzer_id != "python-semgrep-v1"
+            or context.capability is not AnalysisCapability.PYTHON_SAST
+            or context.core_adapter_id != definition.adapter_id
+        ):
+            raise SourceExecutionAdapterMismatchError
+
+        reference = envelope.projection_reference
+        projection = self._projection_manager.reopen_projection(
+            reference.projection_id,
+            expected_context_digest=reference.context_digest,
+            expected_projection_digest=reference.projection_digest,
+        )
+        selected_entries = tuple(
+            replace(selected.entry) for selected in context.selected_files
+        )
+        if any(
+            entry.relative_path.rsplit("/", 1)[-1]
+            in _TARGET_CONTROLLED_IGNORE_FILES
+            for entry in selected_entries
+        ):
+            raise SourceExecutionProjectionMismatchError
+        selected_manifest = RepositoryManifest(
+            entries=selected_entries,
+            file_count=len(selected_entries),
+            total_bytes=sum(entry.size_bytes for entry in selected_entries),
+            content_digest=repository_content_digest(selected_entries),
+        )
+        if (
+            reference.context_digest != envelope.context_digest
+            or reference.context_digest != context.context_digest()
+            or projection.context_digest != context.context_digest()
+            or reference.projection_digest != selected_manifest.content_digest
+            or projection.projection_digest != selected_manifest.content_digest
+            or projection.manifest != selected_manifest
+        ):
+            raise SourceExecutionProjectionMismatchError
+        return SemgrepExecutionInput(
+            source_directory=projection.source_directory,
+            authorized_manifest=projection.manifest,
+        )
+
+
+class SourceAwareSemgrepJobInputResolver:
+    def __init__(
+        self,
+        source_resolver: SemgrepSourceResolver,
+        source_execution_resolver: SourceSemgrepExecutionResolver,
+    ) -> None:
+        if (
+            not callable(source_resolver)
+            or not isinstance(
+                source_execution_resolver,
+                SourceSemgrepExecutionResolver,
+            )
+        ):
+            raise InvalidSourceSemgrepExecutionRequestError
+        self._source_resolver = source_resolver
+        self._source_execution_resolver = source_execution_resolver
+
+    def __call__(
+        self,
+        job: JobRecord,
+        definition: TrustedAdapterDefinition,
+    ) -> SemgrepExecutionInput:
+        payload = job.payload_json
+        is_source = (
+            isinstance(payload, dict)
+            and SOURCE_EXECUTION_PAYLOAD_KEY in payload
+        )
+        if not is_source:
+            source_directory = self._source_resolver(job.run_id)
+            if not isinstance(source_directory, Path):
+                raise TypeError
+            return SemgrepExecutionInput(source_directory=source_directory)
+        try:
+            return self._source_execution_resolver.resolve(job, definition)
+        except (SourceProjectionMissingError, SourceExecutionContextArtifactError) as exc:
+            raise SemgrepExecutionInfrastructureError from exc
+        except (
+            SourceSemgrepExecutionContextError,
+            SourceProjectionError,
+        ) as exc:
+            raise SemgrepExecutionAuthorizationError from exc
+        except Exception as exc:
+            raise SemgrepExecutionAuthorizationError from exc
+
+
 class SourceSemgrepSubmissionService:
     def __init__(
         self,
         job_submission_service: JobSubmissionService,
         artifact_store: ContentAddressedArtifactStore,
+        projection_manager: SourceProjectionManager,
         *,
         run_id_factory: Callable[[], UUID] | None = None,
         job_id_factory: Callable[[], UUID] | None = None,
@@ -342,12 +607,14 @@ class SourceSemgrepSubmissionService:
         if (
             not isinstance(job_submission_service, JobSubmissionService)
             or not isinstance(artifact_store, ContentAddressedArtifactStore)
+            or not isinstance(projection_manager, SourceProjectionManager)
             or (run_id_factory is not None and not callable(run_id_factory))
             or (job_id_factory is not None and not callable(job_id_factory))
         ):
             raise InvalidSourceSemgrepExecutionRequestError
         self._job_submission_service = job_submission_service
         self._artifact_store = artifact_store
+        self._projection_manager = projection_manager
         self._run_id_factory = run_id_factory
         self._job_id_factory = job_id_factory
 
@@ -371,6 +638,55 @@ class SourceSemgrepSubmissionService:
             return str(value)
         except Exception as exc:
             raise InvalidSourceSemgrepExecutionRequestError from exc
+
+    @staticmethod
+    def _projection_suffix(context: SourceExecutionContext) -> str:
+        digest = hashlib.sha256()
+        digest.update(_PROJECTION_ID_STREAM_VERSION)
+        digest.update(context.job_id.encode("ascii"))
+        digest.update(bytes.fromhex(context.context_digest()))
+        return digest.hexdigest()[:32]
+
+    def _prepare_projection(
+        self,
+        workspace: PreparedRepositoryWorkspace,
+        context: SourceExecutionContext,
+    ) -> tuple[PreparedSourceProjection, bool]:
+        suffix = self._projection_suffix(context)
+        projection_id = f"securescan-source-projection-{suffix}"
+        selected_entries = tuple(
+            replace(selected.entry) for selected in context.selected_files
+        )
+        expected_projection_digest = repository_content_digest(selected_entries)
+        try:
+            projection = self._projection_manager.reopen_projection(
+                projection_id,
+                expected_context_digest=context.context_digest(),
+                expected_projection_digest=expected_projection_digest,
+            )
+            created = False
+        except SourceProjectionMissingError:
+            try:
+                projection = self._projection_manager.build_projection(
+                    workspace,
+                    context,
+                    projection_suffix=suffix,
+                )
+                created = True
+            except SourceProjectionPublicationError:
+                projection = self._projection_manager.reopen_projection(
+                    projection_id,
+                    expected_context_digest=context.context_digest(),
+                    expected_projection_digest=expected_projection_digest,
+                )
+                created = False
+        if (
+            projection.context_digest != context.context_digest()
+            or projection.projection_digest != expected_projection_digest
+            or projection.manifest.entries != selected_entries
+        ):
+            raise SourceExecutionProjectionMismatchError
+        return projection, created
 
     def submit(
         self,
@@ -396,7 +712,13 @@ class SourceSemgrepSubmissionService:
             entry=request.entry,
             binding=request.binding,
         )
+        projection: PreparedSourceProjection | None = None
+        projection_created = False
         try:
+            projection, projection_created = self._prepare_projection(
+                request.workspace,
+                context,
+            )
             artifact = self._artifact_store.put(
                 context.canonical_json(),
                 kind=ArtifactKind.SOURCE_EXECUTION_CONTEXT,
@@ -407,6 +729,11 @@ class SourceSemgrepSubmissionService:
                 artifact_sha256=artifact.sha256,
                 artifact_size_bytes=artifact.size_bytes,
                 context_digest=context.context_digest(),
+                projection_reference=SourceProjectionExecutionReference(
+                    projection_id=projection.projection_id,
+                    context_digest=projection.context_digest,
+                    projection_digest=projection.projection_digest,
+                ),
             )
             return self._job_submission_service.submit_server_owned(
                 ServerOwnedJobSubmissionRequest(
@@ -421,7 +748,13 @@ class SourceSemgrepSubmissionService:
                     max_attempts=request.max_attempts,
                 )
             )
-        except JobSubmissionError:
+        except (JobSubmissionError, SourceSemgrepExecutionContextError):
+            if projection is not None and projection_created:
+                with suppress(SourceProjectionError):
+                    self._projection_manager.cleanup_projection(projection)
             raise
         except Exception as exc:
+            if projection is not None and projection_created:
+                with suppress(SourceProjectionError):
+                    self._projection_manager.cleanup_projection(projection)
             raise SourceExecutionContextArtifactError from exc

@@ -32,6 +32,7 @@ Status: COMPLETE
 | v0.3C0 | Source/Semgrep bridge audit | COMPLETE |
 | v0.3C1 | Durable execution context | COMPLETE |
 | v0.3C2 | Deterministic selected-file projection | COMPLETE |
+| v0.3C3 | Trusted projection → Semgrep execution bridge | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -105,11 +106,32 @@ and current effective-user ownership where POSIX exposes it. Existing unmarked
 directories and marked roots with incorrect permissions are rejected without
 permission repair. v0.3C2 does not execute Semgrep or Docker.
 
+v0.3C3 connects a validated durable Source job and its exact C2 projection to
+the existing trusted Semgrep execution path. Each attempt reopens and
+reinventories the durable projection, correlates it with the frozen C1 context
+and current trusted binding, then creates a fresh identity-preserving Semgrep
+attempt workspace. This repository does not yet contain a production worker
+startup/registry composition module. Its trusted C3 composition seam is
+`create_source_aware_semgrep_trusted_definition`: any worker registry that can
+lease Source jobs must register the definition returned by that helper. The
+adapter itself fails closed if a reserved Source envelope reaches a definition
+without the Source-aware resolver, preventing miscomposition from falling back
+to mutable generic input. The fixed reference baseline ruleset is the only
+scanner configuration. Selected `.semgrepignore` and `.gitignore` files are
+conservatively rejected before Docker, while unselected ignore, vendor, and
+test files never enter the attempt workspace.
+
+The durable projection is intentionally retained through C3 rather than being
+deleted when the adapter returns. Cleanup after terminal durable result
+commitment remains deferred to v0.3C4 lifecycle hardening.
+
+v0.3C3 does not yet calculate actual Source coverage or promote `PYTHON_SAST`
+maturity.
+
 ## Next Phase
 
-Source v0.3C3 execution integration remains deferred. v0.3C2 does not execute
-plan entries, create findings, or claim actual Source coverage, benchmarked
-support, or product support.
+Source coverage/result aggregation remains deferred. v0.3C3 does not claim
+actual Source coverage, benchmarked support, or product support.
 
 ## Known Non-Blocking Maintenance
 

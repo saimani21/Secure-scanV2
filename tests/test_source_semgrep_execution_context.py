@@ -64,12 +64,14 @@ from securescan.source import (
     SourceFileRecord,
     SourceFileRole,
     SourcePlanningPolicy,
+    SourceProjectionManager,
+    SourceProjectionPublicationError,
     SourceSupportState,
     TrustedSourceAnalyzer,
     TrustedSourceAnalyzerRegistry,
     build_source_analysis_plan,
 )
-from securescan.workspaces import RepositoryManifestEntry
+from securescan.workspaces import RepositoryManifestEntry, RepositoryWorkspaceManager
 from securescan.workspaces.models import repository_content_digest
 
 IMAGE = "registry.example/securescan/semgrep@sha256:" + "5" * 64
@@ -429,9 +431,11 @@ def _submit(
 ):
     session_factory, store, target_id = services
     profile, plan, entry, binding = _trusted_inputs()
+    workspace = _submission_workspace(store)
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
+        SourceProjectionManager(store.root.parent / "source-projections"),
         run_id_factory=lambda: UUID(RUN_ID),
         job_id_factory=lambda: UUID(JOB_ID),
     )
@@ -439,6 +443,7 @@ def _submit(
         SourceSemgrepSubmissionRequest(
             target_id=target_id,
             idempotency_key="c" * 64,
+            workspace=workspace,
             profile=profile,
             plan=plan,
             entry=entry,
@@ -450,6 +455,7 @@ def _submit(
 
 def _submission_request(
     target_id: str,
+    store: ContentAddressedArtifactStore,
     *,
     priority: int = 100,
     max_attempts: int = 3,
@@ -459,6 +465,7 @@ def _submission_request(
         SourceSemgrepSubmissionRequest(
             target_id=target_id,
             idempotency_key="d" * 64,
+            workspace=_submission_workspace(store),
             profile=profile,
             plan=plan,
             entry=entry,
@@ -470,6 +477,19 @@ def _submission_request(
     )
 
 
+def _submission_workspace(
+    store: ContentAddressedArtifactStore,
+):
+    source = store.root.parent / "source-input"
+    source.mkdir(exist_ok=True)
+    (source / "app.py").write_bytes(b"app content\n")
+    (source / "pkg").mkdir(exist_ok=True)
+    (source / "pkg" / "mod.py").write_bytes(b"module content\n")
+    return RepositoryWorkspaceManager(
+        store.root.parent / "source-input-workspaces"
+    ).prepare_repository(source)
+
+
 def _artifact_files(store: ContentAddressedArtifactStore) -> set[Path]:
     return {
         path.relative_to(store.root)
@@ -478,14 +498,26 @@ def _artifact_files(store: ContentAddressedArtifactStore) -> set[Path]:
     }
 
 
+def _projection_directories(store: ContentAddressedArtifactStore) -> tuple[Path, ...]:
+    root = store.root.parent / "source-projections"
+    return tuple(
+        sorted(
+            path
+            for path in root.iterdir()
+            if path.is_dir() and path.name.startswith("securescan-source-projection-")
+        )
+    )
+
+
 def test_identical_retry_returns_existing_job_and_stable_context(
     durable_services,
 ) -> None:
     session_factory, store, target_id = durable_services
-    request, binding = _submission_request(target_id)
+    request, binding = _submission_request(target_id, store)
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
+        SourceProjectionManager(store.root.parent / "source-projections"),
     )
 
     first = service.submit(request)
@@ -510,8 +542,19 @@ def test_identical_retry_returns_existing_job_and_stable_context(
     assert second.job_id == first.job_id
     assert second_job.payload_json == first_envelope
     assert second_context == first_context
+    first_reference = SourceExecutionEnvelope.from_payload_json(
+        first_envelope
+    ).projection_reference
+    second_reference = SourceExecutionEnvelope.from_payload_json(
+        second_job.payload_json
+    ).projection_reference
+    assert second_reference == first_reference
+    assert second_reference.context_digest == second_context.context_digest()
     assert _artifact_files(store) == first_artifacts
     assert len(first_artifacts) == 1
+    assert [path.name for path in _projection_directories(store)] == [
+        first_reference.projection_id
+    ]
     with session_factory() as session:
         assert session.query(AnalysisRunRow).count() == 1
         assert session.query(JobRow).count() == 1
@@ -521,20 +564,22 @@ def test_identical_retry_with_fresh_services_uses_durable_identity(
     durable_services,
 ) -> None:
     session_factory, store, target_id = durable_services
-    first_request, _ = _submission_request(target_id)
+    first_request, _ = _submission_request(target_id, store)
     first_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
+        SourceProjectionManager(store.root.parent / "source-projections"),
     )
     first = first_service.submit(first_request)
     artifact_root = store.root
     del first_service, first_request, store
 
     fresh_store = ContentAddressedArtifactStore(artifact_root)
-    second_request, binding = _submission_request(target_id)
+    second_request, binding = _submission_request(target_id, fresh_store)
     second_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         fresh_store,
+        SourceProjectionManager(fresh_store.root.parent / "source-projections"),
     )
     second = second_service.submit(second_request)
     durable_job = JobRepository(session_factory).get_job(second.job_id)
@@ -547,8 +592,15 @@ def test_identical_retry_with_fresh_services_uses_durable_identity(
         fresh_store,
         binding,
     ).resolve(durable_job)
+    reference = SourceExecutionEnvelope.from_payload_json(
+        durable_job.payload_json
+    ).projection_reference
     assert context.source_run_id == first.run_id
     assert context.job_id == first.job_id
+    assert reference.context_digest == context.context_digest()
+    assert [path.name for path in _projection_directories(fresh_store)] == [
+        reference.projection_id
+    ]
     assert len(_artifact_files(fresh_store)) == 1
 
 
@@ -556,15 +608,20 @@ def test_same_key_with_different_source_semantics_remains_a_conflict(
     durable_services,
 ) -> None:
     session_factory, store, target_id = durable_services
-    request, _ = _submission_request(target_id)
+    request, _ = _submission_request(target_id, store)
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
+        SourceProjectionManager(store.root.parent / "source-projections"),
     )
     first = service.submit(request)
 
     with pytest.raises(IdempotencyConflictError):
         service.submit(replace(request, priority=request.priority + 1))
+
+    changed_binding = _binding(tool_version="1.172.0")
+    with pytest.raises(IdempotencyConflictError):
+        service.submit(replace(request, binding=changed_binding))
 
     with session_factory() as session:
         runs = list(session.query(AnalysisRunRow))
@@ -574,6 +631,14 @@ def test_same_key_with_different_source_semantics_remains_a_conflict(
         assert runs[0].id == first.run_id
         assert jobs[0].id == first.job_id
         assert jobs[0].priority == request.priority
+    first_job = JobRepository(session_factory).get_job(first.job_id)
+    assert first_job is not None
+    first_reference = SourceExecutionEnvelope.from_payload_json(
+        first_job.payload_json
+    ).projection_reference
+    assert [path.name for path in _projection_directories(store)] == [
+        first_reference.projection_id
+    ]
 
 
 def test_server_owned_integrity_error_recovery_returns_existing_submission(
@@ -581,10 +646,11 @@ def test_server_owned_integrity_error_recovery_returns_existing_submission(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     session_factory, store, target_id = durable_services
-    request, _ = _submission_request(target_id)
+    request, _ = _submission_request(target_id, store)
     first_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
+        SourceProjectionManager(store.root.parent / "source-projections"),
     )
     first = first_service.submit(request)
     original_find = job_submission_module._find_submission
@@ -601,8 +667,9 @@ def test_server_owned_integrity_error_recovery_returns_existing_submission(
     recovery_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         ContentAddressedArtifactStore(store.root),
+        SourceProjectionManager(store.root.parent / "source-projections"),
     )
-    recovered = recovery_service.submit(_submission_request(target_id)[0])
+    recovered = recovery_service.submit(_submission_request(target_id, store)[0])
 
     assert find_calls == 2
     assert recovered.created is False
@@ -611,6 +678,43 @@ def test_server_owned_integrity_error_recovery_returns_existing_submission(
     with session_factory() as session:
         assert session.query(AnalysisRunRow).count() == 1
         assert session.query(JobRow).count() == 1
+
+
+def test_projection_publication_race_reopens_the_valid_competing_projection(
+    durable_services,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session_factory, store, target_id = durable_services
+    request, _ = _submission_request(target_id, store)
+    projection_root = store.root.parent / "source-projections"
+    manager = SourceProjectionManager(projection_root)
+    service = SourceSemgrepSubmissionService(
+        JobSubmissionService(session_factory),
+        store,
+        manager,
+    )
+
+    def competing_publication(workspace, context, *, projection_suffix):
+        SourceProjectionManager(projection_root).build_projection(
+            workspace,
+            context,
+            projection_suffix=projection_suffix,
+        )
+        raise SourceProjectionPublicationError
+
+    monkeypatch.setattr(manager, "build_projection", competing_publication)
+
+    result = service.submit(request)
+    job = JobRepository(session_factory).get_job(result.job_id)
+
+    assert result.created is True
+    assert job is not None
+    reference = SourceExecutionEnvelope.from_payload_json(
+        job.payload_json
+    ).projection_reference
+    assert [path.name for path in _projection_directories(store)] == [
+        reference.projection_id
+    ]
 
 
 def test_server_submission_derives_adapter_and_persists_tiny_envelope(
@@ -631,7 +735,17 @@ def test_server_submission_derives_adapter_and_persists_tiny_envelope(
     assert envelope["artifact_kind"] == ArtifactKind.SOURCE_EXECUTION_CONTEXT.value
     assert envelope["artifact_media_type"] == "application/json"
     assert envelope["artifact_sanitized"] is False
+    assert set(envelope["projection_reference"]) == {
+        "context_digest",
+        "projection_digest",
+        "projection_id",
+        "schema_version",
+    }
+    assert envelope["projection_reference"]["projection_id"].startswith(
+        "securescan-source-projection-"
+    )
     assert "selected_files" not in envelope
+    assert "source_directory" not in json.dumps(envelope)
     assert "image" not in envelope
     assert "command" not in envelope
     assert "adapter_id" not in {
@@ -706,6 +820,10 @@ def test_context_digest_mismatch_is_rejected(durable_services) -> None:
             artifact_sha256=envelope.artifact_sha256,
             artifact_size_bytes=envelope.artifact_size_bytes,
             context_digest="0" * 64,
+            projection_reference=replace(
+                envelope.projection_reference,
+                context_digest="0" * 64,
+            ),
         ).payload_json(),
     )
 
@@ -757,6 +875,7 @@ def test_context_content_tampering_is_rejected(
         artifact_sha256=artifact.sha256,
         artifact_size_bytes=artifact.size_bytes,
         context_digest=envelope.context_digest,
+        projection_reference=envelope.projection_reference,
     )
     tampered_job = replace(job, payload_json=changed_envelope.payload_json())
 
@@ -805,6 +924,7 @@ def test_selected_file_and_schema_tampering_is_rejected(
             artifact_sha256=artifact.sha256,
             artifact_size_bytes=artifact.size_bytes,
             context_digest=envelope.context_digest,
+            projection_reference=envelope.projection_reference,
         ).payload_json(),
     )
 

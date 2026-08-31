@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import suppress
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
@@ -25,11 +25,13 @@ from securescan.execution.docker_sandbox import (
     DockerSandboxTimeoutError,
 )
 from securescan.jobs.failure_commit import FailedToolExecutionCommit
-from securescan.jobs.models import JobRecord
+from securescan.jobs.models import RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX, JobRecord
 from securescan.jobs.result_commit import ToolExecutionCommit
 from securescan.scanners.semgrep.models import (
     SemgrepAdapterError,
+    SemgrepExecutionAuthorizationError,
     SemgrepExecutionError,
+    SemgrepExecutionInfrastructureError,
     SemgrepOutputMalformedError,
     SemgrepOutputMissingError,
     SemgrepOutputTooLargeError,
@@ -54,7 +56,7 @@ from securescan.workspaces.intake import (
     RepositoryWorkspaceError,
     RepositoryWorkspaceManager,
 )
-from securescan.workspaces.models import PreparedRepositoryWorkspace
+from securescan.workspaces.models import PreparedRepositoryWorkspace, RepositoryManifest
 
 _SEMGREP_ARGUMENTS = (
     "scan",
@@ -69,6 +71,9 @@ _SEMGREP_ARGUMENTS = (
     "--output=/workspace/output/semgrep-results.json",
     "/workspace/source",
 )
+_SOURCE_EXECUTION_PAYLOAD_KEY = (
+    f"{RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX}source_execution__"
+)
 _SEMGREP_ENVIRONMENT = (("HOME", "/tmp"),)
 
 
@@ -78,6 +83,27 @@ def _utc_now() -> datetime:
 
 class SemgrepSourceResolver(Protocol):
     def __call__(self, run_id: str) -> Path: ...
+
+
+@dataclass(frozen=True, slots=True)
+class SemgrepExecutionInput:
+    source_directory: Path
+    authorized_manifest: RepositoryManifest | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.source_directory, Path) or (
+            self.authorized_manifest is not None
+            and not isinstance(self.authorized_manifest, RepositoryManifest)
+        ):
+            raise SemgrepExecutionAuthorizationError
+
+
+class SemgrepJobInputResolver(Protocol):
+    def __call__(
+        self,
+        job: JobRecord,
+        definition: TrustedAdapterDefinition,
+    ) -> SemgrepExecutionInput: ...
 
 
 class SemgrepDockerExecutionHandle(Protocol):
@@ -108,6 +134,7 @@ class _PreparedSemgrepExecution:
     workspace: PreparedRepositoryWorkspace
     request: DockerSandboxExecutionRequest
     started_at: datetime
+    authorized_manifest: RepositoryManifest | None = None
 
 
 class _CompletedSemgrepFailureHandle:
@@ -226,6 +253,7 @@ class SemgrepScannerAdapter:
         ruleset: TrustedSemgrepRuleset,
         artifact_store: ContentAddressedArtifactStore,
         source_resolver: SemgrepSourceResolver,
+        job_input_resolver: SemgrepJobInputResolver | None = None,
         plan: SemgrepScanPlan | None = None,
         clock: Callable[[], datetime] = _utc_now,
     ) -> None:
@@ -238,6 +266,10 @@ class SemgrepScannerAdapter:
             or not isinstance(ruleset, TrustedSemgrepRuleset)
             or not isinstance(artifact_store, ContentAddressedArtifactStore)
             or not callable(source_resolver)
+            or (
+                job_input_resolver is not None
+                and not callable(job_input_resolver)
+            )
             or not isinstance(trusted_plan, SemgrepScanPlan)
             or trusted_plan.ruleset != ruleset
             or not callable(clock)
@@ -250,6 +282,7 @@ class SemgrepScannerAdapter:
         self._ruleset = ruleset
         self._artifact_store = artifact_store
         self._source_resolver = source_resolver
+        self._job_input_resolver = job_input_resolver
         self._plan = trusted_plan
         self._clock = clock
 
@@ -262,18 +295,56 @@ class SemgrepScannerAdapter:
         return self._plan
 
     def _prepare(self, job: JobRecord) -> _PreparedSemgrepExecution:
-        if not isinstance(job, JobRecord) or job.adapter_id != self.adapter_id:
+        if not isinstance(job, JobRecord):
             raise SemgrepExecutionError
+        is_source_execution = (
+            isinstance(job.payload_json, dict)
+            and _SOURCE_EXECUTION_PAYLOAD_KEY in job.payload_json
+        )
+        if job.adapter_id != self.adapter_id:
+            if is_source_execution:
+                raise SemgrepExecutionAuthorizationError
+            raise SemgrepExecutionError
+        if is_source_execution and self._job_input_resolver is None:
+            raise SemgrepExecutionAuthorizationError
         try:
-            source_directory = self._source_resolver(job.run_id)
-            if not isinstance(source_directory, Path):
+            if self._job_input_resolver is None:
+                source_directory = self._source_resolver(job.run_id)
+                if not isinstance(source_directory, Path):
+                    raise TypeError
+                execution_input = SemgrepExecutionInput(
+                    source_directory=source_directory,
+                )
+            else:
+                execution_input = self._job_input_resolver(job, self._definition)
+            if not isinstance(execution_input, SemgrepExecutionInput):
                 raise TypeError
         except Exception as exc:
+            if isinstance(
+                exc,
+                (
+                    SemgrepExecutionAuthorizationError,
+                    SemgrepExecutionInfrastructureError,
+                ),
+            ):
+                raise
             raise SemgrepExecutionError from exc
 
         workspace: PreparedRepositoryWorkspace | None = None
         try:
-            workspace = self._workspace_manager.prepare_repository(source_directory)
+            workspace = self._workspace_manager.prepare_repository(
+                execution_input.source_directory
+            )
+            authorized_manifest = execution_input.authorized_manifest
+            if authorized_manifest is not None:
+                authorized_manifest = replace(
+                    authorized_manifest,
+                    entries=tuple(
+                        replace(entry) for entry in authorized_manifest.entries
+                    ),
+                )
+                if workspace.manifest != authorized_manifest:
+                    raise SemgrepExecutionAuthorizationError
             self._ruleset.materialize(workspace.output_directory)
             request = DockerSandboxExecutionRequest(
                 definition=self._definition,
@@ -288,6 +359,7 @@ class SemgrepScannerAdapter:
                 workspace=workspace,
                 request=request,
                 started_at=self._clock(),
+                authorized_manifest=authorized_manifest,
             )
         except Exception as exc:
             if workspace is not None:
@@ -353,6 +425,16 @@ class SemgrepScannerAdapter:
             scanner_version=self.tool_version,
             maximum_findings=self._plan.maximum_findings,
         )
+        if prepared.authorized_manifest is not None:
+            authorized_paths = {
+                entry.relative_path
+                for entry in prepared.authorized_manifest.entries
+            }
+            if (
+                prepared.workspace.manifest != prepared.authorized_manifest
+                or any(finding.path not in authorized_paths for finding in parsed.findings)
+            ):
+                raise SemgrepExecutionAuthorizationError
         sanitized_evidence = build_sanitized_semgrep_evidence(
             parsed,
             scanner_id=self.adapter_id,
@@ -504,6 +586,24 @@ class SemgrepScannerAdapter:
                 ExecutionOutcome.INVALID_OUTPUT,
                 JobFailureCategory.RETRYABLE_INFRASTRUCTURE,
                 "Semgrep result output is missing",
+                retryable=True,
+                exit_code=exit_code,
+                duration_ms=duration_ms,
+            )
+        if isinstance(error, SemgrepExecutionAuthorizationError):
+            return self._failed_outcome(
+                ExecutionOutcome.INTERNAL_ERROR,
+                JobFailureCategory.NON_RETRYABLE_POLICY,
+                "Source Semgrep execution authorization failed",
+                retryable=False,
+                exit_code=exit_code,
+                duration_ms=duration_ms,
+            )
+        if isinstance(error, SemgrepExecutionInfrastructureError):
+            return self._failed_outcome(
+                ExecutionOutcome.INTERNAL_ERROR,
+                JobFailureCategory.RETRYABLE_INFRASTRUCTURE,
+                "Source Semgrep execution input is unavailable",
                 retryable=True,
                 exit_code=exit_code,
                 duration_ms=duration_ms,
