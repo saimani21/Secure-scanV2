@@ -31,6 +31,7 @@ Status: COMPLETE
 | v0.3B2 | Trusted Source Semgrep analyzer | COMPLETE |
 | v0.3C0 | Source/Semgrep bridge audit | COMPLETE |
 | v0.3C1 | Durable execution context | COMPLETE |
+| v0.3C2 | Deterministic selected-file projection | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -93,11 +94,22 @@ secrets or authorization. Identical retries reproduce the same canonical
 context and content address, so the artifact store reuses the existing object;
 the existing exact submission comparison still rejects changed semantics.
 
+v0.3C2 materializes the exact approved selected-file identities into a
+separate durable, read-only scanner-visible source tree. Its independently
+verified manifest and projection digest enforce scope without repository
+ignore/config behavior. The trusted Settings boundary normalizes the configured
+projection root to an absolute path. A new root is created privately and marked
+as a dedicated SecureScan projection root; every manager construction requires
+the exact root marker, private root and marker permissions, single-link marker,
+and current effective-user ownership where POSIX exposes it. Existing unmarked
+directories and marked roots with incorrect permissions are rejected without
+permission repair. v0.3C2 does not execute Semgrep or Docker.
+
 ## Next Phase
 
-Source v0.3C2 projection and execution integration remains deferred. v0.3C1
-does not project selected paths, execute plan entries, create findings, or
-claim actual Source coverage, benchmarked support, or product support.
+Source v0.3C3 execution integration remains deferred. v0.3C2 does not execute
+plan entries, create findings, or claim actual Source coverage, benchmarked
+support, or product support.
 
 ## Known Non-Blocking Maintenance
 
