@@ -34,6 +34,7 @@ Status: COMPLETE
 | v0.3C2 | Deterministic selected-file projection | COMPLETE |
 | v0.3C3 | Trusted projection → Semgrep execution bridge | COMPLETE |
 | v0.3C4 | Terminal projection lifecycle + hostile bridge validation | COMPLETE |
+| v0.3D | Source Semgrep result + actual coverage correlation | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -136,10 +137,40 @@ publication remains deferred to deployment or bounded maintenance design.
 v0.3C4 does not yet calculate actual Source coverage or promote `PYTHON_SAST`
 maturity.
 
+v0.3D derives a frozen Source capability execution assessment from durable
+state only: the terminal job, its C1 context artifact, the canonical run
+report, and the tool execution identified by the job's final attempt number.
+It adds no assessment table or database migration, requires no retained C2
+projection, and performs no scanner execution, workspace preparation,
+repository inspection, profiling, planning, or support rediscovery. The
+current one-Source-job-per-run submission model is enforced when correlating
+the durable run aggregate; multi-job Source assessment is not generalized in
+this checkpoint.
+
+`FULL_FOR_DECLARED_SCOPE` means the trusted analyzer completed over the
+entire exact filesystem scope authorized by that Source plan entry without
+SecureScan-reported analysis gaps. It does not mean the repository is
+vulnerability-free, that all execution paths were analyzed, or that Semgrep
+has 100% recall. It is categorical execution coverage, not a numeric semantic
+coverage or security score.
+
+Zero observations with `FULL_FOR_DECLARED_SCOPE` means only that this analyzer
+produced no observations for its declared scope in this execution. It is not a
+"clean repository" or "secure repository" claim. Observations remain scanner
+findings requiring triage, and automated assessments remain
+`OBSERVATIONS_ONLY`.
+
+Completed-result assessment authenticates and validates the original durable
+C1 context but does not require today's scanner binding to equal the historical
+binding. The original binding digest and final durable tool version remain in
+the reconstructed assessment. Authorization for a new execution continues to
+require the current trusted binding and rejects a mismatch.
+
 ## Next Phase
 
-Source coverage/result aggregation remains deferred to v0.3D. v0.3C4 does not
-claim actual Source coverage, benchmarked support, or product support.
+Rule expansion remains deferred to v0.3E, and detection-quality benchmarking
+remains deferred to v0.3F. v0.3D does not claim benchmarked support or product
+support and does not promote `PYTHON_SAST` beyond `SCANNABLE`.
 
 ## Known Non-Blocking Maintenance
 

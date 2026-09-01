@@ -412,20 +412,16 @@ class SourceSemgrepSubmissionRequest:
     max_attempts: int = 3
 
 
-class SourceSemgrepExecutionContextResolver:
+class SourceSemgrepExecutionContextIntegrityResolver:
+    """Resolve persisted C1 context without applying current execution policy."""
+
     def __init__(
         self,
         artifact_store: ContentAddressedArtifactStore,
-        binding: TrustedSemgrepSourceBinding,
     ) -> None:
-        if (
-            not isinstance(artifact_store, ContentAddressedArtifactStore)
-            or not isinstance(binding, TrustedSemgrepSourceBinding)
-        ):
+        if not isinstance(artifact_store, ContentAddressedArtifactStore):
             raise InvalidSourceSemgrepExecutionRequestError
-        binding._validate_state()
         self._artifact_store = artifact_store
-        self._binding = binding
 
     def resolve(self, job: JobRecord) -> SourceExecutionContext:
         if not isinstance(job, JobRecord):
@@ -450,6 +446,28 @@ class SourceSemgrepExecutionContextResolver:
             or context.core_adapter_id != job.adapter_id
         ):
             raise SourceExecutionContextIdentityError
+        return context
+
+
+class SourceSemgrepExecutionContextResolver:
+    def __init__(
+        self,
+        artifact_store: ContentAddressedArtifactStore,
+        binding: TrustedSemgrepSourceBinding,
+    ) -> None:
+        if (
+            not isinstance(artifact_store, ContentAddressedArtifactStore)
+            or not isinstance(binding, TrustedSemgrepSourceBinding)
+        ):
+            raise InvalidSourceSemgrepExecutionRequestError
+        binding._validate_state()
+        self._integrity_resolver = SourceSemgrepExecutionContextIntegrityResolver(
+            artifact_store
+        )
+        self._binding = binding
+
+    def resolve(self, job: JobRecord) -> SourceExecutionContext:
+        context = self._integrity_resolver.resolve(job)
         try:
             self._binding._validate_state()
             binding_matches = (

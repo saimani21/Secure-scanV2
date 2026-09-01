@@ -6,7 +6,8 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from securescan.domain.enums import (
@@ -26,6 +27,8 @@ from securescan.persistence.database import (
 )
 from securescan.runs import (
     RunNotFoundError,
+    RunQueryError,
+    RunQueryPersistenceError,
     RunQueryService,
     RunReportNotReadyError,
 )
@@ -170,6 +173,78 @@ def test_list_executions_orders_attempt_history_deterministically(
     assert [item.attempt_number for item in result.items] == [1, 2]
     assert not hasattr(result.items[1], "warning_json")
     assert not hasattr(result.items[1], "error")
+
+
+def test_find_job_tool_execution_selects_exact_unique_attempt(
+    run_query_context: _QueryContext,
+) -> None:
+    service = RunQueryService(run_query_context.session_factory)
+
+    found = service.find_job_tool_execution(run_query_context.job_ids[1], 2)
+
+    assert found is not None
+    assert found.job_id == run_query_context.job_ids[1]
+    assert found.run_id == run_query_context.run_id
+    assert found.attempt_number == 2
+    assert found.failure_category is JobFailureCategory.NON_RETRYABLE_INPUT
+    assert found.retryable is False
+    assert service.find_job_tool_execution(run_query_context.job_ids[1], 1) is None
+    assert not hasattr(found, "warning_json")
+    assert not hasattr(found, "error")
+
+
+@pytest.mark.parametrize(
+    ("job_id", "attempt_number"),
+    (
+        ("not-a-uuid", 1),
+        (" 00000000-0000-4000-8000-000000000001", 1),
+        ("00000000-0000-4000-8000-000000000001", 0),
+        ("00000000-0000-4000-8000-000000000001", True),
+    ),
+)
+def test_find_job_tool_execution_rejects_invalid_identity_or_attempt(
+    run_query_context: _QueryContext,
+    job_id: str,
+    attempt_number: int,
+) -> None:
+    with pytest.raises(RunQueryError):
+        RunQueryService(run_query_context.session_factory).find_job_tool_execution(
+            job_id,
+            attempt_number,
+        )
+
+
+def test_job_attempt_uniqueness_prevents_ambiguous_execution_selection(
+    run_query_context: _QueryContext,
+) -> None:
+    with pytest.raises(IntegrityError), run_query_context.session_factory.begin() as session:
+        session.add(
+            ToolExecutionRow(
+                run_id=run_query_context.run_id,
+                job_id=run_query_context.job_ids[0],
+                attempt_number=1,
+                adapter_id="adapter-a",
+                adapter_version="1",
+                tool_version="1",
+                outcome=ExecutionOutcome.INTERNAL_ERROR.value,
+                duration_ms=1,
+                warning_json=[],
+            )
+        )
+
+
+def test_find_job_tool_execution_sanitizes_persistence_failure(
+    run_query_context: _QueryContext,
+) -> None:
+    with run_query_context.session_factory.begin() as session:
+        session.execute(text("DROP TABLE tool_executions"))
+
+    with pytest.raises(RunQueryPersistenceError) as captured:
+        RunQueryService(run_query_context.session_factory).find_job_tool_execution(
+            run_query_context.job_ids[0],
+            1,
+        )
+    assert str(captured.value) == "Analysis run query persistence is unavailable"
 
 
 def test_get_report_returns_defensive_copy(

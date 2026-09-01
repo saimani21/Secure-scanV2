@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -10,6 +11,7 @@ from securescan.domain.enums import JobFailureCategory, JobStatus, RunStatus
 from securescan.persistence.database import (
     AnalysisRunRow,
     JobRow,
+    TargetRow,
     ToolExecutionRow,
 )
 from securescan.runs.models import (
@@ -74,6 +76,9 @@ class RunQueryService:
                 run = session.get(AnalysisRunRow, normalized_run_id)
                 if run is None:
                     raise RunNotFoundError
+                target = session.get(TargetRow, run.target_id)
+                if target is None:
+                    raise RunQueryPersistenceError
                 persisted_statuses = list(
                     session.scalars(select(JobRow.status).where(JobRow.run_id == run.id))
                 )
@@ -81,6 +86,7 @@ class RunQueryService:
                 record = AnalysisRunRecord(
                     id=run.id,
                     target_id=run.target_id,
+                    target_content_digest=target.content_digest,
                     status=RunStatus(run.status),
                     created_at=run.created_at,
                     updated_at=None,
@@ -221,6 +227,54 @@ class RunQueryService:
             offset=offset,
         )
 
+    def find_job_tool_execution(
+        self,
+        job_id: str,
+        attempt_number: int,
+    ) -> ToolExecutionSummary | None:
+        normalized_job_id = self._normalize_job_id(job_id)
+        if (
+            isinstance(attempt_number, bool)
+            or not isinstance(attempt_number, int)
+            or attempt_number < 1
+        ):
+            raise RunQueryError("Tool execution attempt number is invalid")
+        try:
+            with self._session_factory() as session:
+                row = session.scalar(
+                    select(ToolExecutionRow).where(
+                        ToolExecutionRow.job_id == normalized_job_id,
+                        ToolExecutionRow.attempt_number == attempt_number,
+                    )
+                )
+                if row is None:
+                    return None
+                return ToolExecutionSummary(
+                    execution_id=row.id,
+                    run_id=row.run_id,
+                    job_id=row.job_id,
+                    attempt_number=row.attempt_number,
+                    adapter_id=row.adapter_id,
+                    adapter_version=row.adapter_version,
+                    tool_version=row.tool_version,
+                    outcome=row.outcome,
+                    exit_code=row.exit_code,
+                    duration_ms=row.duration_ms,
+                    failure_category=(
+                        JobFailureCategory(row.failure_category)
+                        if row.failure_category is not None
+                        else None
+                    ),
+                    retryable=row.retryable,
+                    created_at=None,
+                )
+        except RunQueryError:
+            raise
+        except SQLAlchemyError as exc:
+            raise RunQueryPersistenceError from exc
+        except (TypeError, ValueError) as exc:
+            raise RunQueryPersistenceError from exc
+
     def get_report(
         self,
         run_id: str,
@@ -253,6 +307,22 @@ class RunQueryService:
         if not isinstance(run_id, str) or not run_id.strip():
             raise RunQueryError("Analysis run identity is invalid")
         return run_id.strip()
+
+    @staticmethod
+    def _normalize_job_id(job_id: str) -> str:
+        if (
+            not isinstance(job_id, str)
+            or len(job_id) != 36
+            or job_id != job_id.lower()
+        ):
+            raise RunQueryError("Tool execution job identity is invalid")
+        try:
+            parsed = UUID(job_id)
+        except ValueError as exc:
+            raise RunQueryError("Tool execution job identity is invalid") from exc
+        if str(parsed) != job_id:
+            raise RunQueryError("Tool execution job identity is invalid")
+        return job_id
 
     @staticmethod
     def _validate_pagination(limit: int, offset: int) -> None:

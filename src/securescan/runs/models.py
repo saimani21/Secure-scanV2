@@ -22,6 +22,7 @@ def _normalize_utc_datetime(
 class AnalysisRunRecord:
     id: str
     target_id: str
+    target_content_digest: str
     status: RunStatus
     created_at: datetime
     updated_at: datetime | None
