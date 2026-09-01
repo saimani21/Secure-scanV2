@@ -40,7 +40,30 @@ license files. `verify` authenticates the stored remotes, commits, licenses,
 per-file hashes, relevant-tree digests, case-set digest, and deterministic
 summary without network access.
 
-Applicability review remains unstarted. No production rule is associated with
-a case, no real-world scan has occurred, and no real-world TP/FP/FN/TN,
-precision, recall, or F1 exists. The F2D synthetic results did not influence
-selection. `PYTHON_SAST` remains `SCANNABLE`.
+F2E2 adds a pending-human-approval claim-applicability proposal without changing
+the frozen F2E1 corpus. It independently inspects only the bounded vulnerable
+and fixed source and the human-readable frozen rule-claim catalog. Evidence is
+location-aware and bound to the F2E1 path, revision-role, and source SHA-256;
+same-CWE similarity alone is insufficient. Vulnerable and fixed revisions are
+classified independently because a dangerous-API observation may legitimately
+remain true after a vulnerability is fixed.
+
+The three `applicability-*.json` documents account for all 13 accepted CVEs.
+`OUTSIDE_FROZEN_RULE_CLAIMS` means that the legitimate CVE implementation is
+outside the current claim boundary; it is not a future false negative and does
+not enter F2E3 evaluation. Generation uses Python AST/source inspection and
+offline Git blob reads only. It cannot execute Semgrep or SecureScan, does not
+read production rule configuration or prior scanner results, and emits no
+TP/FP/FN/TN, precision, recall, or F1.
+
+Run the scanner-independent review tooling with the project interpreter:
+
+```text
+.venv/bin/python -m securescan.benchmarks.python_sast_realworld_applicability_cli check
+.venv/bin/python -m securescan.benchmarks.python_sast_realworld_applicability_cli generate
+.venv/bin/python -m securescan.benchmarks.python_sast_realworld_applicability_cli summary
+```
+
+F2E2 is implemented but pending hostile/human approval. F2E3 remains future
+work, no real-world scan or metrics exist, and `PYTHON_SAST` remains
+`SCANNABLE`.

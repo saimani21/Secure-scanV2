@@ -1,0 +1,948 @@
+{
+  "accepted_case_set_digest": "60d44ea9cf0f174e1488c5b8dbccde2804524fe4d3bfa31b9db0810e52332a92",
+  "baseline_commit": "8b0a6ca6ac2ae659723425f21aaafcbfe11ef5f2",
+  "baseline_tag": "source-v0.3F2E1-python-sast-realworld-cases",
+  "case_count": 13,
+  "cases": [
+    {
+      "applicable_rule_ids": [],
+      "case_disposition": "OUTSIDE_FROZEN_RULE_CLAIMS",
+      "case_family_id": "cookiecutter-mercurial-checkout-command-injection",
+      "case_id": "python-realworld/CVE-2022-24065/cookiecutter",
+      "cve_id": "CVE-2022-24065",
+      "cwe_ids": [
+        78
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 125,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "cookiecutter/vcs.py",
+            "revision_role": "fixed",
+            "source_sha256": "44d6ff2ffa516decc1ded96f115c010710e25bbc8b3c9d64bbdefc5750451737",
+            "start_line": 57,
+            "symbol_name": "clone"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 121,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "cookiecutter/vcs.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "d4c09d4686eb6baaed2d548bb663bd083e481cde1e007965773d1e7b8bbb237b",
+            "start_line": 57,
+            "symbol_name": "clone"
+          }
+        ]
+      },
+      "project": "cookiecutter",
+      "reason_codes": [
+        "literal-shell-true-absent",
+        "security-fix-outside-rule-semantics"
+      ],
+      "relations": [],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [],
+      "case_disposition": "OUTSIDE_FROZEN_RULE_CLAIMS",
+      "case_family_id": "django-queryset-explain-sql-injection",
+      "case_id": "python-realworld/CVE-2022-28347/django",
+      "cve_id": "CVE-2022-28347",
+      "cwe_ids": [
+        89
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 319,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "django/db/backends/postgresql/operations.py",
+            "revision_role": "fixed",
+            "source_sha256": "7f4ca3b6629ecd29dde38e06c6aae8fd64f8bf75257b8c144c0e46adfa8b4aa3",
+            "start_line": 302,
+            "symbol_name": "DatabaseOperations.explain_query_prefix"
+          },
+          {
+            "end_line": 601,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "django/db/models/sql/query.py",
+            "revision_role": "fixed",
+            "source_sha256": "41bfe2d6e856848dac451a26ffcdc2c5ac3d2437df5256a6f608c07e03b809fc",
+            "start_line": 591,
+            "symbol_name": "Query.explain"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 304,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "django/db/backends/postgresql/operations.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "5f48fa904b601bbb89511c27a3b54e63316dfbe820ab08b8441bde31b0afb988",
+            "start_line": 290,
+            "symbol_name": "DatabaseOperations.explain_query_prefix"
+          },
+          {
+            "end_line": 586,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "django/db/models/sql/query.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "87390fbc6ab3656fc3a666950a7f4ef0dae798751b7f9bafdc98e898c257b986",
+            "start_line": 582,
+            "symbol_name": "Query.explain"
+          }
+        ]
+      },
+      "project": "django",
+      "reason_codes": [
+        "same-cwe-unsupported-pattern",
+        "different-interpolation-shape"
+      ],
+      "relations": [],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [],
+      "case_disposition": "OUTSIDE_FROZEN_RULE_CLAIMS",
+      "case_family_id": "django-datetime-function-sql-injection",
+      "case_id": "python-realworld/CVE-2022-34265/django",
+      "cve_id": "CVE-2022-34265",
+      "cwe_ids": [
+        89
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 77,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "django/db/models/functions/datetime.py",
+            "revision_role": "fixed",
+            "source_sha256": "1ab514470a96e17244b0d09564de7baa3ee6135ce28e68231d1fbf47612b0df1",
+            "start_line": 53,
+            "symbol_name": "Extract.as_sql"
+          },
+          {
+            "end_line": 258,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "django/db/models/functions/datetime.py",
+            "revision_role": "fixed",
+            "source_sha256": "1ab514470a96e17244b0d09564de7baa3ee6135ce28e68231d1fbf47612b0df1",
+            "start_line": 239,
+            "symbol_name": "TruncBase.as_sql"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 75,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "django/db/models/functions/datetime.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "f93d4dad7cb4270e282d704d1e975e7f4e8735810fd7e8de0ca7abd80fc4e1a9",
+            "start_line": 53,
+            "symbol_name": "Extract.as_sql"
+          },
+          {
+            "end_line": 254,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "django/db/models/functions/datetime.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "f93d4dad7cb4270e282d704d1e975e7f4e8735810fd7e8de0ca7abd80fc4e1a9",
+            "start_line": 237,
+            "symbol_name": "TruncBase.as_sql"
+          }
+        ]
+      },
+      "project": "django",
+      "reason_codes": [
+        "same-cwe-unsupported-pattern",
+        "different-interpolation-shape"
+      ],
+      "relations": [],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [
+        "securescan.python.os-system"
+      ],
+      "case_disposition": "CLAIM_APPLICABLE",
+      "case_family_id": "ipython-windows-command-line-shell-injection",
+      "case_id": "python-realworld/CVE-2023-24816/ipython",
+      "cve_id": "CVE-2023-24816",
+      "cwe_ids": [
+        78
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 101,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "IPython/utils/terminal.py",
+            "revision_role": "fixed",
+            "source_sha256": "5b6222e03323540c311ac1e55e66f90c9d2d3b7b6eeed7ccf73fb1e349881a68",
+            "start_line": 99,
+            "symbol_name": "_set_term_title"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 117,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "IPython/utils/terminal.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "e6cbc0aee3fbf65389a94c913200a008370290a8f09b922f4b4216a0b094f4a7",
+            "start_line": 104,
+            "symbol_name": "_set_term_title"
+          }
+        ]
+      },
+      "project": "ipython",
+      "reason_codes": [
+        "exact-frozen-claim-overlap",
+        "dangerous-api-removed-by-fix"
+      ],
+      "relations": [
+        {
+          "discrimination_expectation": "SHOULD_DISCRIMINATE",
+          "fixed": {
+            "evidence_regions": [
+              {
+                "end_line": 101,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "IPython/utils/terminal.py",
+                "revision_role": "fixed",
+                "source_sha256": "5b6222e03323540c311ac1e55e66f90c9d2d3b7b6eeed7ccf73fb1e349881a68",
+                "start_line": 99,
+                "symbol_name": "_set_term_title"
+              }
+            ],
+            "expected_match": false
+          },
+          "reason_codes": [
+            "exact-frozen-claim-overlap",
+            "dangerous-api-removed-by-fix"
+          ],
+          "rule_id": "securescan.python.os-system",
+          "vulnerable": {
+            "evidence_regions": [
+              {
+                "end_line": 117,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "IPython/utils/terminal.py",
+                "revision_role": "vulnerable",
+                "source_sha256": "e6cbc0aee3fbf65389a94c913200a008370290a8f09b922f4b4216a0b094f4a7",
+                "start_line": 104,
+                "symbol_name": "_set_term_title"
+              }
+            ],
+            "expected_match": true
+          }
+        }
+      ],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [],
+      "case_disposition": "OUTSIDE_FROZEN_RULE_CLAIMS",
+      "case_family_id": "yt-dlp-exec-shell-quoting",
+      "case_id": "python-realworld/CVE-2023-40581/yt-dlp",
+      "cve_id": "CVE-2023-40581",
+      "cwe_ids": [
+        78
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 32,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "yt_dlp/postprocessor/exec.py",
+            "revision_role": "fixed",
+            "source_sha256": "dd070bef54ed99adb908456b450438ffebddf76b38033bbf8b4b2ebb012495c9",
+            "start_line": 25,
+            "symbol_name": "ExecPP.run"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 34,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "yt_dlp/postprocessor/exec.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "ac033013947a65b83f7f6b45cc76ab9bd763a3e5bbd16341a89f5f503a951648",
+            "start_line": 27,
+            "symbol_name": "ExecPP.run"
+          }
+        ]
+      },
+      "project": "yt-dlp",
+      "reason_codes": [
+        "different-sink-api",
+        "security-fix-outside-rule-semantics"
+      ],
+      "relations": [],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [
+        "securescan.python.unsafe-pickle-load"
+      ],
+      "case_disposition": "CLAIM_APPLICABLE",
+      "case_family_id": "airflow-xcom-pickle-deserialization",
+      "case_id": "python-realworld/CVE-2023-50943/airflow",
+      "cve_id": "CVE-2023-50943",
+      "cwe_ids": [
+        502
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 689,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "airflow/models/xcom.py",
+            "revision_role": "fixed",
+            "source_sha256": "61f4f71600b5be82fa57418219d3532ff5b0706220b07431ece5134f2b3a991a",
+            "start_line": 675,
+            "symbol_name": "BaseXCom._deserialize_value"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 691,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "airflow/models/xcom.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "c5ebce326cb866850d8b6a974732ba4a384397a5a901a6277f69134084de9dbf",
+            "start_line": 675,
+            "symbol_name": "BaseXCom._deserialize_value"
+          }
+        ]
+      },
+      "project": "airflow",
+      "reason_codes": [
+        "exact-frozen-claim-overlap",
+        "dangerous-api-persists-after-fix"
+      ],
+      "relations": [
+        {
+          "discrimination_expectation": "NOT_EXPECTED_TO_DISCRIMINATE",
+          "fixed": {
+            "evidence_regions": [
+              {
+                "end_line": 689,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "airflow/models/xcom.py",
+                "revision_role": "fixed",
+                "source_sha256": "61f4f71600b5be82fa57418219d3532ff5b0706220b07431ece5134f2b3a991a",
+                "start_line": 675,
+                "symbol_name": "BaseXCom._deserialize_value"
+              }
+            ],
+            "expected_match": true
+          },
+          "reason_codes": [
+            "exact-frozen-claim-overlap",
+            "dangerous-api-persists-after-fix"
+          ],
+          "rule_id": "securescan.python.unsafe-pickle-load",
+          "vulnerable": {
+            "evidence_regions": [
+              {
+                "end_line": 691,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "airflow/models/xcom.py",
+                "revision_role": "vulnerable",
+                "source_sha256": "c5ebce326cb866850d8b6a974732ba4a384397a5a901a6277f69134084de9dbf",
+                "start_line": 675,
+                "symbol_name": "BaseXCom._deserialize_value"
+              }
+            ],
+            "expected_match": true
+          }
+        }
+      ],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [],
+      "case_disposition": "OUTSIDE_FROZEN_RULE_CLAIMS",
+      "case_family_id": "mlflow-jinja-yaml-code-injection",
+      "case_id": "python-realworld/CVE-2023-6940/mlflow",
+      "cve_id": "CVE-2023-6940",
+      "cwe_ids": [
+        77,
+        94
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 361,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "mlflow/utils/file_utils.py",
+            "revision_role": "fixed",
+            "source_sha256": "598b1fa50c543c17c11a69069ea8b675454db2873fdd2966b1b3133df52f56f7",
+            "start_line": 322,
+            "symbol_name": "render_and_merge_yaml"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 360,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "mlflow/utils/file_utils.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "fcac628834f39ad968376fbbf75aa8076909011f7b6a7363243c37e86cebf8da",
+            "start_line": 322,
+            "symbol_name": "render_and_merge_yaml"
+          }
+        ]
+      },
+      "project": "mlflow",
+      "reason_codes": [
+        "same-cwe-unsupported-pattern",
+        "security-fix-outside-rule-semantics"
+      ],
+      "relations": [],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [
+        "securescan.python.unsafe-pickle-load"
+      ],
+      "case_disposition": "CLAIM_APPLICABLE",
+      "case_family_id": "transformers-transfoxl-rag-pickle-deserialization",
+      "case_id": "python-realworld/CVE-2023-7018/transformers",
+      "cve_id": "CVE-2023-7018",
+      "cwe_ids": [
+        502
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 143,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "src/transformers/models/rag/retrieval_rag.py",
+            "revision_role": "fixed",
+            "source_sha256": "49132bd36d6ac98836edc2e9b805e768b3c9b866838ae2e315fc0fc20f48131d",
+            "start_line": 131,
+            "symbol_name": "LegacyIndex._load_passages"
+          },
+          {
+            "end_line": 275,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+            "revision_role": "fixed",
+            "source_sha256": "cda24af1f9accadeb5cbc38b896c9aeb34c36e3729ca99527094196fe073b215",
+            "start_line": 169,
+            "symbol_name": "TransfoXLTokenizer.__init__"
+          },
+          {
+            "end_line": 830,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+            "revision_role": "fixed",
+            "source_sha256": "cda24af1f9accadeb5cbc38b896c9aeb34c36e3729ca99527094196fe073b215",
+            "start_line": 794,
+            "symbol_name": "get_lm_corpus"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 136,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "src/transformers/models/rag/retrieval_rag.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "ae7c5f9a4543e05c58c900cd0b978f6960493db4c4fad98704e35fd176c2bd3d",
+            "start_line": 131,
+            "symbol_name": "LegacyIndex._load_passages"
+          },
+          {
+            "end_line": 260,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "src/transformers/models/transfo_xl/tokenization_transfo_xl.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "32a73c45c56dc95d35eeff38d79a235a3b2648faf36bad54fdf7040ab5ea7593",
+            "start_line": 168,
+            "symbol_name": "TransfoXLTokenizer.__init__"
+          },
+          {
+            "end_line": 808,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "src/transformers/models/transfo_xl/tokenization_transfo_xl.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "32a73c45c56dc95d35eeff38d79a235a3b2648faf36bad54fdf7040ab5ea7593",
+            "start_line": 779,
+            "symbol_name": "get_lm_corpus"
+          }
+        ]
+      },
+      "project": "transformers",
+      "reason_codes": [
+        "exact-frozen-claim-overlap",
+        "dangerous-api-persists-after-fix"
+      ],
+      "relations": [
+        {
+          "discrimination_expectation": "NOT_EXPECTED_TO_DISCRIMINATE",
+          "fixed": {
+            "evidence_regions": [
+              {
+                "end_line": 143,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "src/transformers/models/rag/retrieval_rag.py",
+                "revision_role": "fixed",
+                "source_sha256": "49132bd36d6ac98836edc2e9b805e768b3c9b866838ae2e315fc0fc20f48131d",
+                "start_line": 131,
+                "symbol_name": "LegacyIndex._load_passages"
+              },
+              {
+                "end_line": 275,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+                "revision_role": "fixed",
+                "source_sha256": "cda24af1f9accadeb5cbc38b896c9aeb34c36e3729ca99527094196fe073b215",
+                "start_line": 169,
+                "symbol_name": "TransfoXLTokenizer.__init__"
+              },
+              {
+                "end_line": 830,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+                "revision_role": "fixed",
+                "source_sha256": "cda24af1f9accadeb5cbc38b896c9aeb34c36e3729ca99527094196fe073b215",
+                "start_line": 794,
+                "symbol_name": "get_lm_corpus"
+              }
+            ],
+            "expected_match": true
+          },
+          "reason_codes": [
+            "exact-frozen-claim-overlap",
+            "dangerous-api-persists-after-fix"
+          ],
+          "rule_id": "securescan.python.unsafe-pickle-load",
+          "vulnerable": {
+            "evidence_regions": [
+              {
+                "end_line": 136,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "src/transformers/models/rag/retrieval_rag.py",
+                "revision_role": "vulnerable",
+                "source_sha256": "ae7c5f9a4543e05c58c900cd0b978f6960493db4c4fad98704e35fd176c2bd3d",
+                "start_line": 131,
+                "symbol_name": "LegacyIndex._load_passages"
+              },
+              {
+                "end_line": 260,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "src/transformers/models/transfo_xl/tokenization_transfo_xl.py",
+                "revision_role": "vulnerable",
+                "source_sha256": "32a73c45c56dc95d35eeff38d79a235a3b2648faf36bad54fdf7040ab5ea7593",
+                "start_line": 168,
+                "symbol_name": "TransfoXLTokenizer.__init__"
+              },
+              {
+                "end_line": 808,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "src/transformers/models/transfo_xl/tokenization_transfo_xl.py",
+                "revision_role": "vulnerable",
+                "source_sha256": "32a73c45c56dc95d35eeff38d79a235a3b2648faf36bad54fdf7040ab5ea7593",
+                "start_line": 779,
+                "symbol_name": "get_lm_corpus"
+              }
+            ],
+            "expected_match": true
+          }
+        }
+      ],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [],
+      "case_disposition": "OUTSIDE_FROZEN_RULE_CLAIMS",
+      "case_family_id": "yt-dlp-exec-shell-quoting",
+      "case_id": "python-realworld/CVE-2024-22423/yt-dlp",
+      "cve_id": "CVE-2024-22423",
+      "cwe_ids": [
+        78
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 1397,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "yt_dlp/YoutubeDL.py",
+            "revision_role": "fixed",
+            "source_sha256": "2511345c774c9187f037d8be0643c4a76fae387422fff280d1ed2bbc6c391256",
+            "start_line": 1176,
+            "symbol_name": "YoutubeDL.prepare_outtmpl"
+          },
+          {
+            "end_line": 1672,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "yt_dlp/utils/_utils.py",
+            "revision_role": "fixed",
+            "source_sha256": "019091c7fbc3ac160ff3fa9f9a7b0e1e942b88b2c8c8e483f4219c618852491d",
+            "start_line": 1657,
+            "symbol_name": "shell_quote"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 1385,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "yt_dlp/YoutubeDL.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "b793425e9900a40ffd38720b8e7362c079a4610a511a448673addf83d576180a",
+            "start_line": 1164,
+            "symbol_name": "YoutubeDL.prepare_outtmpl"
+          },
+          {
+            "end_line": 1648,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "yt_dlp/utils/_utils.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "a5db1dedae46f3091d794da8e72ba15a76d6400f6df04bb5b935ccc8036d957c",
+            "start_line": 1640,
+            "symbol_name": "shell_quote"
+          }
+        ]
+      },
+      "project": "yt-dlp",
+      "reason_codes": [
+        "different-sink-api",
+        "security-fix-outside-rule-semantics"
+      ],
+      "relations": [],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [
+        "securescan.python.dangerous-eval"
+      ],
+      "case_disposition": "CLAIM_APPLICABLE",
+      "case_family_id": "llama-index-safe-eval-restriction-bypass",
+      "case_id": "python-realworld/CVE-2024-3098/llama-index",
+      "cve_id": "CVE-2024-3098",
+      "cwe_ids": [
+        94
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 158,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "llama-index-core/llama_index/core/exec_utils.py",
+            "revision_role": "fixed",
+            "source_sha256": "bb946053770902cf9fb5004a126af3dc0e86ecb205680addd52067cb55b966d2",
+            "start_line": 149,
+            "symbol_name": "safe_eval"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 140,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "llama-index-core/llama_index/core/exec_utils.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "7031b72135827c6805fdde67f321e9f1e0af35b10dc53f3f2f312c16795ca2c0",
+            "start_line": 131,
+            "symbol_name": "safe_eval"
+          }
+        ]
+      },
+      "project": "llama-index",
+      "reason_codes": [
+        "exact-frozen-claim-overlap",
+        "dangerous-api-persists-after-fix"
+      ],
+      "relations": [
+        {
+          "discrimination_expectation": "NOT_EXPECTED_TO_DISCRIMINATE",
+          "fixed": {
+            "evidence_regions": [
+              {
+                "end_line": 158,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "llama-index-core/llama_index/core/exec_utils.py",
+                "revision_role": "fixed",
+                "source_sha256": "bb946053770902cf9fb5004a126af3dc0e86ecb205680addd52067cb55b966d2",
+                "start_line": 149,
+                "symbol_name": "safe_eval"
+              }
+            ],
+            "expected_match": true
+          },
+          "reason_codes": [
+            "exact-frozen-claim-overlap",
+            "dangerous-api-persists-after-fix"
+          ],
+          "rule_id": "securescan.python.dangerous-eval",
+          "vulnerable": {
+            "evidence_regions": [
+              {
+                "end_line": 140,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "llama-index-core/llama_index/core/exec_utils.py",
+                "revision_role": "vulnerable",
+                "source_sha256": "7031b72135827c6805fdde67f321e9f1e0af35b10dc53f3f2f312c16795ca2c0",
+                "start_line": 131,
+                "symbol_name": "safe_eval"
+              }
+            ],
+            "expected_match": true
+          }
+        }
+      ],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [
+        "securescan.python.dangerous-eval"
+      ],
+      "case_disposition": "CLAIM_APPLICABLE",
+      "case_family_id": "llama-index-safe-eval-restriction-bypass",
+      "case_id": "python-realworld/CVE-2024-3271/llama-index",
+      "cve_id": "CVE-2024-3271",
+      "cwe_ids": [
+        77,
+        94
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 158,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "llama-index-core/llama_index/core/exec_utils.py",
+            "revision_role": "fixed",
+            "source_sha256": "bb946053770902cf9fb5004a126af3dc0e86ecb205680addd52067cb55b966d2",
+            "start_line": 149,
+            "symbol_name": "safe_eval"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 140,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "llama-index-core/llama_index/core/exec_utils.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "7031b72135827c6805fdde67f321e9f1e0af35b10dc53f3f2f312c16795ca2c0",
+            "start_line": 131,
+            "symbol_name": "safe_eval"
+          }
+        ]
+      },
+      "project": "llama-index",
+      "reason_codes": [
+        "exact-frozen-claim-overlap",
+        "dangerous-api-persists-after-fix"
+      ],
+      "relations": [
+        {
+          "discrimination_expectation": "NOT_EXPECTED_TO_DISCRIMINATE",
+          "fixed": {
+            "evidence_regions": [
+              {
+                "end_line": 158,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "llama-index-core/llama_index/core/exec_utils.py",
+                "revision_role": "fixed",
+                "source_sha256": "bb946053770902cf9fb5004a126af3dc0e86ecb205680addd52067cb55b966d2",
+                "start_line": 149,
+                "symbol_name": "safe_eval"
+              }
+            ],
+            "expected_match": true
+          },
+          "reason_codes": [
+            "exact-frozen-claim-overlap",
+            "dangerous-api-persists-after-fix"
+          ],
+          "rule_id": "securescan.python.dangerous-eval",
+          "vulnerable": {
+            "evidence_regions": [
+              {
+                "end_line": 140,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "llama-index-core/llama_index/core/exec_utils.py",
+                "revision_role": "vulnerable",
+                "source_sha256": "7031b72135827c6805fdde67f321e9f1e0af35b10dc53f3f2f312c16795ca2c0",
+                "start_line": 131,
+                "symbol_name": "safe_eval"
+              }
+            ],
+            "expected_match": true
+          }
+        }
+      ],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [
+        "securescan.python.unsafe-pickle-load"
+      ],
+      "case_disposition": "CLAIM_APPLICABLE",
+      "case_family_id": "transformers-tf-checkpoint-pickle-deserialization",
+      "case_id": "python-realworld/CVE-2024-3568/transformers",
+      "cve_id": "CVE-2024-3568",
+      "cwe_ids": [
+        502
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 3451,
+            "region_kind": "bounded-relevant-file-absence",
+            "relative_source_path": "src/transformers/modeling_tf_utils.py",
+            "revision_role": "fixed",
+            "source_sha256": "40862a9cc88dd3363c7b751048bbdedf4ef94e8118067353988d250262467eb5",
+            "start_line": 1,
+            "symbol_name": null
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 1389,
+            "region_kind": "cve-relevant-symbol",
+            "relative_source_path": "src/transformers/modeling_tf_utils.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "c687fd9add8d04ee0177aeb14c42b97592b1db88179c299d60ae060b2cd5aacc",
+            "start_line": 1342,
+            "symbol_name": "TFPreTrainedModel.load_repo_checkpoint"
+          }
+        ]
+      },
+      "project": "transformers",
+      "reason_codes": [
+        "exact-frozen-claim-overlap",
+        "dangerous-api-removed-by-fix"
+      ],
+      "relations": [
+        {
+          "discrimination_expectation": "SHOULD_DISCRIMINATE",
+          "fixed": {
+            "evidence_regions": [
+              {
+                "end_line": 3451,
+                "region_kind": "bounded-relevant-file-absence",
+                "relative_source_path": "src/transformers/modeling_tf_utils.py",
+                "revision_role": "fixed",
+                "source_sha256": "40862a9cc88dd3363c7b751048bbdedf4ef94e8118067353988d250262467eb5",
+                "start_line": 1,
+                "symbol_name": null
+              }
+            ],
+            "expected_match": false
+          },
+          "reason_codes": [
+            "exact-frozen-claim-overlap",
+            "dangerous-api-removed-by-fix"
+          ],
+          "rule_id": "securescan.python.unsafe-pickle-load",
+          "vulnerable": {
+            "evidence_regions": [
+              {
+                "end_line": 1389,
+                "region_kind": "cve-relevant-symbol",
+                "relative_source_path": "src/transformers/modeling_tf_utils.py",
+                "revision_role": "vulnerable",
+                "source_sha256": "c687fd9add8d04ee0177aeb14c42b97592b1db88179c299d60ae060b2cd5aacc",
+                "start_line": 1342,
+                "symbol_name": "TFPreTrainedModel.load_repo_checkpoint"
+              }
+            ],
+            "expected_match": true
+          }
+        }
+      ],
+      "review_state": "pending-human-approval"
+    },
+    {
+      "applicable_rule_ids": [],
+      "case_disposition": "OUTSIDE_FROZEN_RULE_CLAIMS",
+      "case_family_id": "calibre-search-sql-injection",
+      "case_id": "python-realworld/CVE-2024-7009/calibre",
+      "cve_id": "CVE-2024-7009",
+      "cwe_ids": [
+        89
+      ],
+      "evidence": {
+        "fixed": [
+          {
+            "end_line": 2391,
+            "region_kind": "cve-relevant-call",
+            "relative_source_path": "src/calibre/db/backend.py",
+            "revision_role": "fixed",
+            "source_sha256": "ff4fb2f3f9f94c49ac4faefa7d72e9cd2b1d8da6ca3eaf8fd0a79180f1ba63db",
+            "start_line": 2391,
+            "symbol_name": "DB.search_annotations"
+          },
+          {
+            "end_line": 188,
+            "region_kind": "cve-relevant-call",
+            "relative_source_path": "src/calibre/db/fts/connect.py",
+            "revision_role": "fixed",
+            "source_sha256": "0895a4d8826ae2fc8cacce423477637529fada64eeb905488831084e89cb4081",
+            "start_line": 188,
+            "symbol_name": "FTS.search"
+          },
+          {
+            "end_line": 438,
+            "region_kind": "cve-relevant-call",
+            "relative_source_path": "src/calibre/db/notes/connect.py",
+            "revision_role": "fixed",
+            "source_sha256": "dde19e173854e03da269d28cb0dc920d7dc31c3d472b6b319775cdfb2197f109",
+            "start_line": 438,
+            "symbol_name": "Notes.search"
+          }
+        ],
+        "vulnerable": [
+          {
+            "end_line": 2386,
+            "region_kind": "cve-relevant-call",
+            "relative_source_path": "src/calibre/db/backend.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "5932f30dafd8be000d870d213e0ddb3f66f89dfa3ffd6bf220b915c9bf6a4d6f",
+            "start_line": 2386,
+            "symbol_name": "DB.search_annotations"
+          },
+          {
+            "end_line": 186,
+            "region_kind": "cve-relevant-call",
+            "relative_source_path": "src/calibre/db/fts/connect.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "72a14c11d7a51be994c4b2706cc24312eb3d1ecf7a83d4a383d4a13a5ff729ac",
+            "start_line": 186,
+            "symbol_name": "FTS.search"
+          },
+          {
+            "end_line": 436,
+            "region_kind": "cve-relevant-call",
+            "relative_source_path": "src/calibre/db/notes/connect.py",
+            "revision_role": "vulnerable",
+            "source_sha256": "bccf3c9edf95e5f17620b8badb150dd02b39312c5745e5e1160b882823838190",
+            "start_line": 436,
+            "symbol_name": "Notes.search"
+          }
+        ]
+      },
+      "project": "calibre",
+      "reason_codes": [
+        "same-cwe-unsupported-pattern",
+        "different-interpolation-shape"
+      ],
+      "relations": [],
+      "review_state": "pending-human-approval"
+    }
+  ],
+  "rule_claim_catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+  "schema_version": "securescan-python-sast-realworld-applicability-v1",
+  "scientific_boundary": {
+    "applicability_only": true,
+    "human_approval": "pending",
+    "metrics": "not-calculated",
+    "scanner_execution": "forbidden"
+  },
+  "source_lock_digest": "0bba4bbe5ce557f1382f61f9af3320adef5cc53ab386d1c63f4983d8cbf48a00"
+}

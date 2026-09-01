@@ -42,6 +42,7 @@ Status: COMPLETE
 | v0.3F2C | Claim-aligned external applicability review | COMPLETE |
 | v0.3F2D | Controlled external Python SAST evaluation | COMPLETE |
 | v0.3F2E1 | Real-world Python CVE discovery and upstream pinning | COMPLETE |
+| v0.3F2E2 | Real-world Python CVE claim applicability | COMPLETE |
 | v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
 
 ## Source Intelligence Foundation Freeze
@@ -266,10 +267,20 @@ cache. The canonical ledger retains every reviewed seed, including explicit
 deferrals, while the accepted lock requires exact vulnerable/fixed revisions,
 license identity, bounded relevant Python source hashes, and fix provenance.
 
-This checkpoint performs source acquisition only. It does not execute acquired
-code, Semgrep, or SecureScan; applicability review is unstarted and no
-real-world TP/FP/FN/TN exists. The frozen F2D synthetic results did not influence
-case selection. `PYTHON_SAST` remains `SCANNABLE`, and v0.3F2 is not complete.
+F2E1 performs source acquisition only. It does not execute acquired code,
+Semgrep, or SecureScan. The frozen F2D synthetic results did not influence case
+selection.
+
+v0.3F2E2 performs a location-aware, scanner-independent applicability review of
+all 13 F2E1 CVEs against only the frozen human-readable claim catalog. Same-CWE
+similarity is insufficient: each vulnerable and fixed region is independently
+bound to its F2E1 path, revision role, and source hash. A fixed revision may
+legitimately remain claim-positive for a dangerous-API observation.
+`OUTSIDE_FROZEN_RULE_CLAIMS` records legitimate CVEs whose implementation is
+outside the current rule semantics; those cases are not future false negatives.
+No Semgrep or SecureScan execution occurred, no real-world metrics exist, and
+the proposal remains pending hostile/human approval. F2E3 remains future work,
+`PYTHON_SAST` remains `SCANNABLE`, and v0.3F2 is not complete.
 
 ## Known Non-Blocking Maintenance
 

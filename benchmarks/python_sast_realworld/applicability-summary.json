@@ -1,0 +1,64 @@
+{
+  "accepted_case_set_digest": "60d44ea9cf0f174e1488c5b8dbccde2804524fe4d3bfa31b9db0810e52332a92",
+  "accepted_cve_count": 13,
+  "applicable_relation_count": 6,
+  "applicable_unique_case_family_count": 5,
+  "applicable_unique_project_count": 4,
+  "case_disposition_counts": {
+    "CLAIM_APPLICABLE": 6,
+    "OUTSIDE_FROZEN_RULE_CLAIMS": 7,
+    "UNRESOLVED": 0
+  },
+  "discrimination_expectation_counts": {
+    "NOT_EXPECTED_TO_DISCRIMINATE": 4,
+    "SHOULD_DISCRIMINATE": 2
+  },
+  "relations_by_case_family": {
+    "airflow-xcom-pickle-deserialization": 1,
+    "ipython-windows-command-line-shell-injection": 1,
+    "llama-index-safe-eval-restriction-bypass": 2,
+    "transformers-tf-checkpoint-pickle-deserialization": 1,
+    "transformers-transfoxl-rag-pickle-deserialization": 1
+  },
+  "relations_by_cwe": {
+    "502": 3,
+    "77": 1,
+    "78": 1,
+    "94": 2
+  },
+  "relations_by_project": {
+    "airflow": 1,
+    "ipython": 1,
+    "llama-index": 2,
+    "transformers": 2
+  },
+  "relations_by_rule": {
+    "securescan.python.dangerous-eval": 2,
+    "securescan.python.os-system": 1,
+    "securescan.python.unsafe-pickle-load": 3
+  },
+  "rule_claim_catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+  "rules_represented_by_real_world_cases": [
+    "securescan.python.dangerous-eval",
+    "securescan.python.os-system",
+    "securescan.python.unsafe-pickle-load"
+  ],
+  "rules_without_real_world_applicable_cve": [
+    "securescan.python.dangerous-exec",
+    "securescan.python.flask-debug-enabled",
+    "securescan.python.insecure-tempfile-mktemp",
+    "securescan.python.jinja-autoescape-disabled",
+    "securescan.python.jwt-signature-verification-disabled",
+    "securescan.python.lxml-resolve-entities",
+    "securescan.python.os-popen",
+    "securescan.python.paramiko-autoaddpolicy",
+    "securescan.python.requests-session-verify-false",
+    "securescan.python.requests-verify-false",
+    "securescan.python.sql-fstring-execute",
+    "securescan.python.ssl-unverified-context",
+    "securescan.python.subprocess-shell-true",
+    "securescan.python.unsafe-yaml-load"
+  ],
+  "schema_version": "securescan-python-sast-realworld-applicability-summary-v1",
+  "source_lock_digest": "0bba4bbe5ce557f1382f61f9af3320adef5cc53ab386d1c63f4983d8cbf48a00"
+}
