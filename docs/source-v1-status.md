@@ -37,7 +37,9 @@ Status: COMPLETE
 | v0.3D | Source Semgrep result + actual coverage correlation | COMPLETE |
 | v0.3E | Production Python SAST ruleset | COMPLETE |
 | v0.3F1 | Controlled local Python SAST benchmark | COMPLETE |
-| v0.3F2 | External pinned Python SAST validation | NEXT |
+| v0.3F2A | External benchmark methodology/source selection | COMPLETE |
+| v0.3F2B | Pinned external candidate acquisition | COMPLETE |
+| v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
 
 ## Source Intelligence Foundation Freeze
 
@@ -217,8 +219,26 @@ taint/dataflow, production-accuracy, or production-readiness benchmark.
 
 v0.3F remains pending methodology and metric review. The benchmark harness does
 not automatically promote maturity or encode production thresholds.
-`PYTHON_SAST` remains `SCANNABLE`; public, pinned corpus evaluation may be
-considered separately after this local harness is approved.
+`PYTHON_SAST` remains `SCANNABLE`.
+
+v0.3F2A selects OWASP BenchmarkPython and the BenchProctor Python quicktest
+bundle as complementary external synthetic sources. v0.3F2B pins and
+authenticates their immutable source identities, parses their external ground
+truth, and commits only a deterministic candidate inventory and count summary.
+External code remains in an ignored cache and is not vendored. A matching CWE
+is only a broad candidate filter; claim-aligned applicability review occurs
+before any SecureScan scan. No external candidate has yet been scanned or
+classified as TP, FP, FN, or TN, and no external-corpus metrics exist.
+
+OWASP BenchmarkPython pull request 6 is represented as known cross-category
+XSS contamination in 33 deserialization files, not as a dispute of their
+published CWE-502 labels. The original CWEs and vulnerable/safe labels remain
+accepted, while the affected cases are explicitly excluded from later scoring
+pending applicability review.
+
+PySASTBench is deferred to v0.3F2C as a real-world CVE discovery/index source
+only. Its 6.2 GB archive is not acquired in v0.3F2B, and prior scanner-result
+columns may not influence later case selection. v0.3F2 is not complete.
 
 ## Known Non-Blocking Maintenance
 

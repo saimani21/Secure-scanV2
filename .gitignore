@@ -6,6 +6,7 @@ __pycache__/
 htmlcov/
 .venv/
 .venv-semgrep-1.171/
+.cache/securescan-benchmarks/
 .env
 *.db
 *.sqlite3

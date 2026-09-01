@@ -1,0 +1,117 @@
+{
+  "schema_version": "securescan-python-sast-external-source-lock-v1",
+  "sources": [
+    {
+      "artifact": {
+        "identity": "benchproctor-python-quicktest-2026.07.22.zip",
+        "kind": "zip",
+        "relative_path": "artifacts/benchproctor-python-quicktest-2026.07.22.zip",
+        "sha256": "8a80cd9efa00464d37aa40010a735f2ebfbe6ff3650a28a2321c2927d9f3976f",
+        "url": "https://raw.githubusercontent.com/TheAuditorTool/BenchProctor/4fab1221316fca7a848bc663c86e6d13c8fe10fb/Benchmarks/quicktest/python/benchproctor-python-quicktest-2026.07.22.zip"
+      },
+      "cache_path": "benchproctor-python-quicktest-2026.07.22",
+      "expected_results": [
+        {
+          "framework": "django",
+          "identity": "python-django-2026.07.22",
+          "metadata": "# python-django-2026.07.22 v2026.07.22",
+          "relative_path": "django/expectedresults-2026.07.22.csv",
+          "sha256": "a9666e0310ca2cb76ae5f0d7e04d09e526d4bf00ac656383aa8942b0f3970572"
+        },
+        {
+          "framework": "fastapi",
+          "identity": "python-fastapi-2026.07.22",
+          "metadata": "# python-fastapi-2026.07.22 v2026.07.22",
+          "relative_path": "fastapi/expectedresults-2026.07.22.csv",
+          "sha256": "3f48859af7fdf1dbc714d83bf621ad178179303cdebd99d441c402cd8d79a016"
+        },
+        {
+          "framework": "flask",
+          "identity": "python-flask-2026.07.22",
+          "metadata": "# python-flask-2026.07.22 v2026.07.22",
+          "relative_path": "flask/expectedresults-2026.07.22.csv",
+          "sha256": "1a3805816e2d080e5adc8f737aeb717448096a253bc9fc99f3bc89d33a5c6a18"
+        }
+      ],
+      "frameworks": [
+        "django",
+        "fastapi",
+        "flask"
+      ],
+      "immutable_identity": {
+        "kind": "git-commit",
+        "value": "4fab1221316fca7a848bc663c86e6d13c8fe10fb"
+      },
+      "license": "Apache-2.0",
+      "release": "2026.07.22",
+      "source_id": "benchproctor-python-quicktest",
+      "source_type": "release-bundle",
+      "upstream_url": "https://github.com/TheAuditorTool/BenchProctor.git",
+      "verification_artifacts": [
+        {
+          "identity": "apache-2.0-license",
+          "relative_path": "LICENSE",
+          "sha256": "8ee4064147c3dec099bafb624a768a226e4183099372eb48457fc5f998a5e3c6",
+          "url": "https://raw.githubusercontent.com/TheAuditorTool/BenchProctor/4fab1221316fca7a848bc663c86e6d13c8fe10fb/LICENSE"
+        },
+        {
+          "identity": "benchproctor-manifest.json",
+          "relative_path": "benchproctor-manifest.json",
+          "sha256": "0e61c8ffafcf67613079fb9b5fd17116d43f87907601fe31c3732cfa3b22e479",
+          "url": "https://raw.githubusercontent.com/TheAuditorTool/BenchProctor/4fab1221316fca7a848bc663c86e6d13c8fe10fb/Benchmarks/quicktest/python/benchproctor-python-quicktest-2026.07.22.zip#benchproctor-manifest.json"
+        },
+        {
+          "identity": "python-quicktest-sha256-sidecar",
+          "relative_path": "checksums/benchproctor-python-quicktest-2026.07.22.zip.sha256",
+          "sha256": "e00b84e77dbe0bbf17eac7243bb3bbdf5093aef27d802402395e89d34371341c",
+          "url": "https://raw.githubusercontent.com/TheAuditorTool/BenchProctor/4fab1221316fca7a848bc663c86e6d13c8fe10fb/Benchmarks/quicktest/python/benchproctor-python-quicktest-2026.07.22.zip.sha256"
+        },
+        {
+          "identity": "release-shasums256",
+          "relative_path": "checksums/SHASUMS256.txt",
+          "sha256": "57058c4521f9684bcb77f0a4305c82e67e046a1753be97325e5de195b43b3c91",
+          "url": "https://raw.githubusercontent.com/TheAuditorTool/BenchProctor/4fab1221316fca7a848bc663c86e6d13c8fe10fb/Benchmarks/SHASUMS256.txt"
+        }
+      ]
+    },
+    {
+      "artifact": {
+        "identity": "OWASP-Benchmark/BenchmarkPython@f1291485808b66e20ddb6b01b10dc71b3df8c8ba",
+        "kind": "git-tree",
+        "relative_path": ".",
+        "sha256": "7944ca69a9e30995f3df322c131e489d821bcd982f4aa0a063437fc8e122e758",
+        "url": "https://github.com/OWASP-Benchmark/BenchmarkPython/tree/f1291485808b66e20ddb6b01b10dc71b3df8c8ba"
+      },
+      "cache_path": "owasp-benchmark-python",
+      "expected_results": [
+        {
+          "framework": "flask",
+          "identity": "expectedresults-0.1.csv",
+          "metadata": "# test name, category, real vulnerability, cwe, Benchmark version: 0.1, 2026-01-9",
+          "relative_path": "expectedresults-0.1.csv",
+          "sha256": "6396f37c97cfd0c018db3d8750095ce6c678a083f83620cfb3e88fe27a46bb0c"
+        }
+      ],
+      "frameworks": [
+        "flask"
+      ],
+      "immutable_identity": {
+        "kind": "git-commit",
+        "value": "f1291485808b66e20ddb6b01b10dc71b3df8c8ba"
+      },
+      "license": "GPL-3.0",
+      "release": "preliminary-v0.1",
+      "source_id": "owasp-benchmark-python",
+      "source_type": "git-commit",
+      "upstream_url": "https://github.com/OWASP-Benchmark/BenchmarkPython.git",
+      "verification_artifacts": [
+        {
+          "identity": "gpl-3.0-license",
+          "relative_path": "LICENSE",
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "url": "https://raw.githubusercontent.com/OWASP-Benchmark/BenchmarkPython/f1291485808b66e20ddb6b01b10dc71b3df8c8ba/LICENSE"
+        }
+      ]
+    }
+  ]
+}

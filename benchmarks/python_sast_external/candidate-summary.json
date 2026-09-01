@@ -1,0 +1,104 @@
+{
+  "candidate_counts_by_cwe": {
+    "295": {
+      "full": 300,
+      "review_sample": 120
+    },
+    "347": {
+      "full": 300,
+      "review_sample": 120
+    },
+    "377": {
+      "full": 0,
+      "review_sample": 0
+    },
+    "489": {
+      "full": 300,
+      "review_sample": 120
+    },
+    "502": {
+      "full": 354,
+      "review_sample": 174
+    },
+    "611": {
+      "full": 328,
+      "review_sample": 148
+    },
+    "78": {
+      "full": 320,
+      "review_sample": 140
+    },
+    "79": {
+      "full": 389,
+      "review_sample": 209
+    },
+    "89": {
+      "full": 316,
+      "review_sample": 136
+    },
+    "94": {
+      "full": 353,
+      "review_sample": 173
+    },
+    "95": {
+      "full": 300,
+      "review_sample": 120
+    }
+  },
+  "candidate_counts_by_framework": {
+    "django": {
+      "full": 1000,
+      "review_sample": 400
+    },
+    "fastapi": {
+      "full": 1000,
+      "review_sample": 400
+    },
+    "flask": {
+      "full": 1260,
+      "review_sample": 660
+    }
+  },
+  "candidate_counts_by_label": {
+    "safe": {
+      "full": 1665,
+      "review_sample": 765
+    },
+    "vulnerable": {
+      "full": 1595,
+      "review_sample": 695
+    }
+  },
+  "candidate_counts_by_source": {
+    "benchproctor-python-quicktest": {
+      "full": 3000,
+      "review_sample": 1200
+    },
+    "owasp-benchmark-python": {
+      "full": 260,
+      "review_sample": 260
+    }
+  },
+  "candidate_inventory_digest": "84e60a1e411ed2f517356e2a6a11bf1fe03fc4945672d120cdb50ead9d4dd60b",
+  "full_candidate_count": 3260,
+  "known_contaminated_excluded_case_count": {
+    "full": 33,
+    "review_sample": 33
+  },
+  "review_sample_count": 1460,
+  "review_selection_digest": "81cb5657d9501bfd0f5aa41125813168bf811788d02d8603ade43e6482384534",
+  "schema_version": "securescan-python-sast-external-summary-v2",
+  "source_identities": [
+    {
+      "immutable_identity": "4fab1221316fca7a848bc663c86e6d13c8fe10fb",
+      "release": "2026.07.22",
+      "source_id": "benchproctor-python-quicktest"
+    },
+    {
+      "immutable_identity": "f1291485808b66e20ddb6b01b10dc71b3df8c8ba",
+      "release": "preliminary-v0.1",
+      "source_id": "owasp-benchmark-python"
+    }
+  ],
+  "source_lock_digest": "ded3352210520814c03532686096a834c0fac95de51cdb13b02bda4a6aeefd23"
+}
