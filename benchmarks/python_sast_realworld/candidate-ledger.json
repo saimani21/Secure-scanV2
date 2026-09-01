@@ -1,0 +1,260 @@
+{
+  "independent_search_outcomes": [
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.flask-debug-enabled"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.insecure-tempfile-mktemp"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.jinja-autoescape-disabled"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.jwt-signature-verification-disabled"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.os-popen"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.paramiko-autoaddpolicy"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.requests-session-verify-false"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.sql-fstring-execute"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.ssl-unverified-context"
+    }
+  ],
+  "reviewed_candidates": [
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2022-24065",
+      "cwe_type": "78;707",
+      "project": "https://github.com/cookiecutter/cookiecutter",
+      "project_type": "dev framework",
+      "reason": "Published advisory, original repository, BSD license, affected 2.1.0 release, and upstream fix commit are independently verifiable.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "before 2.1.1",
+      "vulnerability_type": "OS Command Injection",
+      "vulnerable_position": "cookiecutter/vcs.py:clone"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2022-28347",
+      "cwe_type": "89;707",
+      "project": "https://github.com/django/django",
+      "project_type": "web framework",
+      "reason": "Django's security release and 4.0.x security commit establish an exact affected release and fix.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "Django 2.2 before 2.2.28, 3.2 before 3.2.13, and 4.0 before 4.0.4",
+      "vulnerability_type": "sql injection",
+      "vulnerable_position": "django/db/backends/postgresql/operations.py:explain_query_prefix"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2022-34265",
+      "cwe_type": "89;707",
+      "project": "https://github.com/django/django",
+      "project_type": "web framework",
+      "reason": "Django's security release and 4.0.x security commit establish an exact affected release and fix.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "Django 3.2 before 3.2.14 and 4.0 before 4.0.6",
+      "vulnerability_type": "sql injection",
+      "vulnerable_position": "django/db/backends/mysql/operations.py:date_extract_sql; django/db/backends/oracle/operations.py:date_extract_sql; django/db/backends/postgresql/operations.py:date_extract_sql; django/db/backends/sqlite3/operations.py:date_extract_sql"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2023-24816",
+      "cwe_type": "78;707",
+      "project": "https://github.com/ipython/ipython",
+      "project_type": "command line tool",
+      "reason": "GitHub's reviewed advisory and upstream security merge establish the affected 8.9.0 release and exact fix.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "Versions prior to 8.1.0",
+      "vulnerability_type": "OS Command Injection",
+      "vulnerable_position": "IPython/utils/terminal.py"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2023-37274",
+      "cwe_type": "94;664,707",
+      "project": "https://github.com/Significant-Gravitas/AutoGPT",
+      "project_type": "manage/monitor platform",
+      "reason": "No official evidence reviewed in this checkpoint established a single exact fixed revision paired to the indexed 0.4.1 source layout.",
+      "selection_state": "DEFER_AMBIGUOUS_REVISION",
+      "version": "0.4.1",
+      "vulnerability_type": "code injection",
+      "vulnerable_position": "autogpt/commands/execute_code.py:execute_python_file"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2023-40581",
+      "cwe_type": "78;707",
+      "project": "https://github.com/yt-dlp/yt-dlp",
+      "project_type": "command line tool",
+      "reason": "The upstream GHSA names the affected range, fixed release, and exact security commit.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "yt-dlp version 2023.09.24 fixes this issue",
+      "vulnerability_type": "OS Command Injection",
+      "vulnerable_position": "yt_dlp/postprocessor/exec.py:ExecPP.run"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2023-50943",
+      "cwe_type": "502;664",
+      "project": "https://github.com/apache/airflow",
+      "project_type": "manage/monitor platform",
+      "reason": "Apache's advisory, reviewed GHSA, affected 2.8.0 release, and exact upstream fix commit are available.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "versions before 2.8.1",
+      "vulnerability_type": "Deserialization",
+      "vulnerable_position": "airflow/models/xcom.py:BaseXCom._deserialize_value"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2023-6730",
+      "cwe_type": "502;664",
+      "project": "https://github.com/huggingface/transformers",
+      "project_type": "ai library",
+      "reason": "The indexed source positions and fixed version duplicate CVE-2023-7018, but the reviewed evidence did not establish a distinct patch relationship suitable for a separate case.",
+      "selection_state": "DEFER_INSUFFICIENT_GROUND_TRUTH",
+      "version": "prior to 4.36",
+      "vulnerability_type": "Deserialization",
+      "vulnerable_position": "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py:TransfoXLTokenizer.__init__; src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py:TransfoXLCorpus.get_lm_corpus; src/transformers/models/rag/retrieval_rag.py:LegacyIndex._load_passages"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2023-6940",
+      "cwe_type": "94;707",
+      "project": "https://github.com/mlflow/mlflow",
+      "project_type": "manage/monitor platform",
+      "reason": "The reviewed GHSA/NVD evidence identifies patched MLflow 2.9.2 and cites the exact upstream security change.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "",
+      "vulnerability_type": "code injection",
+      "vulnerable_position": "mlflow/utils/file_utils.py:render_and_merge_yaml"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2023-7018",
+      "cwe_type": "502;664",
+      "project": "https://github.com/huggingface/transformers",
+      "project_type": "ai library",
+      "reason": "GitHub's reviewed advisory identifies affected and patched releases and the exact upstream security commit.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "prior to 4.36",
+      "vulnerability_type": "Deserialization",
+      "vulnerable_position": "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py:TransfoXLTokenizer.__init__; src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py:TransfoXLCorpus.get_lm_corpus; src/transformers/models/rag/retrieval_rag.py:LegacyIndex._load_passages"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2024-22423",
+      "cwe_type": "78;707",
+      "project": "https://github.com/yt-dlp/yt-dlp",
+      "project_type": "command line tool",
+      "reason": "The upstream GHSA names the affected range, fixed release, and exact security commit.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "yt-dlp version 2024.04.09 fixes this issue",
+      "vulnerability_type": "OS Command Injection",
+      "vulnerable_position": "yt_dlp/postprocessor/exec.py:ExecPP.run"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2024-3098",
+      "cwe_type": "94;664,707",
+      "project": "https://github.com/run-llama/llama_index",
+      "project_type": "llm framework",
+      "reason": "The reviewed GHSA identifies affected and patched llama-index-core releases and cites the exact upstream security commits.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "-",
+      "vulnerability_type": "code injection",
+      "vulnerable_position": "llama-index-core/llama_index/core/exec_utils.py:safe_eval"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2024-3271",
+      "cwe_type": "94;707",
+      "project": "https://github.com/run-llama/llama_index",
+      "project_type": "llm framework",
+      "reason": "The reviewed GHSA identifies affected and patched llama-index-core releases and cites the exact upstream security commits.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "-",
+      "vulnerability_type": "code injection",
+      "vulnerable_position": "llama-index-core/llama_index/core/exec_utils.py:safe_eval"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2024-3568",
+      "cwe_type": "502;664",
+      "project": "https://github.com/huggingface/transformers",
+      "project_type": "ai library",
+      "reason": "GitHub's reviewed advisory identifies affected and patched releases and the exact upstream security commit.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "-",
+      "vulnerability_type": "Deserialization",
+      "vulnerable_position": "src/transformers/modeling_tf_utils.py:TFPreTrainedModel.load_repo_checkpoint"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2024-37058",
+      "cwe_type": "502;664",
+      "project": "https://github.com/mlflow/mlflow",
+      "project_type": "manage/monitor platform",
+      "reason": "The reviewed advisory has no patched version and no reliable fixing commit was established.",
+      "selection_state": "DEFER_NO_VERIFIED_FIX",
+      "version": "version 2.5.0 or newer",
+      "vulnerability_type": "Deserialization",
+      "vulnerable_position": "mlflow/langchain/utils.py:_load_from_pickle"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2024-37059",
+      "cwe_type": "502;664",
+      "project": "https://github.com/mlflow/mlflow",
+      "project_type": "manage/monitor platform",
+      "reason": "The reviewed advisory has no patched version and no reliable fixing commit was established.",
+      "selection_state": "DEFER_NO_VERIFIED_FIX",
+      "version": "version 0.5.0 or newer",
+      "vulnerability_type": "Deserialization",
+      "vulnerable_position": "mlflow/pytorch/__init__.py:_load_model"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2024-37060",
+      "cwe_type": "502;664",
+      "project": "https://github.com/mlflow/mlflow",
+      "project_type": "manage/monitor platform",
+      "reason": "The reviewed advisory has no patched version and no reliable fixing commit was established.",
+      "selection_state": "DEFER_NO_VERIFIED_FIX",
+      "version": "version 1.27.0 or newer",
+      "vulnerability_type": "Deserialization",
+      "vulnerable_position": "mlflow/pipelines/cards/__init__.py:BaseCard.load"
+    },
+    {
+      "candidate_source": "pysastbench",
+      "cve_id": "CVE-2024-7009",
+      "cwe_type": "89;707",
+      "project": "https://github.com/kovidgoyal/calibre",
+      "project_type": "manage/monitor platform",
+      "reason": "The CNA/NVD record identifies affected releases and the exact upstream fix commit in the original GPL repository.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "version": "Calibre <= 7.15.0",
+      "vulnerability_type": "sql injection",
+      "vulnerable_position": "src/calibre/db/backend.py:DB.search_annotations; src/calibre/db/fts/connect.py:FTS.search; src/calibre/db/notes/connect.py:Notes.search"
+    }
+  ],
+  "schema_version": "securescan-python-sast-realworld-ledger-v1",
+  "selection_boundary": "CVE/CWE/project/vulnerable-position metadata plus independent advisories and upstream history only; prior-tool result columns are excluded from the selection model"
+}

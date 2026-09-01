@@ -1,0 +1,48 @@
+{
+  "advisory_metadata_sources": [
+    {
+      "identity": "GitHub Advisory Database stable advisory pages",
+      "kind": "official-advisory-index",
+      "url": "https://github.com/advisories"
+    },
+    {
+      "identity": "NVD stable CVE detail pages",
+      "kind": "government-cve-index",
+      "url": "https://nvd.nist.gov/vuln"
+    },
+    {
+      "identity": "original upstream Git commits and security releases",
+      "kind": "upstream-primary-evidence",
+      "url": "https://github.com"
+    }
+  ],
+  "pysastbench": {
+    "allowed_discovery_columns": [
+      "CVE",
+      "CWE Type",
+      "Type",
+      "vul position",
+      "project",
+      "Project Type",
+      "Version"
+    ],
+    "commit": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+    "csv_path": "RealworldDataset.csv",
+    "csv_sha256": "06ae70387ba9eaf6696409fc7ee7d08a387b7e14ed4524130cfc6eccb4ccefd4",
+    "forbidden_prior_tool_columns": [
+      "Bearer_reason",
+      "DevSkim_reason",
+      "Dlint_reason",
+      "Bandit_reason",
+      "Semgrep_reason",
+      "Codeql_reason",
+      "Pysa_reason"
+    ],
+    "repository_url": "https://github.com/Victor725/PySASTBench.git",
+    "role": "discovery-index-only",
+    "source_archive_vendored": false,
+    "source_id": "pysastbench-realworld-index"
+  },
+  "schema_version": "securescan-python-sast-realworld-discovery-v1",
+  "source_lock_digest": "0bba4bbe5ce557f1382f61f9af3320adef5cc53ab386d1c63f4983d8cbf48a00"
+}

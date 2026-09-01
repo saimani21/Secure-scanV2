@@ -41,6 +41,7 @@ Status: COMPLETE
 | v0.3F2B | Pinned external candidate acquisition | COMPLETE |
 | v0.3F2C | Claim-aligned external applicability review | COMPLETE |
 | v0.3F2D | Controlled external Python SAST evaluation | COMPLETE |
+| v0.3F2E1 | Real-world Python CVE discovery and upstream pinning | COMPLETE |
 | v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
 
 ## Source Intelligence Foundation Freeze
@@ -247,8 +248,8 @@ separate non-scoring observations, as are unexpected cross-rule relations.
 
 This external corpus is synthetic. Rules without external positive or negative
 evidence remain explicitly unvalidated even though all 17 frozen rules execute
-together. PySASTBench and any real-world CVE challenge remain later work. The
-evaluation does not promote maturity: `PYTHON_SAST` remains `SCANNABLE`.
+together. The evaluation does not promote maturity: `PYTHON_SAST` remains
+`SCANNABLE`.
 
 OWASP BenchmarkPython pull request 6 is represented as known cross-category
 XSS contamination in 33 deserialization files, not as a dispute of their
@@ -256,9 +257,19 @@ published CWE-502 labels. The original CWEs and vulnerable/safe labels remain
 accepted, while the affected cases are explicitly excluded from later scoring
 pending applicability review.
 
-PySASTBench remains deferred as a possible real-world CVE discovery/index source
-only. Its 6.2 GB archive has not been acquired, and prior scanner-result columns
-may not influence any later case selection. v0.3F2 is not complete.
+v0.3F2E1 uses a pinned PySASTBench `RealworldDataset.csv` only as a discovery
+index and supplements it with independent official-advisory and original
+upstream evidence. Prior scanner-result columns are forbidden from selection.
+The large source archive is not acquired, PySASTBench repository copies are not
+used, and original upstream Git repositories remain authoritative in an ignored
+cache. The canonical ledger retains every reviewed seed, including explicit
+deferrals, while the accepted lock requires exact vulnerable/fixed revisions,
+license identity, bounded relevant Python source hashes, and fix provenance.
+
+This checkpoint performs source acquisition only. It does not execute acquired
+code, Semgrep, or SecureScan; applicability review is unstarted and no
+real-world TP/FP/FN/TN exists. The frozen F2D synthetic results did not influence
+case selection. `PYTHON_SAST` remains `SCANNABLE`, and v0.3F2 is not complete.
 
 ## Known Non-Blocking Maintenance
 

@@ -1,0 +1,102 @@
+{
+  "accepted_case_count": 13,
+  "accepted_case_set_digest": "60d44ea9cf0f174e1488c5b8dbccde2804524fe4d3bfa31b9db0810e52332a92",
+  "accepted_cve_ids": [
+    "CVE-2022-24065",
+    "CVE-2022-28347",
+    "CVE-2022-34265",
+    "CVE-2023-24816",
+    "CVE-2023-40581",
+    "CVE-2023-50943",
+    "CVE-2023-6940",
+    "CVE-2023-7018",
+    "CVE-2024-22423",
+    "CVE-2024-3098",
+    "CVE-2024-3271",
+    "CVE-2024-3568",
+    "CVE-2024-7009"
+  ],
+  "counts_by_cwe": {
+    "502": 3,
+    "77": 2,
+    "78": 4,
+    "89": 3,
+    "94": 3
+  },
+  "deferred_candidate_count": 5,
+  "deferred_candidates": [
+    {
+      "cve_id": "CVE-2023-37274",
+      "reason": "No official evidence reviewed in this checkpoint established a single exact fixed revision paired to the indexed 0.4.1 source layout.",
+      "selection_state": "DEFER_AMBIGUOUS_REVISION"
+    },
+    {
+      "cve_id": "CVE-2023-6730",
+      "reason": "The indexed source positions and fixed version duplicate CVE-2023-7018, but the reviewed evidence did not establish a distinct patch relationship suitable for a separate case.",
+      "selection_state": "DEFER_INSUFFICIENT_GROUND_TRUTH"
+    },
+    {
+      "cve_id": "CVE-2024-37058",
+      "reason": "The reviewed advisory has no patched version and no reliable fixing commit was established.",
+      "selection_state": "DEFER_NO_VERIFIED_FIX"
+    },
+    {
+      "cve_id": "CVE-2024-37059",
+      "reason": "The reviewed advisory has no patched version and no reliable fixing commit was established.",
+      "selection_state": "DEFER_NO_VERIFIED_FIX"
+    },
+    {
+      "cve_id": "CVE-2024-37060",
+      "reason": "The reviewed advisory has no patched version and no reliable fixing commit was established.",
+      "selection_state": "DEFER_NO_VERIFIED_FIX"
+    }
+  ],
+  "independent_search_outcomes": [
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.flask-debug-enabled"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.insecure-tempfile-mktemp"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.jinja-autoescape-disabled"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.jwt-signature-verification-disabled"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.os-popen"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.paramiko-autoaddpolicy"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.requests-session-verify-false"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.sql-fstring-execute"
+    },
+    {
+      "outcome": "no verified case found",
+      "rule_family": "securescan.python.ssl-unverified-context"
+    }
+  ],
+  "reviewed_candidate_count": 18,
+  "schema_version": "securescan-python-sast-realworld-summary-v1",
+  "scientific_boundary": {
+    "applicability_review": "not-started",
+    "benchmark_metrics": "not-calculated",
+    "real_world_scanning": "not-performed"
+  },
+  "source_lock_digest": "0bba4bbe5ce557f1382f61f9af3320adef5cc53ab386d1c63f4983d8cbf48a00",
+  "unique_case_family_count": 11,
+  "unique_project_count": 9
+}

@@ -1,0 +1,1146 @@
+{
+  "accepted_case_set_digest": "60d44ea9cf0f174e1488c5b8dbccde2804524fe4d3bfa31b9db0810e52332a92",
+  "cases": [
+    {
+      "advisory_urls": [
+        "https://nvd.nist.gov/vuln/detail/CVE-2022-24065",
+        "https://github.com/cookiecutter/cookiecutter/commit/fdffddb31fd2b46344dfa317531ff155e7999f77"
+      ],
+      "affected_paths": [
+        "cookiecutter/vcs.py"
+      ],
+      "case_family_id": "cookiecutter-mercurial-checkout-command-injection",
+      "cve_id": "CVE-2022-24065",
+      "cwe_ids": [
+        78
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "quote untrusted Mercurial branch argument before shell invocation",
+        "changed_paths": [
+          "cookiecutter/vcs.py"
+        ],
+        "security_fix_commits": [
+          "fdffddb31fd2b46344dfa317531ff155e7999f77"
+        ],
+        "symbol_names": [
+          "clone"
+        ]
+      },
+      "fixed_revision": "fdffddb31fd2b46344dfa317531ff155e7999f77",
+      "fixed_revision_basis": "NVD-cited upstream security merge included in Cookiecutter 2.1.1",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "cookiecutter/vcs.py",
+            "sha256": "44d6ff2ffa516decc1ded96f115c010710e25bbc8b3c9d64bbdefc5750451737"
+          }
+        ],
+        "relevant_path_set": [
+          "cookiecutter/vcs.py"
+        ],
+        "relevant_tree_digest": "d1a2ef1898bc82003f66ed1369ad4dd3bfc28203757c4ce9a05d8faaaa30b5b5",
+        "revision": "fdffddb31fd2b46344dfa317531ff155e7999f77"
+      },
+      "ghsa_id": null,
+      "ground_truth_evidence": [
+        "NVD identifies versions before 2.1.1 as affected and cites the upstream patch.",
+        "Upstream commit fdffddb31fd2b46344dfa317531ff155e7999f77 changes the indexed Python source path."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2022-24065/cookiecutter",
+      "license_file_sha256": "88f45cff69dcb9eb095daf230383becad4726194ab8c9b041d445eef64ad1f6b",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "cookiecutter/vcs.py:clone"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "cookiecutter",
+      "repository_license": "BSD-3-Clause",
+      "revision_relationship": "Cookiecutter 2.1.0 release commit is an ancestor of the advisory-cited security merge.",
+      "revision_relationship_kind": "ancestor-security-fix",
+      "selection_reason": "Exact original upstream source pair, license, patch provenance, and relevant Python source are independently reproducible.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/cookiecutter/cookiecutter.git",
+      "vulnerability_type": "OS command injection",
+      "vulnerable_revision": "f601b710324fd9d0255e790121dba8f74cb6e423",
+      "vulnerable_revision_basis": "Exact commit for upstream release tag 2.1.0, which is within the published affected range.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "cookiecutter/vcs.py",
+            "sha256": "d4c09d4686eb6baaed2d548bb663bd083e481cde1e007965773d1e7b8bbb237b"
+          }
+        ],
+        "relevant_path_set": [
+          "cookiecutter/vcs.py"
+        ],
+        "relevant_tree_digest": "f6546b9d9efd6da508f131a20ebdb2d4f4147f48ae4aa4e412ba6315da74aefc",
+        "revision": "f601b710324fd9d0255e790121dba8f74cb6e423"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://www.djangoproject.com/weblog/2022/apr/11/security-releases/",
+        "https://github.com/django/django/commit/00b0fc50e1738c7174c495464a5ef069408a4402"
+      ],
+      "affected_paths": [
+        "django/db/backends/postgresql/features.py",
+        "django/db/backends/postgresql/operations.py",
+        "django/db/models/sql/query.py"
+      ],
+      "case_family_id": "django-queryset-explain-sql-injection",
+      "cve_id": "CVE-2022-28347",
+      "cwe_ids": [
+        89
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "validate QuerySet explain option names before SQL construction",
+        "changed_paths": [
+          "django/db/backends/postgresql/features.py",
+          "django/db/backends/postgresql/operations.py",
+          "django/db/models/sql/query.py"
+        ],
+        "security_fix_commits": [
+          "00b0fc50e1738c7174c495464a5ef069408a4402"
+        ],
+        "symbol_names": [
+          "Query.explain",
+          "explain_query_prefix"
+        ]
+      },
+      "fixed_revision": "00b0fc50e1738c7174c495464a5ef069408a4402",
+      "fixed_revision_basis": "Exact Django 4.0.x security commit corresponding to the vendor's 4.0.4 security release.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "django/db/backends/postgresql/features.py",
+            "sha256": "7b056e912fc8e4dd54b8fa6f788524d85c52b232ef9fc58e0ffcb0f82d1a6748"
+          },
+          {
+            "path": "django/db/backends/postgresql/operations.py",
+            "sha256": "7f4ca3b6629ecd29dde38e06c6aae8fd64f8bf75257b8c144c0e46adfa8b4aa3"
+          },
+          {
+            "path": "django/db/models/sql/query.py",
+            "sha256": "41bfe2d6e856848dac451a26ffcdc2c5ac3d2437df5256a6f608c07e03b809fc"
+          }
+        ],
+        "relevant_path_set": [
+          "django/db/backends/postgresql/features.py",
+          "django/db/backends/postgresql/operations.py",
+          "django/db/models/sql/query.py"
+        ],
+        "relevant_tree_digest": "7f17bf06e03eef17c74a5ed059db9292720ebae173ff0fcc1d0303b768b14855",
+        "revision": "00b0fc50e1738c7174c495464a5ef069408a4402"
+      },
+      "ghsa_id": null,
+      "ground_truth_evidence": [
+        "Django's vendor advisory identifies 4.0.3 and earlier as affected and 4.0.4 as fixed.",
+        "The 4.0.x security commit explicitly names CVE-2022-28347 and changes the bounded Python paths."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2022-28347/django",
+      "license_file_sha256": "b846415d1b514e9c1dff14a22deb906d794bc546ca6129f950a18cd091e2a669",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "django/db/backends/postgresql/operations.py:explain_query_prefix"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "django",
+      "repository_license": "BSD-3-Clause",
+      "revision_relationship": "Django 4.0.3 release commit is an ancestor of the 4.0.x security commit.",
+      "revision_relationship_kind": "ancestor-security-fix",
+      "selection_reason": "Vendor advisory and branch-specific security commit establish an exact source pair.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/django/django.git",
+      "vulnerability_type": "SQL injection",
+      "vulnerable_revision": "a3a5fbdf848bd76ab65d602ed88f41ea648de9cd",
+      "vulnerable_revision_basis": "Exact commit for upstream release tag 4.0.3 within the vendor-published affected range.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "django/db/backends/postgresql/features.py",
+            "sha256": "1a48bc96cb8017f8ccf6746d1822bdffc8bbf1f1f6d958f40ade560b259d7a1c"
+          },
+          {
+            "path": "django/db/backends/postgresql/operations.py",
+            "sha256": "5f48fa904b601bbb89511c27a3b54e63316dfbe820ab08b8441bde31b0afb988"
+          },
+          {
+            "path": "django/db/models/sql/query.py",
+            "sha256": "87390fbc6ab3656fc3a666950a7f4ef0dae798751b7f9bafdc98e898c257b986"
+          }
+        ],
+        "relevant_path_set": [
+          "django/db/backends/postgresql/features.py",
+          "django/db/backends/postgresql/operations.py",
+          "django/db/models/sql/query.py"
+        ],
+        "relevant_tree_digest": "840dcad34e825a558e4a537224f3d1c97d06b48f2f3cfd57034e6ff2e4245ff6",
+        "revision": "a3a5fbdf848bd76ab65d602ed88f41ea648de9cd"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://www.djangoproject.com/weblog/2022/jul/04/security-releases/",
+        "https://github.com/django/django/commit/0dc9c016fadb71a067e5a42be30164e3f96c0492"
+      ],
+      "affected_paths": [
+        "django/db/backends/base/operations.py",
+        "django/db/models/functions/datetime.py"
+      ],
+      "case_family_id": "django-datetime-function-sql-injection",
+      "cve_id": "CVE-2022-34265",
+      "cwe_ids": [
+        89
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "validate Trunc kind and Extract lookup name before SQL construction",
+        "changed_paths": [
+          "django/db/backends/base/operations.py",
+          "django/db/models/functions/datetime.py"
+        ],
+        "security_fix_commits": [
+          "0dc9c016fadb71a067e5a42be30164e3f96c0492"
+        ],
+        "symbol_names": [
+          "Extract.as_sql",
+          "TruncBase.as_sql"
+        ]
+      },
+      "fixed_revision": "0dc9c016fadb71a067e5a42be30164e3f96c0492",
+      "fixed_revision_basis": "Exact Django 4.0.x security commit corresponding to the vendor's 4.0.6 security release.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "django/db/backends/base/operations.py",
+            "sha256": "b20c02fde2a6c8e6bb99a8ebdae4a79ad73171fdefddd5edaa9ef54bc69e9dda"
+          },
+          {
+            "path": "django/db/models/functions/datetime.py",
+            "sha256": "1ab514470a96e17244b0d09564de7baa3ee6135ce28e68231d1fbf47612b0df1"
+          }
+        ],
+        "relevant_path_set": [
+          "django/db/backends/base/operations.py",
+          "django/db/models/functions/datetime.py"
+        ],
+        "relevant_tree_digest": "d47243026ac2d3ee4f2ba881344a135e9b16b7d0f01b8cc1dbdfd6875afd76dd",
+        "revision": "0dc9c016fadb71a067e5a42be30164e3f96c0492"
+      },
+      "ghsa_id": null,
+      "ground_truth_evidence": [
+        "Django's vendor advisory identifies 4.0.5 and earlier as affected and 4.0.6 as fixed.",
+        "The 4.0.x security commit explicitly names CVE-2022-34265 and changes the bounded Python paths."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2022-34265/django",
+      "license_file_sha256": "b846415d1b514e9c1dff14a22deb906d794bc546ca6129f950a18cd091e2a669",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "django.db.models.functions.datetime.Extract",
+        "django.db.models.functions.datetime.Trunc"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "django",
+      "repository_license": "BSD-3-Clause",
+      "revision_relationship": "Django 4.0.5 release commit is an ancestor of the 4.0.x security commit.",
+      "revision_relationship_kind": "ancestor-security-fix",
+      "selection_reason": "Vendor advisory and branch-specific security commit establish an exact source pair.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/django/django.git",
+      "vulnerability_type": "SQL injection",
+      "vulnerable_revision": "9736596bce4f711ccf2914284938d85748838c94",
+      "vulnerable_revision_basis": "Exact commit for upstream release tag 4.0.5 within the vendor-published affected range.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "django/db/backends/base/operations.py",
+            "sha256": "2dfd5164fc7af46654c9511abc38d5c14ed753bb1e19b6c0ec10940acc75e94d"
+          },
+          {
+            "path": "django/db/models/functions/datetime.py",
+            "sha256": "f93d4dad7cb4270e282d704d1e975e7f4e8735810fd7e8de0ca7abd80fc4e1a9"
+          }
+        ],
+        "relevant_path_set": [
+          "django/db/backends/base/operations.py",
+          "django/db/models/functions/datetime.py"
+        ],
+        "relevant_tree_digest": "538def1171bc94210521069a8f59a524b92ff5bda25fd65051f247f15df5d113",
+        "revision": "9736596bce4f711ccf2914284938d85748838c94"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/advisories/GHSA-29gw-9793-fvw7",
+        "https://github.com/ipython/ipython/commit/385d69325319a5972ee9b5983638e3617f21cb1f"
+      ],
+      "affected_paths": [
+        "IPython/utils/terminal.py"
+      ],
+      "case_family_id": "ipython-windows-command-line-shell-injection",
+      "cve_id": "CVE-2023-24816",
+      "cwe_ids": [
+        78
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "replace unsafe command-line construction on Windows",
+        "changed_paths": [
+          "IPython/utils/terminal.py"
+        ],
+        "security_fix_commits": [
+          "385d69325319a5972ee9b5983638e3617f21cb1f"
+        ],
+        "symbol_names": [
+          "set_term_title"
+        ]
+      },
+      "fixed_revision": "385d69325319a5972ee9b5983638e3617f21cb1f",
+      "fixed_revision_basis": "Reviewed GHSA-cited upstream security merge released in IPython 8.10.0.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "IPython/utils/terminal.py",
+            "sha256": "5b6222e03323540c311ac1e55e66f90c9d2d3b7b6eeed7ccf73fb1e349881a68"
+          }
+        ],
+        "relevant_path_set": [
+          "IPython/utils/terminal.py"
+        ],
+        "relevant_tree_digest": "9bb692286acddfe54b3676689ece986d7f451ae615aca5be22aaccf401727710",
+        "revision": "385d69325319a5972ee9b5983638e3617f21cb1f"
+      },
+      "ghsa_id": "GHSA-29gw-9793-fvw7",
+      "ground_truth_evidence": [
+        "The reviewed GHSA identifies IPython versions before 8.10.0 as affected.",
+        "The advisory-cited merge changes IPython/utils/terminal.py."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2023-24816/ipython",
+      "license_file_sha256": "341afcbd729887b7046fe7b98fc4f4edff3aed8d38f06eefd9b30670f043df17",
+      "license_path": "COPYING.rst",
+      "published_vulnerable_positions": [
+        "IPython/utils/terminal.py"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "ipython",
+      "repository_license": "BSD-3-Clause",
+      "revision_relationship": "IPython 8.9.0 release commit is an ancestor of the advisory-cited security merge.",
+      "revision_relationship_kind": "ancestor-security-fix",
+      "selection_reason": "Exact original upstream source pair, license, advisory, and bounded Python path are reproducible.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/ipython/ipython.git",
+      "vulnerability_type": "OS command injection",
+      "vulnerable_revision": "cca49a27b5b102c2e37dadb06889b84e67e1512f",
+      "vulnerable_revision_basis": "Exact commit for upstream release tag 8.9.0, immediately before the patched 8.10.0 release.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "IPython/utils/terminal.py",
+            "sha256": "e6cbc0aee3fbf65389a94c913200a008370290a8f09b922f4b4216a0b094f4a7"
+          }
+        ],
+        "relevant_path_set": [
+          "IPython/utils/terminal.py"
+        ],
+        "relevant_tree_digest": "cd1f6b09544968e1cd04dfbbcad6bb7954e332db047d1f7a0d393567ebf0d537",
+        "revision": "cca49a27b5b102c2e37dadb06889b84e67e1512f"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/yt-dlp/yt-dlp/security/advisories/GHSA-42h4-v29r-42qg",
+        "https://github.com/yt-dlp/yt-dlp/commit/de015e930747165dbb8fcd360f8775fd973b7d6e"
+      ],
+      "affected_paths": [
+        "yt_dlp/postprocessor/exec.py",
+        "yt_dlp/utils/_utils.py"
+      ],
+      "case_family_id": "yt-dlp-exec-shell-quoting",
+      "cve_id": "CVE-2023-40581",
+      "cwe_ids": [
+        78
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "platform-aware shell quoting for exec template expansion",
+        "changed_paths": [
+          "yt_dlp/postprocessor/exec.py",
+          "yt_dlp/utils/_utils.py"
+        ],
+        "security_fix_commits": [
+          "de015e930747165dbb8fcd360f8775fd973b7d6e"
+        ],
+        "symbol_names": [
+          "ExecPP.run",
+          "shell_quote"
+        ]
+      },
+      "fixed_revision": "de015e930747165dbb8fcd360f8775fd973b7d6e",
+      "fixed_revision_basis": "Exact security commit named by the upstream GHSA and included in release 2023.09.24.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "yt_dlp/postprocessor/exec.py",
+            "sha256": "dd070bef54ed99adb908456b450438ffebddf76b38033bbf8b4b2ebb012495c9"
+          },
+          {
+            "path": "yt_dlp/utils/_utils.py",
+            "sha256": "0c35c90a57216c0e90f9b635bbb8b0e3973c5559e645fd528fb67869fe30aed0"
+          }
+        ],
+        "relevant_path_set": [
+          "yt_dlp/postprocessor/exec.py",
+          "yt_dlp/utils/_utils.py"
+        ],
+        "relevant_tree_digest": "c34b6d51edf937f1e175da54e8c82fecd527455c38a9a8390d9ee75226816fb8",
+        "revision": "de015e930747165dbb8fcd360f8775fd973b7d6e"
+      },
+      "ghsa_id": "GHSA-42h4-v29r-42qg",
+      "ground_truth_evidence": [
+        "The upstream GHSA publishes affected and patched versions and names the exact security commit.",
+        "The security commit changes the two bounded production Python paths."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2023-40581/yt-dlp",
+      "license_file_sha256": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "yt_dlp/postprocessor/exec.py:ExecPP.run"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "yt-dlp",
+      "repository_license": "Unlicense",
+      "revision_relationship": "yt-dlp 2023.07.06 release commit is an ancestor of the upstream security commit.",
+      "revision_relationship_kind": "ancestor-security-fix",
+      "selection_reason": "Upstream advisory and commit establish an exact, source-level vulnerable/fixed relationship.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/yt-dlp/yt-dlp.git",
+      "vulnerability_type": "OS command injection",
+      "vulnerable_revision": "cc0619f62d6da52689797483e96b29290b0c0873",
+      "vulnerable_revision_basis": "Exact commit for the last upstream release before the advisory's fixed 2023.09.24 release.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "yt_dlp/postprocessor/exec.py",
+            "sha256": "ac033013947a65b83f7f6b45cc76ab9bd763a3e5bbd16341a89f5f503a951648"
+          },
+          {
+            "path": "yt_dlp/utils/_utils.py",
+            "sha256": "a42805c5dab07e98270a6debd6129b12d6a419b46f6503f44b6544d012a29f30"
+          }
+        ],
+        "relevant_path_set": [
+          "yt_dlp/postprocessor/exec.py",
+          "yt_dlp/utils/_utils.py"
+        ],
+        "relevant_tree_digest": "88f004adb05d958f612be86a162e5379be16e1c0ef3a0772661fbd21b079a250",
+        "revision": "cc0619f62d6da52689797483e96b29290b0c0873"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/advisories/GHSA-c3c6-f2ww-xfr2",
+        "https://github.com/apache/airflow/commit/2c4c5bc604e9ab0cc1e98f7bee7d31d566579462"
+      ],
+      "affected_paths": [
+        "airflow/models/xcom.py"
+      ],
+      "case_family_id": "airflow-xcom-pickle-deserialization",
+      "cve_id": "CVE-2023-50943",
+      "cwe_ids": [
+        502
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "prevent pickle deserialization when XCom pickling is disabled",
+        "changed_paths": [
+          "airflow/models/xcom.py"
+        ],
+        "security_fix_commits": [
+          "2c4c5bc604e9ab0cc1e98f7bee7d31d566579462"
+        ],
+        "symbol_names": [
+          "BaseXCom._deserialize_value"
+        ]
+      },
+      "fixed_revision": "2c4c5bc604e9ab0cc1e98f7bee7d31d566579462",
+      "fixed_revision_basis": "Exact security commit cited by the reviewed GHSA and released in Airflow 2.8.1.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "airflow/models/xcom.py",
+            "sha256": "61f4f71600b5be82fa57418219d3532ff5b0706220b07431ece5134f2b3a991a"
+          }
+        ],
+        "relevant_path_set": [
+          "airflow/models/xcom.py"
+        ],
+        "relevant_tree_digest": "5ee5b419f22bda5c7aa4996b953d3fdeff991ff6690403d7d0c3ec1c10eae3f4",
+        "revision": "2c4c5bc604e9ab0cc1e98f7bee7d31d566579462"
+      },
+      "ghsa_id": "GHSA-c3c6-f2ww-xfr2",
+      "ground_truth_evidence": [
+        "Apache and the reviewed GHSA identify versions before 2.8.1 as affected.",
+        "The advisory-cited security commit changes airflow/models/xcom.py."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2023-50943/airflow",
+      "license_file_sha256": "cb0501a4a65cec96fdeab56de48dc80db83b7482406d448792ea03705de36c7e",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "airflow/models/xcom.py:BaseXCom._deserialize_value"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "airflow",
+      "repository_license": "Apache-2.0",
+      "revision_relationship": "Airflow 2.8.0 release commit is an ancestor of the advisory-cited security commit.",
+      "revision_relationship_kind": "ancestor-security-fix",
+      "selection_reason": "Original Apache source, license, advisory, and exact security commit form a reproducible pair.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/apache/airflow.git",
+      "vulnerability_type": "deserialization of untrusted data",
+      "vulnerable_revision": "db2b75c233e3e3c59ec9d0563b93ddbe733ad0bf",
+      "vulnerable_revision_basis": "Exact commit for upstream release tag 2.8.0 within the published affected range.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "airflow/models/xcom.py",
+            "sha256": "c5ebce326cb866850d8b6a974732ba4a384397a5a901a6277f69134084de9dbf"
+          }
+        ],
+        "relevant_path_set": [
+          "airflow/models/xcom.py"
+        ],
+        "relevant_tree_digest": "e796d7df8f340e06f1dd434e68b06df0099d318d78938f844cd5e85b16769f5b",
+        "revision": "db2b75c233e3e3c59ec9d0563b93ddbe733ad0bf"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/advisories/GHSA-hvc6-42vf-jhf8",
+        "https://github.com/mlflow/mlflow/commit/5139b1087d686fa52e2b087e09da66aff86297b1",
+        "https://github.com/mlflow/mlflow/commit/a98a341a7222f894b7735db575ad9311ecaba4e3"
+      ],
+      "affected_paths": [
+        "mlflow/utils/file_utils.py"
+      ],
+      "case_family_id": "mlflow-jinja-yaml-code-injection",
+      "cve_id": "CVE-2023-6940",
+      "cwe_ids": [
+        77,
+        94
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "render YAML with a sandboxed Jinja environment",
+        "changed_paths": [
+          "mlflow/utils/file_utils.py"
+        ],
+        "security_fix_commits": [
+          "5139b1087d686fa52e2b087e09da66aff86297b1",
+          "a98a341a7222f894b7735db575ad9311ecaba4e3"
+        ],
+        "symbol_names": [
+          "render_and_merge_yaml"
+        ]
+      },
+      "fixed_revision": "6ca72469b289e77acc2f1201ca39237fc025c090",
+      "fixed_revision_basis": "Exact commit for patched upstream release tag v2.9.2 identified by reviewed advisory metadata.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "mlflow/utils/file_utils.py",
+            "sha256": "598b1fa50c543c17c11a69069ea8b675454db2873fdd2966b1b3133df52f56f7"
+          }
+        ],
+        "relevant_path_set": [
+          "mlflow/utils/file_utils.py"
+        ],
+        "relevant_tree_digest": "8312c93fa4496c0ab6c2ca9bc81a000be81281a4606e3e279982bcad05ff710f",
+        "revision": "6ca72469b289e77acc2f1201ca39237fc025c090"
+      },
+      "ghsa_id": "GHSA-hvc6-42vf-jhf8",
+      "ground_truth_evidence": [
+        "The reviewed GHSA/OSV record identifies versions before 2.9.2 as affected and 2.9.2 as fixed.",
+        "NVD and the reviewed advisory cite the two upstream forms of the security change to file_utils.py."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2023-6940/mlflow",
+      "license_file_sha256": "6395355de6f391afff35996a30fb41b189b4991a4cb54993ace35ab69a0bfa28",
+      "license_path": "LICENSE.txt",
+      "published_vulnerable_positions": [
+        "mlflow/utils/file_utils.py:render_and_merge_yaml"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "mlflow",
+      "repository_license": "Apache-2.0",
+      "revision_relationship": "MLflow 2.9.1 release commit is an ancestor of the patched 2.9.2 release commit containing the cited security change.",
+      "revision_relationship_kind": "ancestor-patched-release",
+      "selection_reason": "Reviewed advisory, original Apache repository, exact adjacent releases, security commits, and bounded Python source are reproducible.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/mlflow/mlflow.git",
+      "vulnerability_type": "command and code injection",
+      "vulnerable_revision": "511d7dbfd55816ecdb0ac46140c22d5e4c3242ef",
+      "vulnerable_revision_basis": "Exact commit for affected upstream release tag v2.9.1 immediately before fixed version 2.9.2.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "mlflow/utils/file_utils.py",
+            "sha256": "fcac628834f39ad968376fbbf75aa8076909011f7b6a7363243c37e86cebf8da"
+          }
+        ],
+        "relevant_path_set": [
+          "mlflow/utils/file_utils.py"
+        ],
+        "relevant_tree_digest": "522912681cbfe349f7fa265d2a25fb6165bab8e9be09ee39751f704ebc0b282e",
+        "revision": "511d7dbfd55816ecdb0ac46140c22d5e4c3242ef"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/advisories/GHSA-v68g-wm8c-6x7j",
+        "https://github.com/huggingface/transformers/commit/1d63b0ec361e7a38f1339385e8a5a855085532ce"
+      ],
+      "affected_paths": [
+        "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+        "src/transformers/models/rag/retrieval_rag.py",
+        "src/transformers/models/transfo_xl/tokenization_transfo_xl.py"
+      ],
+      "case_family_id": "transformers-transfoxl-rag-pickle-deserialization",
+      "cve_id": "CVE-2023-7018",
+      "cwe_ids": [
+        502
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "require explicit trust opt-in before pickle deserialization",
+        "changed_paths": [
+          "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+          "src/transformers/models/rag/retrieval_rag.py"
+        ],
+        "security_fix_commits": [
+          "1d63b0ec361e7a38f1339385e8a5a855085532ce"
+        ],
+        "symbol_names": [
+          "LegacyIndex._load_passages",
+          "TransfoXLCorpus.get_lm_corpus",
+          "TransfoXLTokenizer.__init__"
+        ]
+      },
+      "fixed_relevant_paths": [
+        "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+        "src/transformers/models/rag/retrieval_rag.py"
+      ],
+      "fixed_revision": "14666775a296a76c88e1aa686a9547f393d322e2",
+      "fixed_revision_basis": "Exact commit for patched upstream release tag v4.36.0 named by the reviewed GHSA.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+            "sha256": "cda24af1f9accadeb5cbc38b896c9aeb34c36e3729ca99527094196fe073b215"
+          },
+          {
+            "path": "src/transformers/models/rag/retrieval_rag.py",
+            "sha256": "49132bd36d6ac98836edc2e9b805e768b3c9b866838ae2e315fc0fc20f48131d"
+          }
+        ],
+        "relevant_path_set": [
+          "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py",
+          "src/transformers/models/rag/retrieval_rag.py"
+        ],
+        "relevant_tree_digest": "0b1a7d4f272d846f5fb21adf2f10b9fcc8174343b037780c82eb72bec8031f05",
+        "revision": "14666775a296a76c88e1aa686a9547f393d322e2"
+      },
+      "ghsa_id": "GHSA-v68g-wm8c-6x7j",
+      "ground_truth_evidence": [
+        "The reviewed GHSA identifies versions before 4.36.0 as affected and 4.36.0 as patched.",
+        "The advisory cites security commit 1d63b0ec361e7a38f1339385e8a5a855085532ce and its bounded Python paths."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2023-7018/transformers",
+      "license_file_sha256": "77fd4710def9ec3c0f6225800e0235f15a425abd4a8b03559127fcd782612049",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py:TransfoXLCorpus.get_lm_corpus",
+        "src/transformers/models/deprecated/transfo_xl/tokenization_transfo_xl.py:TransfoXLTokenizer.__init__",
+        "src/transformers/models/rag/retrieval_rag.py:LegacyIndex._load_passages"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "transformers",
+      "repository_license": "Apache-2.0",
+      "revision_relationship": "The reviewed advisory defines v4.35.2 as affected and v4.36.0 as patched; upstream release tags are not a linear ancestry chain, so no parent-of-fix claim is made.",
+      "revision_relationship_kind": "advisory-version-pair",
+      "selection_reason": "Official affected/patched release identities and the separately pinned security commit establish a reproducible pair without unsafe fix-parent inference.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/huggingface/transformers.git",
+      "vulnerability_type": "deserialization of untrusted data",
+      "vulnerable_relevant_paths": [
+        "src/transformers/models/rag/retrieval_rag.py",
+        "src/transformers/models/transfo_xl/tokenization_transfo_xl.py"
+      ],
+      "vulnerable_revision": "514de24abfd4416aeba6a6455ad5920f57f3567d",
+      "vulnerable_revision_basis": "Exact commit for affected upstream release tag v4.35.2 immediately preceding the patched 4.36.0 version.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "src/transformers/models/rag/retrieval_rag.py",
+            "sha256": "ae7c5f9a4543e05c58c900cd0b978f6960493db4c4fad98704e35fd176c2bd3d"
+          },
+          {
+            "path": "src/transformers/models/transfo_xl/tokenization_transfo_xl.py",
+            "sha256": "32a73c45c56dc95d35eeff38d79a235a3b2648faf36bad54fdf7040ab5ea7593"
+          }
+        ],
+        "relevant_path_set": [
+          "src/transformers/models/rag/retrieval_rag.py",
+          "src/transformers/models/transfo_xl/tokenization_transfo_xl.py"
+        ],
+        "relevant_tree_digest": "310dc0f93270576aeea1b8cecfa8bd9b2074d7288a820aa9d2f4017064cd738f",
+        "revision": "514de24abfd4416aeba6a6455ad5920f57f3567d"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/yt-dlp/yt-dlp/security/advisories/GHSA-hjq6-52gw-2g7p",
+        "https://github.com/yt-dlp/yt-dlp/commit/ff07792676f404ffff6ee61b5638c9dc1a33a37a"
+      ],
+      "affected_paths": [
+        "yt_dlp/YoutubeDL.py",
+        "yt_dlp/utils/_utils.py"
+      ],
+      "case_family_id": "yt-dlp-exec-shell-quoting",
+      "cve_id": "CVE-2024-22423",
+      "cwe_ids": [
+        78
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "Windows percent-q shell escaping hardening",
+        "changed_paths": [
+          "yt_dlp/YoutubeDL.py",
+          "yt_dlp/utils/_utils.py"
+        ],
+        "security_fix_commits": [
+          "ff07792676f404ffff6ee61b5638c9dc1a33a37a"
+        ],
+        "symbol_names": [
+          "YoutubeDL.prepare_outtmpl",
+          "shell_quote"
+        ]
+      },
+      "fixed_revision": "ff07792676f404ffff6ee61b5638c9dc1a33a37a",
+      "fixed_revision_basis": "Exact security commit named by the upstream GHSA and included in release 2024.04.09.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "yt_dlp/YoutubeDL.py",
+            "sha256": "2511345c774c9187f037d8be0643c4a76fae387422fff280d1ed2bbc6c391256"
+          },
+          {
+            "path": "yt_dlp/utils/_utils.py",
+            "sha256": "019091c7fbc3ac160ff3fa9f9a7b0e1e942b88b2c8c8e483f4219c618852491d"
+          }
+        ],
+        "relevant_path_set": [
+          "yt_dlp/YoutubeDL.py",
+          "yt_dlp/utils/_utils.py"
+        ],
+        "relevant_tree_digest": "8b51e698695a5a2e9320200f651f2c70924916077d03f44b9e8a83deec0c2c08",
+        "revision": "ff07792676f404ffff6ee61b5638c9dc1a33a37a"
+      },
+      "ghsa_id": "GHSA-hjq6-52gw-2g7p",
+      "ground_truth_evidence": [
+        "The upstream GHSA publishes affected and patched versions and names the exact security commit.",
+        "The security commit changes the bounded production Python paths."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2024-22423/yt-dlp",
+      "license_file_sha256": "7e12e5df4bae12cb21581ba157ced20e1986a0508dd10d0e8a4ab9a4cf94e85c",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "yt_dlp/postprocessor/exec.py:ExecPP.run"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "yt-dlp",
+      "repository_license": "Unlicense",
+      "revision_relationship": "yt-dlp 2024.03.10 release commit is an ancestor of the upstream security commit.",
+      "revision_relationship_kind": "ancestor-security-fix",
+      "selection_reason": "Upstream advisory and commit establish an exact, source-level vulnerable/fixed relationship.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/yt-dlp/yt-dlp.git",
+      "vulnerability_type": "OS command injection",
+      "vulnerable_revision": "8463fb510a58050ec118b3ae17bf00d08ea7b881",
+      "vulnerable_revision_basis": "Exact commit for the last upstream release before the advisory's fixed 2024.04.09 release.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "yt_dlp/YoutubeDL.py",
+            "sha256": "b793425e9900a40ffd38720b8e7362c079a4610a511a448673addf83d576180a"
+          },
+          {
+            "path": "yt_dlp/utils/_utils.py",
+            "sha256": "a5db1dedae46f3091d794da8e72ba15a76d6400f6df04bb5b935ccc8036d957c"
+          }
+        ],
+        "relevant_path_set": [
+          "yt_dlp/YoutubeDL.py",
+          "yt_dlp/utils/_utils.py"
+        ],
+        "relevant_tree_digest": "6ef6f5f1d41f18a2f382abf65edd3c8058bc951a0bcef0589396454bbc7822fe",
+        "revision": "8463fb510a58050ec118b3ae17bf00d08ea7b881"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/advisories/GHSA-wvpx-g427-q9wc",
+        "https://github.com/run-llama/llama_index/commit/2c92e88838a5f481d50840240b1dd3180066c6f5",
+        "https://github.com/run-llama/llama_index/commit/5fbcb5a8b9f20f81b791c7fc8849e352613ab475"
+      ],
+      "affected_paths": [
+        "llama-index-core/llama_index/core/exec_utils.py"
+      ],
+      "case_family_id": "llama-index-safe-eval-restriction-bypass",
+      "cve_id": "CVE-2024-3098",
+      "cwe_ids": [
+        94
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "restrict builtins and attribute access available to safe_eval",
+        "changed_paths": [
+          "llama-index-core/llama_index/core/exec_utils.py"
+        ],
+        "security_fix_commits": [
+          "2c92e88838a5f481d50840240b1dd3180066c6f5",
+          "5fbcb5a8b9f20f81b791c7fc8849e352613ab475"
+        ],
+        "symbol_names": [
+          "safe_eval"
+        ]
+      },
+      "fixed_revision": "3d3a8b9608af9f7aea30bcd9e115dcf37379a5d6",
+      "fixed_revision_basis": "Exact commit for patched upstream release tag v0.10.24 named by the reviewed GHSA.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "llama-index-core/llama_index/core/exec_utils.py",
+            "sha256": "bb946053770902cf9fb5004a126af3dc0e86ecb205680addd52067cb55b966d2"
+          }
+        ],
+        "relevant_path_set": [
+          "llama-index-core/llama_index/core/exec_utils.py"
+        ],
+        "relevant_tree_digest": "729d9b55d8b2d31e1d74062bb3d29d74da3a2e1860d86ef7df58bf77fe732fdc",
+        "revision": "3d3a8b9608af9f7aea30bcd9e115dcf37379a5d6"
+      },
+      "ghsa_id": "GHSA-wvpx-g427-q9wc",
+      "ground_truth_evidence": [
+        "The reviewed GHSA identifies llama-index-core versions before 0.10.24 as affected and 0.10.24 as patched.",
+        "The advisory cites the two upstream forms of the security change to the bounded exec_utils.py path."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2024-3098/llama-index",
+      "license_file_sha256": "24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb",
+      "license_path": "llama-index-core/LICENSE",
+      "published_vulnerable_positions": [
+        "llama-index-core/llama_index/core/exec_utils.py:safe_eval"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "llama-index",
+      "repository_license": "MIT",
+      "revision_relationship": "llama-index-core 0.10.23 release commit is an ancestor of the patched 0.10.24 release commit containing the cited security change.",
+      "revision_relationship_kind": "ancestor-patched-release",
+      "selection_reason": "Reviewed advisory, original MIT repository, exact adjacent releases, security commits, and bounded Python source are reproducible.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/run-llama/llama_index.git",
+      "vulnerability_type": "code injection",
+      "vulnerable_revision": "be63bae53227f1360472477eb2afa993791c09ce",
+      "vulnerable_revision_basis": "Exact commit for affected upstream release tag v0.10.23 immediately before patched version 0.10.24.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "llama-index-core/llama_index/core/exec_utils.py",
+            "sha256": "7031b72135827c6805fdde67f321e9f1e0af35b10dc53f3f2f312c16795ca2c0"
+          }
+        ],
+        "relevant_path_set": [
+          "llama-index-core/llama_index/core/exec_utils.py"
+        ],
+        "relevant_tree_digest": "3f8bee509d27e04b346fba8473ec816954678fd0b96d0b3b2cda99a5c5502243",
+        "revision": "be63bae53227f1360472477eb2afa993791c09ce"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/advisories/GHSA-r6gp-rff2-p3hf",
+        "https://github.com/run-llama/llama_index/commit/2c92e88838a5f481d50840240b1dd3180066c6f5",
+        "https://github.com/run-llama/llama_index/commit/5fbcb5a8b9f20f81b791c7fc8849e352613ab475"
+      ],
+      "affected_paths": [
+        "llama-index-core/llama_index/core/exec_utils.py"
+      ],
+      "case_family_id": "llama-index-safe-eval-restriction-bypass",
+      "cve_id": "CVE-2024-3271",
+      "cwe_ids": [
+        77,
+        94
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "restrict builtins and attribute access available to safe_eval",
+        "changed_paths": [
+          "llama-index-core/llama_index/core/exec_utils.py"
+        ],
+        "security_fix_commits": [
+          "2c92e88838a5f481d50840240b1dd3180066c6f5",
+          "5fbcb5a8b9f20f81b791c7fc8849e352613ab475"
+        ],
+        "symbol_names": [
+          "safe_eval"
+        ]
+      },
+      "fixed_revision": "3d3a8b9608af9f7aea30bcd9e115dcf37379a5d6",
+      "fixed_revision_basis": "Exact commit for patched upstream release tag v0.10.24 named by the reviewed GHSA.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "llama-index-core/llama_index/core/exec_utils.py",
+            "sha256": "bb946053770902cf9fb5004a126af3dc0e86ecb205680addd52067cb55b966d2"
+          }
+        ],
+        "relevant_path_set": [
+          "llama-index-core/llama_index/core/exec_utils.py"
+        ],
+        "relevant_tree_digest": "729d9b55d8b2d31e1d74062bb3d29d74da3a2e1860d86ef7df58bf77fe732fdc",
+        "revision": "3d3a8b9608af9f7aea30bcd9e115dcf37379a5d6"
+      },
+      "ghsa_id": "GHSA-r6gp-rff2-p3hf",
+      "ground_truth_evidence": [
+        "The reviewed GHSA identifies llama-index-core versions before 0.10.24 as affected and 0.10.24 as patched.",
+        "The advisory cites the two upstream forms of the security change to the bounded exec_utils.py path."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2024-3271/llama-index",
+      "license_file_sha256": "24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb",
+      "license_path": "llama-index-core/LICENSE",
+      "published_vulnerable_positions": [
+        "llama-index-core/llama_index/core/exec_utils.py:safe_eval"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "llama-index",
+      "repository_license": "MIT",
+      "revision_relationship": "llama-index-core 0.10.23 release commit is an ancestor of the patched 0.10.24 release commit containing the cited security change.",
+      "revision_relationship_kind": "ancestor-patched-release",
+      "selection_reason": "Reviewed advisory, original MIT repository, exact adjacent releases, security commits, and bounded Python source are reproducible.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/run-llama/llama_index.git",
+      "vulnerability_type": "command injection",
+      "vulnerable_revision": "be63bae53227f1360472477eb2afa993791c09ce",
+      "vulnerable_revision_basis": "Exact commit for affected upstream release tag v0.10.23 immediately before patched version 0.10.24.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "llama-index-core/llama_index/core/exec_utils.py",
+            "sha256": "7031b72135827c6805fdde67f321e9f1e0af35b10dc53f3f2f312c16795ca2c0"
+          }
+        ],
+        "relevant_path_set": [
+          "llama-index-core/llama_index/core/exec_utils.py"
+        ],
+        "relevant_tree_digest": "3f8bee509d27e04b346fba8473ec816954678fd0b96d0b3b2cda99a5c5502243",
+        "revision": "be63bae53227f1360472477eb2afa993791c09ce"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://github.com/advisories/GHSA-37q5-v5qm-c9v8",
+        "https://github.com/huggingface/transformers/commit/693667b8ac8138b83f8adb6522ddaf42fa07c125"
+      ],
+      "affected_paths": [
+        "src/transformers/modeling_tf_utils.py"
+      ],
+      "case_family_id": "transformers-tf-checkpoint-pickle-deserialization",
+      "cve_id": "CVE-2024-3568",
+      "cwe_ids": [
+        502
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "remove dead TensorFlow pickle checkpoint loading code",
+        "changed_paths": [
+          "src/transformers/modeling_tf_utils.py"
+        ],
+        "security_fix_commits": [
+          "693667b8ac8138b83f8adb6522ddaf42fa07c125"
+        ],
+        "symbol_names": [
+          "TFPreTrainedModel.load_repo_checkpoint"
+        ]
+      },
+      "fixed_revision": "08ab54ada594f8f4cc1e458b1217bf8c53f04dd8",
+      "fixed_revision_basis": "Exact commit for patched upstream release tag v4.38.0 named by the reviewed GHSA.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "src/transformers/modeling_tf_utils.py",
+            "sha256": "40862a9cc88dd3363c7b751048bbdedf4ef94e8118067353988d250262467eb5"
+          }
+        ],
+        "relevant_path_set": [
+          "src/transformers/modeling_tf_utils.py"
+        ],
+        "relevant_tree_digest": "53d3ae56afd95d39b8c8c236ec3ae747a88735e220594852e3de6fd53d2c0154",
+        "revision": "08ab54ada594f8f4cc1e458b1217bf8c53f04dd8"
+      },
+      "ghsa_id": "GHSA-37q5-v5qm-c9v8",
+      "ground_truth_evidence": [
+        "The reviewed GHSA identifies versions before 4.38.0 as affected and 4.38.0 as patched.",
+        "The advisory cites security commit 693667b8ac8138b83f8adb6522ddaf42fa07c125 and the bounded Python path."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2024-3568/transformers",
+      "license_file_sha256": "77fd4710def9ec3c0f6225800e0235f15a425abd4a8b03559127fcd782612049",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "src/transformers/modeling_tf_utils.py:TFPreTrainedModel.load_repo_checkpoint"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "transformers",
+      "repository_license": "Apache-2.0",
+      "revision_relationship": "The reviewed advisory defines v4.37.2 as affected and v4.38.0 as patched; upstream release tags are not a linear ancestry chain, so no parent-of-fix claim is made.",
+      "revision_relationship_kind": "advisory-version-pair",
+      "selection_reason": "Official affected/patched release identities and the separately pinned security commit establish a reproducible pair without unsafe fix-parent inference.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/huggingface/transformers.git",
+      "vulnerability_type": "deserialization of untrusted data",
+      "vulnerable_revision": "345b9b1a6a308a1fa6559251eb33ead2211240ac",
+      "vulnerable_revision_basis": "Exact commit for affected upstream release tag v4.37.2 immediately preceding the patched 4.38.0 version.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "src/transformers/modeling_tf_utils.py",
+            "sha256": "c687fd9add8d04ee0177aeb14c42b97592b1db88179c299d60ae060b2cd5aacc"
+          }
+        ],
+        "relevant_path_set": [
+          "src/transformers/modeling_tf_utils.py"
+        ],
+        "relevant_tree_digest": "e97d85294903e507337da2f27cc6e2dcd0b04aa9ae1d90979c0d29c547c66580",
+        "revision": "345b9b1a6a308a1fa6559251eb33ead2211240ac"
+      }
+    },
+    {
+      "advisory_urls": [
+        "https://nvd.nist.gov/vuln/detail/CVE-2024-7009",
+        "https://github.com/kovidgoyal/calibre/commit/d56574285e8859d3d715eb7829784ee74337b7d7"
+      ],
+      "affected_paths": [
+        "src/calibre/db/backend.py",
+        "src/calibre/db/fts/connect.py",
+        "src/calibre/db/notes/connect.py"
+      ],
+      "case_family_id": "calibre-search-sql-injection",
+      "cve_id": "CVE-2024-7009",
+      "cwe_ids": [
+        89
+      ],
+      "discovery_source": "pysastbench",
+      "discovery_source_revision": "3ad04b72c516d0533a5dc9c8042c9808e69e0f40",
+      "fix_diff_evidence": {
+        "change_category": "parameterize full-text-search SQL queries",
+        "changed_paths": [
+          "src/calibre/db/backend.py",
+          "src/calibre/db/fts/connect.py",
+          "src/calibre/db/notes/connect.py"
+        ],
+        "security_fix_commits": [
+          "d56574285e8859d3d715eb7829784ee74337b7d7"
+        ],
+        "symbol_names": [
+          "DB.search_annotations",
+          "FTS.search",
+          "Notes.search"
+        ]
+      },
+      "fixed_revision": "d56574285e8859d3d715eb7829784ee74337b7d7",
+      "fixed_revision_basis": "Exact original-upstream patch cited by the CNA/NVD record.",
+      "fixed_source": {
+        "per_file_sha256": [
+          {
+            "path": "src/calibre/db/backend.py",
+            "sha256": "ff4fb2f3f9f94c49ac4faefa7d72e9cd2b1d8da6ca3eaf8fd0a79180f1ba63db"
+          },
+          {
+            "path": "src/calibre/db/fts/connect.py",
+            "sha256": "0895a4d8826ae2fc8cacce423477637529fada64eeb905488831084e89cb4081"
+          },
+          {
+            "path": "src/calibre/db/notes/connect.py",
+            "sha256": "dde19e173854e03da269d28cb0dc920d7dc31c3d472b6b319775cdfb2197f109"
+          }
+        ],
+        "relevant_path_set": [
+          "src/calibre/db/backend.py",
+          "src/calibre/db/fts/connect.py",
+          "src/calibre/db/notes/connect.py"
+        ],
+        "relevant_tree_digest": "a23ecb8251f4246e4b140ff5b436ea50011536966d782c4f47e7c13a30e26ced",
+        "revision": "d56574285e8859d3d715eb7829784ee74337b7d7"
+      },
+      "ghsa_id": null,
+      "ground_truth_evidence": [
+        "The CNA/NVD record identifies Calibre through 7.15.0 as affected and cites the exact upstream patch.",
+        "The patch changes the three indexed production Python database-search paths."
+      ],
+      "immutable_case_id": "python-realworld/CVE-2024-7009/calibre",
+      "license_file_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "license_path": "LICENSE",
+      "published_vulnerable_positions": [
+        "src/calibre/db/backend.py:DB.search_annotations",
+        "src/calibre/db/fts/connect.py:FTS.search",
+        "src/calibre/db/notes/connect.py:Notes.search"
+      ],
+      "pysastbench_indexed": true,
+      "repository_id": "calibre",
+      "repository_license": "GPL-3.0-only",
+      "revision_relationship": "Calibre 7.15.0 release commit is an ancestor of the CNA-cited upstream security commit.",
+      "revision_relationship_kind": "ancestor-security-fix",
+      "selection_reason": "The original GPL repository, exact affected release, and CNA-cited patch provide a high-confidence pair.",
+      "selection_state": "ACCEPTED_FOR_APPLICABILITY_REVIEW",
+      "upstream_repository": "https://github.com/kovidgoyal/calibre.git",
+      "vulnerability_type": "SQL injection",
+      "vulnerable_revision": "d64c7ad715fbe35f673e859b5a2590b49f94621a",
+      "vulnerable_revision_basis": "Exact commit for upstream release tag v7.15.0, the last release in the published affected range.",
+      "vulnerable_source": {
+        "per_file_sha256": [
+          {
+            "path": "src/calibre/db/backend.py",
+            "sha256": "5932f30dafd8be000d870d213e0ddb3f66f89dfa3ffd6bf220b915c9bf6a4d6f"
+          },
+          {
+            "path": "src/calibre/db/fts/connect.py",
+            "sha256": "72a14c11d7a51be994c4b2706cc24312eb3d1ecf7a83d4a383d4a13a5ff729ac"
+          },
+          {
+            "path": "src/calibre/db/notes/connect.py",
+            "sha256": "bccf3c9edf95e5f17620b8badb150dd02b39312c5745e5e1160b882823838190"
+          }
+        ],
+        "relevant_path_set": [
+          "src/calibre/db/backend.py",
+          "src/calibre/db/fts/connect.py",
+          "src/calibre/db/notes/connect.py"
+        ],
+        "relevant_tree_digest": "adecff3ea5a2301363edae2a89c2dcf601cc80dac5c1d1d4d51bd3909099390d",
+        "revision": "d64c7ad715fbe35f673e859b5a2590b49f94621a"
+      }
+    }
+  ],
+  "schema_version": "securescan-python-sast-realworld-cases-v1"
+}

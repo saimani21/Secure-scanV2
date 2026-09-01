@@ -7,6 +7,7 @@ htmlcov/
 .venv/
 .venv-semgrep-1.171/
 .cache/securescan-benchmarks/
+.cache/securescan-realworld-python/
 .env
 *.db
 *.sqlite3
