@@ -100,13 +100,13 @@ class TrustedSemgrepRuleset:
 def load_baseline_ruleset() -> TrustedSemgrepRuleset:
     content = (
         files("securescan.scanners.semgrep")
-        .joinpath("rules", "securescan-python-baseline-v1.yml")
+        .joinpath("rules", "securescan-python-baseline-v2.yml")
         .read_bytes()
     )
     return TrustedSemgrepRuleset(
-        ruleset_id="securescan-python-baseline-v1",
-        display_name="SecureScan Python Baseline",
-        version="1",
+        ruleset_id="securescan-python-baseline-v2",
+        display_name="SecureScan Python Baseline v2",
+        version="2",
         content=content,
         sha256=hashlib.sha256(content).hexdigest(),
     )

@@ -197,10 +197,10 @@ def test_adapter_returns_findings_in_sanitized_artifact_with_golden_digest(
     assert len(report["observations"]) == 1
     assert artifact_data["sanitized"] is True
     assert artifact_data["sha256"] == (
-        "4cb708cbde935e5dfad653ae4aee10138d7fe9f0728a75fd753959651c1f6f2c"
+        "ef7e9dae19a7b8dbe024d64bd4dd4616c94b66556da5c34a2b6bdff6d121b3da"
     )
     assert hashlib.sha256(evidence_bytes).hexdigest() == (
-        "4cb708cbde935e5dfad653ae4aee10138d7fe9f0728a75fd753959651c1f6f2c"
+        "ef7e9dae19a7b8dbe024d64bd4dd4616c94b66556da5c34a2b6bdff6d121b3da"
     )
     assert artifact_data["size_bytes"] == len(evidence_bytes)
     assert artifact_data["media_type"] == "application/json"
@@ -219,7 +219,7 @@ def test_adapter_returns_findings_in_sanitized_artifact_with_golden_digest(
                 "start": {"column": 5, "line": 3},
             }
         ],
-        "ruleset": {"id": "securescan-python-baseline-v1", "version": "1"},
+        "ruleset": {"id": "securescan-python-baseline-v2", "version": "2"},
         "scanner_id": "semgrep-ce",
         "schema_version": "securescan-semgrep-sanitized-v1",
         "summary": {

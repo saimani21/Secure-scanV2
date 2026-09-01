@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from pathlib import Path
 from typing import Final
@@ -8,6 +9,7 @@ from uuid import UUID
 
 from pydantic import ValidationError
 
+from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.domain.enums import (
     ArtifactKind,
     ExecutionOutcome,
@@ -48,8 +50,15 @@ from securescan.workspaces.models import repository_content_digest
 _ADAPTER_ID: Final = "semgrep-ce"
 _ADAPTER_VERSION: Final = "1.0.0"
 _ANALYZER_ID: Final = "python-semgrep-v1"
-_RULESET_ID: Final = "securescan-python-baseline-v1"
-_RULESET_VERSION: Final = "1"
+_TRUSTED_RULESET_IDENTITIES: Final = frozenset(
+    {
+        ("securescan-python-baseline-v1", "1"),
+        ("securescan-python-baseline-v2", "2"),
+    }
+)
+_SANITIZED_EVIDENCE_FIELDS: Final = frozenset(
+    {"results", "ruleset", "scanner_id", "schema_version", "summary"}
+)
 _FINDING_MESSAGE: Final = "Semgrep security rule matched"
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
 _SUCCESS_OUTCOMES = frozenset(
@@ -208,6 +217,46 @@ class SourceExecutionAssessmentPersistenceError(SourceSemgrepExecutionAssessment
         super().__init__("Durable Source execution evidence is unavailable")
 
 
+def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError
+        result[key] = value
+    return result
+
+
+def _reject_non_finite_constant(_value: str) -> None:
+    raise ValueError
+
+
+def _sanitized_ruleset_identity(payload: bytes) -> tuple[str, str]:
+    try:
+        document = json.loads(
+            payload.decode("utf-8"),
+            object_pairs_hook=_reject_duplicate_keys,
+            parse_constant=_reject_non_finite_constant,
+        )
+        if (
+            not isinstance(document, dict)
+            or set(document) != _SANITIZED_EVIDENCE_FIELDS
+            or document["schema_version"] != "securescan-semgrep-sanitized-v1"
+            or document["scanner_id"] != _ADAPTER_ID
+            or not isinstance(document["results"], list)
+            or not isinstance(document["summary"], dict)
+        ):
+            raise ValueError
+        ruleset = document["ruleset"]
+        if not isinstance(ruleset, dict) or set(ruleset) != {"id", "version"}:
+            raise ValueError
+        identity = (ruleset["id"], ruleset["version"])
+        if identity not in _TRUSTED_RULESET_IDENTITIES:
+            raise ValueError
+        return identity
+    except (AttributeError, KeyError, TypeError, UnicodeDecodeError, ValueError) as exc:
+        raise SourceExecutionAssessmentIntegrityError from exc
+
+
 def _fingerprint(
     producer: str,
     rule_id: str,
@@ -348,6 +397,7 @@ class SourceSemgrepExecutionAssessmentService:
         job_repository: JobRepository,
         context_resolver: SourceSemgrepExecutionContextIntegrityResolver,
         run_query_service: RunQueryService,
+        artifact_store: ContentAddressedArtifactStore,
     ) -> None:
         if (
             not isinstance(job_repository, JobRepository)
@@ -356,11 +406,13 @@ class SourceSemgrepExecutionAssessmentService:
                 SourceSemgrepExecutionContextIntegrityResolver,
             )
             or not isinstance(run_query_service, RunQueryService)
+            or not isinstance(artifact_store, ContentAddressedArtifactStore)
         ):
             raise SourceExecutionAssessmentIntegrityError
         self._job_repository = job_repository
         self._context_resolver = context_resolver
         self._run_query_service = run_query_service
+        self._artifact_store = artifact_store
 
     def assess_job(self, job_id: str) -> SourceCapabilityExecutionAssessment:
         try:
@@ -492,15 +544,21 @@ class SourceSemgrepExecutionAssessmentService:
             or report.target.target_type is not TargetType.SOURCE_REPOSITORY
             or report.target.path != Path(".")
             or report.target.content_digest != expected_target_digest
-            or report.target.metadata
-            != {
-                "file_count": len(context.selected_files),
-                "ruleset_id": _RULESET_ID,
-                "ruleset_version": _RULESET_VERSION,
-            }
+            or set(report.target.metadata)
+            != {"file_count", "ruleset_id", "ruleset_version"}
+            or report.target.metadata["file_count"] != len(context.selected_files)
+            or (
+                report.target.metadata["ruleset_id"],
+                report.target.metadata["ruleset_version"],
+            )
+            not in _TRUSTED_RULESET_IDENTITIES
             or len(report.executions) != 1
         ):
             raise SourceExecutionAssessmentIntegrityError
+        report_ruleset_identity = (
+            report.target.metadata["ruleset_id"],
+            report.target.metadata["ruleset_version"],
+        )
         execution = report.executions[0]
         try:
             row_outcome = ExecutionOutcome(tool_execution.outcome)
@@ -534,6 +592,15 @@ class SourceSemgrepExecutionAssessmentService:
             or artifact.storage_path
             != f"sha256/{artifact.sha256[:2]}/{artifact.sha256}"
         ):
+            raise SourceExecutionAssessmentIntegrityError
+        try:
+            sanitized_evidence = self._artifact_store.read_by_sha256(
+                artifact.sha256,
+                expected_size_bytes=artifact.size_bytes,
+            )
+        except Exception as exc:
+            raise SourceExecutionAssessmentIntegrityError from exc
+        if _sanitized_ruleset_identity(sanitized_evidence) != report_ruleset_identity:
             raise SourceExecutionAssessmentIntegrityError
 
         observations = tuple(

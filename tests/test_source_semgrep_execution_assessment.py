@@ -61,6 +61,7 @@ def _service(environment) -> SourceSemgrepExecutionAssessmentService:
         JobRepository(environment.session_factory),
         SourceSemgrepExecutionContextIntegrityResolver(environment.store),
         RunQueryService(environment.session_factory),
+        environment.store,
     )
 
 
@@ -597,6 +598,78 @@ def test_missing_and_ordinary_jobs_are_typed(tmp_path: Path) -> None:
         _service(environment).assess_job(environment.job.id)
 
 
+def test_cross_version_report_ruleset_tamper_fails_artifact_correlation(
+    tmp_path: Path,
+) -> None:
+    environment = _environment(tmp_path)
+    _run_terminal(environment, tmp_path / "attempt", _DockerExecutor())
+
+    with environment.session_factory.begin() as session:
+        run = session.get(AnalysisRunRow, environment.job.run_id)
+        assert run is not None and run.report_json is not None
+        report = deepcopy(run.report_json)
+        assert report["target"]["metadata"]["ruleset_id"] == (
+            "securescan-python-baseline-v2"
+        )
+        assert report["target"]["metadata"]["ruleset_version"] == "2"
+        report["target"]["metadata"]["ruleset_id"] = (
+            "securescan-python-baseline-v1"
+        )
+        report["target"]["metadata"]["ruleset_version"] = "1"
+        run.report_json = report
+
+    with pytest.raises(SourceExecutionAssessmentIntegrityError):
+        _service(environment).assess_job(environment.job.id)
+
+
+def test_matching_historical_v1_report_and_artifact_remain_assessable(
+    tmp_path: Path,
+) -> None:
+    environment = _environment(tmp_path)
+    _run_terminal(environment, tmp_path / "attempt", _DockerExecutor())
+
+    with environment.session_factory.begin() as session:
+        run = session.get(AnalysisRunRow, environment.job.run_id)
+        assert run is not None and run.report_json is not None
+        report = deepcopy(run.report_json)
+        artifact_record = report["executions"][0]["artifacts"][0]
+        evidence = json.loads(
+            environment.store.read_by_sha256(
+                artifact_record["sha256"],
+                expected_size_bytes=artifact_record["size_bytes"],
+            )
+        )
+        evidence["ruleset"] = {
+            "id": "securescan-python-baseline-v1",
+            "version": "1",
+        }
+        historical_artifact = environment.store.put(
+            json.dumps(
+                evidence,
+                allow_nan=False,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8"),
+            kind=ArtifactKind.SANITIZED_NATIVE_REPORT,
+            media_type="application/json",
+            sanitized=True,
+        )
+        report["target"]["metadata"]["ruleset_id"] = (
+            "securescan-python-baseline-v1"
+        )
+        report["target"]["metadata"]["ruleset_version"] = "1"
+        report["executions"][0]["artifacts"][0] = (
+            historical_artifact.model_dump(mode="json")
+        )
+        run.report_json = report
+
+    assessment = _service(environment).assess_job(environment.job.id)
+
+    assert assessment.execution_status is SourceExecutionStatus.COMPLETE
+    assert assessment.coverage_status is CoverageStatus.FULL_FOR_DECLARED_SCOPE
+
+
 @pytest.mark.parametrize(
     "mutation",
     (
@@ -693,7 +766,7 @@ def test_inconsistent_success_evidence_fails_closed(
             report["target"]["metadata"]["ruleset_id"] = "other"
             run.report_json = report
         elif mutation == "wrong_ruleset_version":
-            report["target"]["metadata"]["ruleset_version"] = "2"
+            report["target"]["metadata"]["ruleset_version"] = "999"
             run.report_json = report
         elif mutation == "wrong_file_count":
             report["target"]["metadata"]["file_count"] = 99
@@ -1018,6 +1091,7 @@ def test_persistence_failures_are_distinct_and_sanitized(
         repository,
         SourceSemgrepExecutionContextIntegrityResolver(environment.store),
         query,
+        environment.store,
     )
 
     def repository_unavailable(_job_id: str):

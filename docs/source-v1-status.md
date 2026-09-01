@@ -35,6 +35,7 @@ Status: COMPLETE
 | v0.3C3 | Trusted projection → Semgrep execution bridge | COMPLETE |
 | v0.3C4 | Terminal projection lifecycle + hostile bridge validation | COMPLETE |
 | v0.3D | Source Semgrep result + actual coverage correlation | COMPLETE |
+| v0.3E | Production Python SAST ruleset | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -163,14 +164,40 @@ findings requiring triage, and automated assessments remain
 Completed-result assessment authenticates and validates the original durable
 C1 context but does not require today's scanner binding to equal the historical
 binding. The original binding digest and final durable tool version remain in
-the reconstructed assessment. Authorization for a new execution continues to
-require the current trusted binding and rejects a mismatch.
+the reconstructed assessment. The report ruleset ID/version must also exactly
+match the identity embedded in its content-addressed sanitized Semgrep artifact;
+cross-version report metadata substitution fails assessment integrity.
+Authorization for a new execution continues to require the current trusted
+binding and rejects a mismatch.
+
+v0.3E replaces the three-rule demonstration baseline with 17 deterministic,
+project-owned Python rules. The compact ruleset covers direct Python code
+execution, dangerous shell command forms, unsafe pickle and YAML
+deserialization, disabled TLS and host-key verification, insecure temporary
+filenames, Flask debug exposure, disabled Jinja autoescaping, f-string SQL
+execution, disabled JWT signature verification, and XML external-entity
+resolution. Every rule has a dedicated vulnerable fixture, safe fixture, and
+adversarial near-miss fixture; these are correctness checks, not a detection
+quality benchmark.
+
+The `eval`, `exec`, `os.system`, `os.popen`, and pickle rules are dangerous-API
+audit matches. They do not claim that matched input is attacker-controlled;
+v0.3E adds no taint or dataflow analysis. The YAML rule matches only
+`yaml.unsafe_load` and explicitly named `Loader`, `UnsafeLoader`, or `CLoader`
+forms. `safe_load`, `SafeLoader`, and `CSafeLoader` are negative cases, while
+`FullLoader` is intentionally unclassified by this rule.
+
+The trusted ruleset identity is `securescan-python-baseline-v2`, version `2`.
+Rules use only fixed messages, supported severity values, and CWE metadata;
+there are no autofixes or network-resolved configurations. `PYTHON_SAST`
+remains `SCANNABLE`. v0.3E makes no precision, recall, F1, benchmarked, or
+product-support claim.
 
 ## Next Phase
 
-Rule expansion remains deferred to v0.3E, and detection-quality benchmarking
-remains deferred to v0.3F. v0.3D does not claim benchmarked support or product
-support and does not promote `PYTHON_SAST` beyond `SCANNABLE`.
+Detection-quality benchmarking remains deferred to v0.3F. v0.3E does not
+claim benchmarked support or product support and does not promote
+`PYTHON_SAST` beyond `SCANNABLE`.
 
 ## Known Non-Blocking Maintenance
 

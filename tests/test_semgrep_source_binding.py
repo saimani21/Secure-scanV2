@@ -56,7 +56,7 @@ from securescan.workspaces.models import (
 IMAGE = "registry.example/securescan/semgrep@sha256:" + "4" * 64
 TOOL_VERSION = "1.171.0"
 BINDING_GOLDEN_DIGEST = (
-    "bf9e0a974698aa75b1cef16fa29e59bf6549d5a914604ac2f4fd19e506211448"
+    "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a"
 )
 REGISTRY_GOLDEN_DIGEST = (
     "7e795691ac8ae95c54efcb99bf9fe746dd9da33cdf29e641b2a03b71123dd072"

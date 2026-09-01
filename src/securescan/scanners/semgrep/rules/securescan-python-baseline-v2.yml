@@ -1,0 +1,192 @@
+rules:
+  - id: securescan.python.dangerous-eval
+    message: "Audit eval use: it executes Python code; this match does not prove attacker-controlled input."
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-95]
+    patterns:
+      - pattern: eval($CODE, ...)
+      - pattern-not: eval("...", ...)
+
+  - id: securescan.python.dangerous-exec
+    message: "Audit exec use: it executes Python code; this match does not prove attacker-controlled input."
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-95]
+    patterns:
+      - pattern: exec($CODE, ...)
+      - pattern-not: exec("...", ...)
+
+  - id: securescan.python.os-system
+    message: "Audit os.system use: it invokes a shell; this match does not prove attacker-controlled input."
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-78]
+    pattern: os.system(...)
+
+  - id: securescan.python.os-popen
+    message: "Audit os.popen use: it invokes a shell; this match does not prove attacker-controlled input."
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-78]
+    pattern: os.popen(...)
+
+  - id: securescan.python.subprocess-shell-true
+    message: Avoid shell=True because it executes the command through a shell.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-78]
+    patterns:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+      - metavariable-regex:
+          metavariable: $FUNC
+          regex: (?:run|call|check_call|check_output|Popen)
+
+  - id: securescan.python.unsafe-pickle-load
+    message: "Audit pickle deserialization: this match does not prove attacker-controlled serialized data."
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-502]
+    pattern-either:
+      - pattern: pickle.load(...)
+      - pattern: pickle.loads(...)
+
+  - id: securescan.python.unsafe-yaml-load
+    message: Avoid PyYAML loaders that permit arbitrary Python object construction.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-502]
+    pattern-either:
+      - pattern: yaml.unsafe_load(...)
+      - pattern: yaml.load(..., Loader=yaml.Loader, ...)
+      - pattern: yaml.load(..., Loader=yaml.UnsafeLoader, ...)
+      - pattern: yaml.load(..., Loader=yaml.CLoader, ...)
+      - pattern: yaml.load(..., yaml.Loader, ...)
+      - pattern: yaml.load(..., yaml.UnsafeLoader, ...)
+      - pattern: yaml.load(..., yaml.CLoader, ...)
+      - patterns:
+          - pattern-inside: |
+              from yaml import Loader
+              ...
+          - pattern-either:
+              - pattern: yaml.load(..., Loader=Loader, ...)
+              - pattern: yaml.load(..., Loader, ...)
+      - patterns:
+          - pattern-inside: |
+              from yaml import UnsafeLoader
+              ...
+          - pattern-either:
+              - pattern: yaml.load(..., Loader=UnsafeLoader, ...)
+              - pattern: yaml.load(..., UnsafeLoader, ...)
+      - patterns:
+          - pattern-inside: |
+              from yaml import CLoader
+              ...
+          - pattern-either:
+              - pattern: yaml.load(..., Loader=CLoader, ...)
+              - pattern: yaml.load(..., CLoader, ...)
+
+  - id: securescan.python.requests-verify-false
+    message: Do not disable TLS certificate verification for HTTP requests.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      cwe: [CWE-295]
+    patterns:
+      - pattern: requests.$METHOD(..., verify=False, ...)
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: (?:request|get|options|head|post|put|patch|delete)
+
+  - id: securescan.python.requests-session-verify-false
+    message: Do not disable TLS certificate verification on a requests session.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      cwe: [CWE-295]
+    patterns:
+      - pattern-inside: |
+          $SESSION = requests.Session()
+          ...
+      - pattern: $SESSION.verify = False
+
+  - id: securescan.python.ssl-unverified-context
+    message: Do not create an SSL context that disables certificate verification.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      cwe: [CWE-295]
+    pattern: ssl._create_unverified_context(...)
+
+  - id: securescan.python.paramiko-autoaddpolicy
+    message: Do not automatically trust unknown SSH host keys.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      cwe: [CWE-295]
+    pattern: $CLIENT.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+  - id: securescan.python.insecure-tempfile-mktemp
+    message: Use a securely created temporary file instead of tempfile.mktemp.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      cwe: [CWE-377]
+    pattern: tempfile.mktemp(...)
+
+  - id: securescan.python.flask-debug-enabled
+    message: Do not run a Flask application with debug mode enabled in production.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      cwe: [CWE-489]
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              $APP = flask.Flask(...)
+              ...
+          - pattern: $APP.run(..., debug=True, ...)
+      - patterns:
+          - pattern-inside: |
+              $APP = Flask(...)
+              ...
+          - pattern: $APP.run(..., debug=True, ...)
+
+  - id: securescan.python.jinja-autoescape-disabled
+    message: Keep Jinja autoescaping enabled when rendering untrusted HTML content.
+    severity: WARNING
+    languages: [python]
+    metadata:
+      cwe: [CWE-79]
+    pattern: jinja2.Environment(..., autoescape=False, ...)
+
+  - id: securescan.python.sql-fstring-execute
+    message: Use parameterized SQL instead of constructing a query with an f-string.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-89]
+    pattern: $CURSOR.execute(f"...")
+
+  - id: securescan.python.jwt-signature-verification-disabled
+    message: Do not decode JWTs with signature verification disabled.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-347]
+    pattern: 'jwt.decode(..., options={"verify_signature": False}, ...)'
+
+  - id: securescan.python.lxml-resolve-entities
+    message: Do not enable external entity resolution when parsing XML.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      cwe: [CWE-611]
+    pattern: lxml.etree.XMLParser(..., resolve_entities=True, ...)

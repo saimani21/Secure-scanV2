@@ -12,6 +12,7 @@ from securescan.scanners.semgrep import (
     TrustedSemgrepRuleset,
     load_baseline_ruleset,
 )
+from securescan.scanners.semgrep.source_result import _TRUSTED_RULESET_IDENTITIES
 from securescan.workspaces import RepositoryWorkspaceManager
 
 
@@ -46,16 +47,28 @@ def test_trusted_semgrep_ruleset_rejects_empty_oversized_nul_and_wrong_digest() 
             TrustedSemgrepRuleset("test-rules", "Test rules", "1", content, digest)
 
 
-def test_baseline_ruleset_has_stable_identity_and_three_rules() -> None:
+def test_baseline_ruleset_has_stable_v2_identity_and_curated_rules() -> None:
     ruleset = load_baseline_ruleset()
     text = ruleset.content.decode("utf-8")
 
-    assert ruleset.ruleset_id == "securescan-python-baseline-v1"
-    assert text.count("\n  - id: securescan.python.") == 3
+    assert ruleset.ruleset_id == "securescan-python-baseline-v2"
+    assert ruleset.version == "2"
+    assert ruleset.sha256 == "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5"
+    assert text.count("\n  - id: securescan.python.") == 17
     assert "securescan.python.dangerous-eval" in text
     assert "securescan.python.subprocess-shell-true" in text
     assert "securescan.python.unsafe-yaml-load" in text
     assert "autofix:" not in text
+    assert "\n    fix:" not in text
+
+
+def test_historical_ruleset_identity_allowlist_retains_v1_after_v2_upgrade() -> None:
+    assert frozenset(
+        {
+            ("securescan-python-baseline-v1", "1"),
+            ("securescan-python-baseline-v2", "2"),
+        }
+    ) == _TRUSTED_RULESET_IDENTITIES
 
 
 def test_ruleset_materialization_is_atomic_read_only_and_outside_source(
