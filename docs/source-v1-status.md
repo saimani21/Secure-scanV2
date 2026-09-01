@@ -40,6 +40,7 @@ Status: COMPLETE
 | v0.3F2A | External benchmark methodology/source selection | COMPLETE |
 | v0.3F2B | Pinned external candidate acquisition | COMPLETE |
 | v0.3F2C | Claim-aligned external applicability review | COMPLETE |
+| v0.3F2D | Controlled external Python SAST evaluation | COMPLETE |
 | v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
 
 ## Source Intelligence Foundation Freeze
@@ -237,9 +238,17 @@ a negative. Ambiguous, shadowed, multi-claim, or unparsable cases remain
 unresolved and unscored; the 33 known-contaminated cases remain excluded. Every
 non-excluded proposal remains pending hostile/human approval.
 
-No external candidate has yet been scanned or classified as TP, FP, FN, or TN,
-and no external-corpus precision, recall, or F1 metrics exist. `PYTHON_SAST`
-remains `SCANNABLE`.
+v0.3F2D evaluates all 1,460 frozen candidates with only the isolated Semgrep CE
+1.171.0 executable and the unchanged production v2 ruleset. The F2C
+expectations were frozen before scanner execution. Only the 400 applicable
+positive and 179 applicable negative relations enter the 579-relation confusion
+matrix. Findings on 848 OUT_OF_SCOPE and 33 EXCLUDED candidates are retained as
+separate non-scoring observations, as are unexpected cross-rule relations.
+
+This external corpus is synthetic. Rules without external positive or negative
+evidence remain explicitly unvalidated even though all 17 frozen rules execute
+together. PySASTBench and any real-world CVE challenge remain later work. The
+evaluation does not promote maturity: `PYTHON_SAST` remains `SCANNABLE`.
 
 OWASP BenchmarkPython pull request 6 is represented as known cross-category
 XSS contamination in 33 deserialization files, not as a dispute of their

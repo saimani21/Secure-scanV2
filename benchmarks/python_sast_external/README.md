@@ -80,8 +80,36 @@ Rebuild these three canonical proposal files from the already verified offline c
 ./.venv/bin/python -m securescan.benchmarks.python_sast_applicability_cli
 ```
 
-No external benchmark candidate has been scanned by SecureScan or Semgrep. The applicability proposal was generated without scanner output and was reproduced identically in a scanner-blocked environment., and these files contain no TP, FP, FN, TN, precision, recall, or
-F1 measures. `PYTHON_SAST` remains `SCANNABLE`.
+The applicability proposal was generated before any external-corpus scan and reproduced
+identically in a scanner-blocked environment. These F2C files contain no TP, FP, FN, TN,
+precision, recall, or F1 measures.
+
+## Controlled external evaluation
+
+v0.3F2D scans all 1,460 frozen candidates from a fresh byte-verified temporary projection using
+only `.venv-semgrep-1.171/bin/semgrep` version 1.171.0 and the unchanged production v2 ruleset.
+The F2C expectations are immutable inputs. Exactly 579 expected relations are scored: 400
+`APPLICABLE_POSITIVE` and 179 `APPLICABLE_NEGATIVE`. The 848 `OUT_OF_SCOPE` and 33 `EXCLUDED`
+cases never enter TP, FP, FN, or TN; their findings are retained as non-scoring observations.
+Unexpected cross-rule findings are also reported separately.
+
+Use the isolated runner:
+
+```text
+scripts/run-python-sast-external-evaluation.sh check
+scripts/run-python-sast-external-evaluation.sh test
+scripts/run-python-sast-external-evaluation.sh report
+scripts/run-python-sast-external-evaluation.sh record
+```
+
+The canonical `external-evaluation-report.json` records the primary and per-rule metrics,
+coverage gaps, and all non-scoring observation relations. `external-evaluation-review.json`
+contains failures, non-scoring observations, and deterministic TP/TN representatives without
+source bodies, host paths, or timestamps.
+
+This remains a controlled synthetic external corpus, not an ecosystem-wide or real-world CVE
+benchmark. Rules lacking applicable external evidence remain explicitly unvalidated.
+`PYTHON_SAST` remains `SCANNABLE`.
 
 ## Deferred PySASTBench boundary
 
