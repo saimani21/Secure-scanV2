@@ -5,6 +5,7 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+.venv-semgrep-1.171/
 .env
 *.db
 *.sqlite3

@@ -1,0 +1,1032 @@
+{
+  "benchmark_id": "securescan-python-sast-v0.3f-local-v1",
+  "cases": [
+    {
+      "case_id": "dangerous-eval-negative-01",
+      "category": "negative",
+      "description": "Built-in eval receives a fixed literal.",
+      "expected_match": false,
+      "relative_path": "corpus/dangerous-eval/dangerous-eval-negative-01.py",
+      "rule_id": "securescan.python.dangerous-eval",
+      "sha256": "f1e26375133abd5f0a8c44546a6daab4ec25fe6810d40c36c78bf0081aa9b987",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-eval-negative-02",
+      "category": "negative",
+      "description": "ast.literal_eval parses the value.",
+      "expected_match": false,
+      "relative_path": "corpus/dangerous-eval/dangerous-eval-negative-02.py",
+      "rule_id": "securescan.python.dangerous-eval",
+      "sha256": "8c027af2f218701ad77e41894fc9f951a649560f872ea919b17b275d040794e6",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-eval-negative-03",
+      "category": "negative",
+      "description": "Unrelated engine eval method is called.",
+      "expected_match": false,
+      "relative_path": "corpus/dangerous-eval/dangerous-eval-negative-03.py",
+      "rule_id": "securescan.python.dangerous-eval",
+      "sha256": "f546e5931a02e93b9af25ddf683b3605e08ca7499a7dddd43ea278b484e2ac1e",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-eval-positive-01",
+      "category": "positive",
+      "description": "Built-in eval receives variable expression.",
+      "expected_match": true,
+      "relative_path": "corpus/dangerous-eval/dangerous-eval-positive-01.py",
+      "rule_id": "securescan.python.dangerous-eval",
+      "sha256": "fc5e114bdd6be32ce92420a6308222b7486555dc6c06a3d6024bbe59278baf73",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-eval-positive-02",
+      "category": "positive",
+      "description": "Built-in eval receives formatted expression.",
+      "expected_match": true,
+      "relative_path": "corpus/dangerous-eval/dangerous-eval-positive-02.py",
+      "rule_id": "securescan.python.dangerous-eval",
+      "sha256": "34e584864eea3e120cbe861f114bb8f4a6f07bf3485f43a1a1b745153bf781bb",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-eval-positive-03",
+      "category": "positive",
+      "description": "Built-in eval receives joined fragments.",
+      "expected_match": true,
+      "relative_path": "corpus/dangerous-eval/dangerous-eval-positive-03.py",
+      "rule_id": "securescan.python.dangerous-eval",
+      "sha256": "31bf603e95dba0351cd586a385f04edc94ec04940e3e9819b8ab039df8830714",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-exec-negative-01",
+      "category": "negative",
+      "description": "Built-in exec receives a fixed literal.",
+      "expected_match": false,
+      "relative_path": "corpus/dangerous-exec/dangerous-exec-negative-01.py",
+      "rule_id": "securescan.python.dangerous-exec",
+      "sha256": "6be46623a7f3c8dc6fb32da23dc292770c99e99f30b0088018a2a988b8360be1",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-exec-negative-02",
+      "category": "negative",
+      "description": "Source is compiled but not executed.",
+      "expected_match": false,
+      "relative_path": "corpus/dangerous-exec/dangerous-exec-negative-02.py",
+      "rule_id": "securescan.python.dangerous-exec",
+      "sha256": "c00f43157510cf182b3b6567560214bc6bfebe162a9ff2b7b12f05791e05e907",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-exec-negative-03",
+      "category": "negative",
+      "description": "Unrelated runner exec method is called.",
+      "expected_match": false,
+      "relative_path": "corpus/dangerous-exec/dangerous-exec-negative-03.py",
+      "rule_id": "securescan.python.dangerous-exec",
+      "sha256": "5386dae77fdeb86984f89f90308c212b53becb492c37ba6f2e47fb941a5f1166",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-exec-positive-01",
+      "category": "positive",
+      "description": "Built-in exec receives variable source.",
+      "expected_match": true,
+      "relative_path": "corpus/dangerous-exec/dangerous-exec-positive-01.py",
+      "rule_id": "securescan.python.dangerous-exec",
+      "sha256": "1a13026b18322c73700f0a4732b438e4253a406068325389935b2f9fbae81039",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-exec-positive-02",
+      "category": "positive",
+      "description": "Built-in exec receives formatted source.",
+      "expected_match": true,
+      "relative_path": "corpus/dangerous-exec/dangerous-exec-positive-02.py",
+      "rule_id": "securescan.python.dangerous-exec",
+      "sha256": "bf61359d071928dc4205a448cef5fb9bce41a6fde54d6da62ad423d6f6d60ece",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "dangerous-exec-positive-03",
+      "category": "positive",
+      "description": "Built-in exec receives joined fragments.",
+      "expected_match": true,
+      "relative_path": "corpus/dangerous-exec/dangerous-exec-positive-03.py",
+      "rule_id": "securescan.python.dangerous-exec",
+      "sha256": "6a9891ebda8c1a50e307af685d034658c784974f61ddaec6c563a74587afc180",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "flask-debug-enabled-negative-01",
+      "category": "negative",
+      "description": "Flask app runs with debug false.",
+      "expected_match": false,
+      "relative_path": "corpus/flask-debug-enabled/flask-debug-enabled-negative-01.py",
+      "rule_id": "securescan.python.flask-debug-enabled",
+      "sha256": "f360fadaed58a5c5d7a748fd1de9919a536146105e545a0e34b4bb6d08de664d",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "flask-debug-enabled-negative-02",
+      "category": "negative",
+      "description": "Flask app omits debug.",
+      "expected_match": false,
+      "relative_path": "corpus/flask-debug-enabled/flask-debug-enabled-negative-02.py",
+      "rule_id": "securescan.python.flask-debug-enabled",
+      "sha256": "2400f9ba990404add9b693784f4125451be6b59a1bbcd0daf358225216fd1fb1",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "flask-debug-enabled-negative-03",
+      "category": "negative",
+      "description": "Flask app uses a dynamic debug value.",
+      "expected_match": false,
+      "relative_path": "corpus/flask-debug-enabled/flask-debug-enabled-negative-03.py",
+      "rule_id": "securescan.python.flask-debug-enabled",
+      "sha256": "e7edf97996b1af5edcf41219fe0461e08d5944334dd1a446a673f227dcd48c9c",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "flask-debug-enabled-positive-01",
+      "category": "positive",
+      "description": "Qualified Flask app runs with debug true.",
+      "expected_match": true,
+      "relative_path": "corpus/flask-debug-enabled/flask-debug-enabled-positive-01.py",
+      "rule_id": "securescan.python.flask-debug-enabled",
+      "sha256": "012bb7f152ac152e42b8dd9d63344bbb174090e2d45a84ed78a0c7a3c5af338c",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "flask-debug-enabled-positive-02",
+      "category": "positive",
+      "description": "Imported Flask app runs with debug true.",
+      "expected_match": true,
+      "relative_path": "corpus/flask-debug-enabled/flask-debug-enabled-positive-02.py",
+      "rule_id": "securescan.python.flask-debug-enabled",
+      "sha256": "4c8d238cfcba4b65affb9a6e6e1bd812939ab4c821c4f0c050ad34186a1694d5",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "flask-debug-enabled-positive-03",
+      "category": "positive",
+      "description": "Configured Flask app runs with debug true.",
+      "expected_match": true,
+      "relative_path": "corpus/flask-debug-enabled/flask-debug-enabled-positive-03.py",
+      "rule_id": "securescan.python.flask-debug-enabled",
+      "sha256": "f7f0db8adc248be570dc6c016c6d2adb3177d213eed50dc5faf0d1eef2dbec7d",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "insecure-tempfile-mktemp-negative-01",
+      "category": "negative",
+      "description": "NamedTemporaryFile creates the file securely.",
+      "expected_match": false,
+      "relative_path": "corpus/insecure-tempfile-mktemp/insecure-tempfile-mktemp-negative-01.py",
+      "rule_id": "securescan.python.insecure-tempfile-mktemp",
+      "sha256": "e771177ae89b409cea6d07e0cc7b33d0ed262bdbf6441586766edaee3ef6c211",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "insecure-tempfile-mktemp-negative-02",
+      "category": "negative",
+      "description": "TemporaryFile creates the file securely.",
+      "expected_match": false,
+      "relative_path": "corpus/insecure-tempfile-mktemp/insecure-tempfile-mktemp-negative-02.py",
+      "rule_id": "securescan.python.insecure-tempfile-mktemp",
+      "sha256": "5b86f19cdf9ceb637bb1ea599bb2dd8326bddf47c0a8bb32925ee6903db881b0",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "insecure-tempfile-mktemp-negative-03",
+      "category": "negative",
+      "description": "Unrelated factory mktemp method is called.",
+      "expected_match": false,
+      "relative_path": "corpus/insecure-tempfile-mktemp/insecure-tempfile-mktemp-negative-03.py",
+      "rule_id": "securescan.python.insecure-tempfile-mktemp",
+      "sha256": "a0e3a51ada79713778b855977a5c717a8eced0eee323a2d25befba3921d1239a",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "insecure-tempfile-mktemp-positive-01",
+      "category": "positive",
+      "description": "tempfile.mktemp creates a name.",
+      "expected_match": true,
+      "relative_path": "corpus/insecure-tempfile-mktemp/insecure-tempfile-mktemp-positive-01.py",
+      "rule_id": "securescan.python.insecure-tempfile-mktemp",
+      "sha256": "8c20b4cfe230345aca1e261cc2c747fcb0828c8586f7f0f90864f8087e500d0e",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "insecure-tempfile-mktemp-positive-02",
+      "category": "positive",
+      "description": "tempfile.mktemp uses directory and suffix.",
+      "expected_match": true,
+      "relative_path": "corpus/insecure-tempfile-mktemp/insecure-tempfile-mktemp-positive-02.py",
+      "rule_id": "securescan.python.insecure-tempfile-mktemp",
+      "sha256": "f6d2f19954938499e04bee72e377f3ea9f1f2a61afb5f7549ff026fdae563ce0",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "insecure-tempfile-mktemp-positive-03",
+      "category": "positive",
+      "description": "tempfile.mktemp uses a prefix.",
+      "expected_match": true,
+      "relative_path": "corpus/insecure-tempfile-mktemp/insecure-tempfile-mktemp-positive-03.py",
+      "rule_id": "securescan.python.insecure-tempfile-mktemp",
+      "sha256": "03c5d967ec6ba9b97b4dd379de67339ba04396c67a69a4f7dadda559c3df01ad",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jinja-autoescape-disabled-negative-01",
+      "category": "negative",
+      "description": "Jinja Environment enables autoescape.",
+      "expected_match": false,
+      "relative_path": "corpus/jinja-autoescape-disabled/jinja-autoescape-disabled-negative-01.py",
+      "rule_id": "securescan.python.jinja-autoescape-disabled",
+      "sha256": "bf8db5fe9a27ac4bf1dccfb7d8088a645e1a97f2254494617c4e9087661f2c34",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jinja-autoescape-disabled-negative-02",
+      "category": "negative",
+      "description": "Jinja Environment uses select_autoescape.",
+      "expected_match": false,
+      "relative_path": "corpus/jinja-autoescape-disabled/jinja-autoescape-disabled-negative-02.py",
+      "rule_id": "securescan.python.jinja-autoescape-disabled",
+      "sha256": "b98385e228bce0e7193af2a96401ee081aad42514fcf6ada6208553c061afa9c",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jinja-autoescape-disabled-negative-03",
+      "category": "negative",
+      "description": "Unrelated Environment class disables a local field.",
+      "expected_match": false,
+      "relative_path": "corpus/jinja-autoescape-disabled/jinja-autoescape-disabled-negative-03.py",
+      "rule_id": "securescan.python.jinja-autoescape-disabled",
+      "sha256": "a9b821437b7e586404403b2a1c5f3d56690012e5b748a91aa1592ae000d8f673",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jinja-autoescape-disabled-positive-01",
+      "category": "positive",
+      "description": "Jinja Environment disables autoescape.",
+      "expected_match": true,
+      "relative_path": "corpus/jinja-autoescape-disabled/jinja-autoescape-disabled-positive-01.py",
+      "rule_id": "securescan.python.jinja-autoescape-disabled",
+      "sha256": "3c89644302892bb4f6df6d07426b7c27c567f0ae21bac8a5ca1a6e185503912c",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jinja-autoescape-disabled-positive-02",
+      "category": "positive",
+      "description": "Jinja Environment with loader disables autoescape.",
+      "expected_match": true,
+      "relative_path": "corpus/jinja-autoescape-disabled/jinja-autoescape-disabled-positive-02.py",
+      "rule_id": "securescan.python.jinja-autoescape-disabled",
+      "sha256": "c78d1462bf733126ebf1092f4634e7e149305b48ad977056901fc0dab8a401da",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jinja-autoescape-disabled-positive-03",
+      "category": "positive",
+      "description": "Jinja Environment argument disables autoescape.",
+      "expected_match": true,
+      "relative_path": "corpus/jinja-autoescape-disabled/jinja-autoescape-disabled-positive-03.py",
+      "rule_id": "securescan.python.jinja-autoescape-disabled",
+      "sha256": "cf3eaf75874ac289de5f81598a389b3df5d6892b3c0ecf9a4c21eeded403bdba",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jwt-signature-verification-disabled-negative-01",
+      "category": "negative",
+      "description": "JWT decode uses normal verified defaults.",
+      "expected_match": false,
+      "relative_path": "corpus/jwt-signature-verification-disabled/jwt-signature-verification-disabled-negative-01.py",
+      "rule_id": "securescan.python.jwt-signature-verification-disabled",
+      "sha256": "5f0800f133373a73cf05ff2c3148b1ade4ddc01c43413dee8a426708c0de563a",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jwt-signature-verification-disabled-negative-02",
+      "category": "negative",
+      "description": "JWT decode explicitly enables signature verification.",
+      "expected_match": false,
+      "relative_path": "corpus/jwt-signature-verification-disabled/jwt-signature-verification-disabled-negative-02.py",
+      "rule_id": "securescan.python.jwt-signature-verification-disabled",
+      "sha256": "df9ba84ae7cf3e9aaee80b14cc08cb7ad569a9ed32d78e0bd48db530c2eace82",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jwt-signature-verification-disabled-negative-03",
+      "category": "negative",
+      "description": "JWT decode disables expiration verification only.",
+      "expected_match": false,
+      "relative_path": "corpus/jwt-signature-verification-disabled/jwt-signature-verification-disabled-negative-03.py",
+      "rule_id": "securescan.python.jwt-signature-verification-disabled",
+      "sha256": "f61f76178f564cbf3a50284bb032106da7a54fcb9004fcc0273729b508c0e28c",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jwt-signature-verification-disabled-positive-01",
+      "category": "positive",
+      "description": "JWT decode disables signature verification.",
+      "expected_match": true,
+      "relative_path": "corpus/jwt-signature-verification-disabled/jwt-signature-verification-disabled-positive-01.py",
+      "rule_id": "securescan.python.jwt-signature-verification-disabled",
+      "sha256": "83ca4b371b02ede126d18201ac4831cb86d4ba678ec8d4d0b250508f1dcf31d0",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jwt-signature-verification-disabled-positive-02",
+      "category": "positive",
+      "description": "JWT decode with algorithms disables signature verification.",
+      "expected_match": true,
+      "relative_path": "corpus/jwt-signature-verification-disabled/jwt-signature-verification-disabled-positive-02.py",
+      "rule_id": "securescan.python.jwt-signature-verification-disabled",
+      "sha256": "27904fc4175b119bf51a95e19a9436e6bdcabe2a73ac21a2ea27e4ba087b0369",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "jwt-signature-verification-disabled-positive-03",
+      "category": "positive",
+      "description": "JWT decode with key disables signature verification.",
+      "expected_match": true,
+      "relative_path": "corpus/jwt-signature-verification-disabled/jwt-signature-verification-disabled-positive-03.py",
+      "rule_id": "securescan.python.jwt-signature-verification-disabled",
+      "sha256": "e9ef20f90d8729b21a6a95653068b2c4b527552717df07e64ebf7bf16ae8930a",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "lxml-resolve-entities-negative-01",
+      "category": "negative",
+      "description": "lxml XMLParser disables entity resolution.",
+      "expected_match": false,
+      "relative_path": "corpus/lxml-resolve-entities/lxml-resolve-entities-negative-01.py",
+      "rule_id": "securescan.python.lxml-resolve-entities",
+      "sha256": "6293dc20a481f04157beb17eadde46eb76a31c5d12180da3a31336da40fe02b4",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "lxml-resolve-entities-negative-02",
+      "category": "negative",
+      "description": "lxml XMLParser uses defaults.",
+      "expected_match": false,
+      "relative_path": "corpus/lxml-resolve-entities/lxml-resolve-entities-negative-02.py",
+      "rule_id": "securescan.python.lxml-resolve-entities",
+      "sha256": "6c91bd7000d9a6ae5a0072ab528ab12f007f55da749bcf52af496f6c1bc149b5",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "lxml-resolve-entities-negative-03",
+      "category": "negative",
+      "description": "Standard-library ElementTree parses XML.",
+      "expected_match": false,
+      "relative_path": "corpus/lxml-resolve-entities/lxml-resolve-entities-negative-03.py",
+      "rule_id": "securescan.python.lxml-resolve-entities",
+      "sha256": "44c06180f1028cac0f521158760d606ce948f53ea33ab5bc6a0f69bd46ef5ba8",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "lxml-resolve-entities-positive-01",
+      "category": "positive",
+      "description": "lxml XMLParser enables entity resolution.",
+      "expected_match": true,
+      "relative_path": "corpus/lxml-resolve-entities/lxml-resolve-entities-positive-01.py",
+      "rule_id": "securescan.python.lxml-resolve-entities",
+      "sha256": "aea574a76b08ffe2d41cc1351e1f082bb4ee23437a75c150c5b61b552fb4f479",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "lxml-resolve-entities-positive-02",
+      "category": "positive",
+      "description": "lxml XMLParser enables entities with no network.",
+      "expected_match": true,
+      "relative_path": "corpus/lxml-resolve-entities/lxml-resolve-entities-positive-02.py",
+      "rule_id": "securescan.python.lxml-resolve-entities",
+      "sha256": "d4d3631fe7714681ec5ad30205a4eb966278b44a95156d6a3e7e7f01e535edd7",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "lxml-resolve-entities-positive-03",
+      "category": "positive",
+      "description": "lxml parse helper uses entity-resolving parser.",
+      "expected_match": true,
+      "relative_path": "corpus/lxml-resolve-entities/lxml-resolve-entities-positive-03.py",
+      "rule_id": "securescan.python.lxml-resolve-entities",
+      "sha256": "b60ddbd21aaa9e47dc33e182affb29822aa70c8cac42aad2756163ed9f297091",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-popen-negative-01",
+      "category": "negative",
+      "description": "subprocess.Popen uses list argv and shell false.",
+      "expected_match": false,
+      "relative_path": "corpus/os-popen/os-popen-negative-01.py",
+      "rule_id": "securescan.python.os-popen",
+      "sha256": "bb9bc49de8aa60adaf85fba81d9cd674138cfa422f609d578737455aea52f84b",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-popen-negative-02",
+      "category": "negative",
+      "description": "Path.open reads a local file.",
+      "expected_match": false,
+      "relative_path": "corpus/os-popen/os-popen-negative-02.py",
+      "rule_id": "securescan.python.os-popen",
+      "sha256": "9c4b665f359d05652d5016f97b8f9454ba915ae2b1e35ecadd1d604820eda738",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-popen-negative-03",
+      "category": "negative",
+      "description": "Unrelated factory popen method is called.",
+      "expected_match": false,
+      "relative_path": "corpus/os-popen/os-popen-negative-03.py",
+      "rule_id": "securescan.python.os-popen",
+      "sha256": "d83c92990e9827d83c0bcec862de3d046d04bdbd853783ac0017bee6bbaf07df",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-popen-positive-01",
+      "category": "positive",
+      "description": "os.popen receives a function argument.",
+      "expected_match": true,
+      "relative_path": "corpus/os-popen/os-popen-positive-01.py",
+      "rule_id": "securescan.python.os-popen",
+      "sha256": "7337035916a0f4699424be8897139d47d49cb962d7bf3b93cb2bbddff3140637",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-popen-positive-02",
+      "category": "positive",
+      "description": "os.popen receives a formatted command.",
+      "expected_match": true,
+      "relative_path": "corpus/os-popen/os-popen-positive-02.py",
+      "rule_id": "securescan.python.os-popen",
+      "sha256": "35d93b9d318f12350a3440e79ae0310ea6c2c85ab29b6dc65c240adb6eef0cfa",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-popen-positive-03",
+      "category": "positive",
+      "description": "os.popen receives a constructed command.",
+      "expected_match": true,
+      "relative_path": "corpus/os-popen/os-popen-positive-03.py",
+      "rule_id": "securescan.python.os-popen",
+      "sha256": "89d8ed611d4fbff74322a5740207195427659586ff78f6a7f3998d349a477e2b",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-system-negative-01",
+      "category": "negative",
+      "description": "platform.system reports the operating system.",
+      "expected_match": false,
+      "relative_path": "corpus/os-system/os-system-negative-01.py",
+      "rule_id": "securescan.python.os-system",
+      "sha256": "6fd5a3842365e9f7cc9047859b65479bcee600e706c91aea437c82a71cd79666",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-system-negative-02",
+      "category": "negative",
+      "description": "subprocess uses list argv and shell false.",
+      "expected_match": false,
+      "relative_path": "corpus/os-system/os-system-negative-02.py",
+      "rule_id": "securescan.python.os-system",
+      "sha256": "9d87bc8c09c98d8af68ca1eb5790db5ec9dc93d8f7caa3e82292cf9c84bba7b3",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-system-negative-03",
+      "category": "negative",
+      "description": "Unrelated simulator system method is called.",
+      "expected_match": false,
+      "relative_path": "corpus/os-system/os-system-negative-03.py",
+      "rule_id": "securescan.python.os-system",
+      "sha256": "71f23896871046448fc242fa86ef52e06b33e03048cededeb8dde0917b508ea1",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-system-positive-01",
+      "category": "positive",
+      "description": "os.system receives a function argument.",
+      "expected_match": true,
+      "relative_path": "corpus/os-system/os-system-positive-01.py",
+      "rule_id": "securescan.python.os-system",
+      "sha256": "d04b29def29a4b9a6c30a4a53d337e9d9395da108d635a8d7ecb5e0db79867c8",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-system-positive-02",
+      "category": "positive",
+      "description": "os.system receives a formatted command.",
+      "expected_match": true,
+      "relative_path": "corpus/os-system/os-system-positive-02.py",
+      "rule_id": "securescan.python.os-system",
+      "sha256": "b6551d0f72714a463128e789e154ce420a99d613f6bd03f5f30c3d576b4c35be",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "os-system-positive-03",
+      "category": "positive",
+      "description": "os.system receives a constructed command.",
+      "expected_match": true,
+      "relative_path": "corpus/os-system/os-system-positive-03.py",
+      "rule_id": "securescan.python.os-system",
+      "sha256": "bf316f0d7c78735f682ff051c8553855c25ff467cb338e08022e7256ac6b37ef",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "paramiko-autoaddpolicy-negative-01",
+      "category": "negative",
+      "description": "SSH client receives RejectPolicy.",
+      "expected_match": false,
+      "relative_path": "corpus/paramiko-autoaddpolicy/paramiko-autoaddpolicy-negative-01.py",
+      "rule_id": "securescan.python.paramiko-autoaddpolicy",
+      "sha256": "8a0251598971f96c587c85498190ec484aedc81c499908a2c130167a7f1f3669",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "paramiko-autoaddpolicy-negative-02",
+      "category": "negative",
+      "description": "SSH client loads system host keys.",
+      "expected_match": false,
+      "relative_path": "corpus/paramiko-autoaddpolicy/paramiko-autoaddpolicy-negative-02.py",
+      "rule_id": "securescan.python.paramiko-autoaddpolicy",
+      "sha256": "4ef8fa9dd666f3014af786185b559bbd8e5b84a9209e6b2403bf557e7486316f",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "paramiko-autoaddpolicy-negative-03",
+      "category": "negative",
+      "description": "Unrelated local AutoAddPolicy class is used.",
+      "expected_match": false,
+      "relative_path": "corpus/paramiko-autoaddpolicy/paramiko-autoaddpolicy-negative-03.py",
+      "rule_id": "securescan.python.paramiko-autoaddpolicy",
+      "sha256": "80cfa0c7bac5039d7a669769fd43aa7d64ed5417d7550fafc83d240d9e3036f7",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "paramiko-autoaddpolicy-positive-01",
+      "category": "positive",
+      "description": "SSH client receives Paramiko AutoAddPolicy.",
+      "expected_match": true,
+      "relative_path": "corpus/paramiko-autoaddpolicy/paramiko-autoaddpolicy-positive-01.py",
+      "rule_id": "securescan.python.paramiko-autoaddpolicy",
+      "sha256": "34f2032d324136f614877962d274f2d957761a484e628eb48e2cac2ec9a51dbd",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "paramiko-autoaddpolicy-positive-02",
+      "category": "positive",
+      "description": "Constructed SSH client receives AutoAddPolicy.",
+      "expected_match": true,
+      "relative_path": "corpus/paramiko-autoaddpolicy/paramiko-autoaddpolicy-positive-02.py",
+      "rule_id": "securescan.python.paramiko-autoaddpolicy",
+      "sha256": "463b7c6db5cde4313cea4579da1bf1777fca8f18ccfa6856bb72a556b4b23af5",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "paramiko-autoaddpolicy-positive-03",
+      "category": "positive",
+      "description": "Connection helper configures AutoAddPolicy.",
+      "expected_match": true,
+      "relative_path": "corpus/paramiko-autoaddpolicy/paramiko-autoaddpolicy-positive-03.py",
+      "rule_id": "securescan.python.paramiko-autoaddpolicy",
+      "sha256": "f94a81facd29f68c6dd93bdab9cae65e3a4f80c3b8d5663d68efe26e65079187",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-session-verify-false-negative-01",
+      "category": "negative",
+      "description": "Requests Session explicitly enables verification.",
+      "expected_match": false,
+      "relative_path": "corpus/requests-session-verify-false/requests-session-verify-false-negative-01.py",
+      "rule_id": "securescan.python.requests-session-verify-false",
+      "sha256": "82b55d20bd4370f6738828eb8a62bfd4c299f969efe86afc1b98ba8000b4df60",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-session-verify-false-negative-02",
+      "category": "negative",
+      "description": "Requests Session uses a dynamic verification value.",
+      "expected_match": false,
+      "relative_path": "corpus/requests-session-verify-false/requests-session-verify-false-negative-02.py",
+      "rule_id": "securescan.python.requests-session-verify-false",
+      "sha256": "96875db403d15a61f72b48944ffb2876f933f2094f3cf940062ea3bc2ea5b292",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-session-verify-false-negative-03",
+      "category": "negative",
+      "description": "Unrelated Session class disables its own verification field.",
+      "expected_match": false,
+      "relative_path": "corpus/requests-session-verify-false/requests-session-verify-false-negative-03.py",
+      "rule_id": "securescan.python.requests-session-verify-false",
+      "sha256": "823f42f103b4333a26b724abb5c3c80547784addc8be462df23c86d00dbe9a3f",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-session-verify-false-positive-01",
+      "category": "positive",
+      "description": "Module-level requests Session disables verification.",
+      "expected_match": true,
+      "relative_path": "corpus/requests-session-verify-false/requests-session-verify-false-positive-01.py",
+      "rule_id": "securescan.python.requests-session-verify-false",
+      "sha256": "a08d42c09e772ed25468de2a711ad4d19e9f211b1f34ffd4f1d3568501d1339a",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-session-verify-false-positive-02",
+      "category": "positive",
+      "description": "Function-local requests Session disables verification.",
+      "expected_match": true,
+      "relative_path": "corpus/requests-session-verify-false/requests-session-verify-false-positive-02.py",
+      "rule_id": "securescan.python.requests-session-verify-false",
+      "sha256": "444e4a2236074fbf1cde281a94f54832b092354315427a8b6f2650f7b3dd0fbf",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-session-verify-false-positive-03",
+      "category": "positive",
+      "description": "Configured requests Session disables verification.",
+      "expected_match": true,
+      "relative_path": "corpus/requests-session-verify-false/requests-session-verify-false-positive-03.py",
+      "rule_id": "securescan.python.requests-session-verify-false",
+      "sha256": "b9578f397c645537760c70f3e704bbb47bdec6013dfca8b93ebdcf1919c57f71",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-verify-false-negative-01",
+      "category": "negative",
+      "description": "requests.get explicitly enables verification.",
+      "expected_match": false,
+      "relative_path": "corpus/requests-verify-false/requests-verify-false-negative-01.py",
+      "rule_id": "securescan.python.requests-verify-false",
+      "sha256": "cf9e010f94ce4b1751b094a4fa2bda2939d74a0ecb4bfcd0d5ccb41ea9695ae3",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-verify-false-negative-02",
+      "category": "negative",
+      "description": "requests.get omits the verification option.",
+      "expected_match": false,
+      "relative_path": "corpus/requests-verify-false/requests-verify-false-negative-02.py",
+      "rule_id": "securescan.python.requests-verify-false",
+      "sha256": "f004d6ecb1d33da69469c2725f3d3c91ff879865268c064aa38664ac06241378",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-verify-false-negative-03",
+      "category": "negative",
+      "description": "Unrelated client get method receives verify false.",
+      "expected_match": false,
+      "relative_path": "corpus/requests-verify-false/requests-verify-false-negative-03.py",
+      "rule_id": "securescan.python.requests-verify-false",
+      "sha256": "e5ba7921a4775093cc8a2853a750d7943698f77f97785fa7999c61bea0d2cffb",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-verify-false-positive-01",
+      "category": "positive",
+      "description": "requests.get disables verification.",
+      "expected_match": true,
+      "relative_path": "corpus/requests-verify-false/requests-verify-false-positive-01.py",
+      "rule_id": "securescan.python.requests-verify-false",
+      "sha256": "3e2335002daae40fbf8cb983c82341230adabff1363e7135956d6941a49a4cbb",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-verify-false-positive-02",
+      "category": "positive",
+      "description": "requests.post disables verification.",
+      "expected_match": true,
+      "relative_path": "corpus/requests-verify-false/requests-verify-false-positive-02.py",
+      "rule_id": "securescan.python.requests-verify-false",
+      "sha256": "871819be3e06ed724ea0fc3b8ca232cafc896bca63f853d685ccbff6e02ba96d",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "requests-verify-false-positive-03",
+      "category": "positive",
+      "description": "requests.request disables verification.",
+      "expected_match": true,
+      "relative_path": "corpus/requests-verify-false/requests-verify-false-positive-03.py",
+      "rule_id": "securescan.python.requests-verify-false",
+      "sha256": "4142d7b951f2e3bf538987f224254f8ede0b764147cfecf3c836abb97ce59448",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "sql-fstring-execute-negative-01",
+      "category": "negative",
+      "description": "Cursor executes a parameterized query.",
+      "expected_match": false,
+      "relative_path": "corpus/sql-fstring-execute/sql-fstring-execute-negative-01.py",
+      "rule_id": "securescan.python.sql-fstring-execute",
+      "sha256": "56a0769828cedfe79cd2609646df0f13a92be4dc3b09f71f2deb4e89dacb819c",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "sql-fstring-execute-negative-02",
+      "category": "negative",
+      "description": "F-string is built but not passed directly to execute.",
+      "expected_match": false,
+      "relative_path": "corpus/sql-fstring-execute/sql-fstring-execute-negative-02.py",
+      "rule_id": "securescan.python.sql-fstring-execute",
+      "sha256": "9b4796e3fb2018b41c24dd9f7faff5a436cea833458fbd1e62f780f2546d11e2",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "sql-fstring-execute-negative-03",
+      "category": "negative",
+      "description": "Cursor executes constant SQL.",
+      "expected_match": false,
+      "relative_path": "corpus/sql-fstring-execute/sql-fstring-execute-negative-03.py",
+      "rule_id": "securescan.python.sql-fstring-execute",
+      "sha256": "7e328f1dc1d256e6b353862e0e58c73fd7ad250ce0887583ebad73e38b615bf1",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "sql-fstring-execute-positive-01",
+      "category": "positive",
+      "description": "Cursor executes an interpolated SELECT f-string.",
+      "expected_match": true,
+      "relative_path": "corpus/sql-fstring-execute/sql-fstring-execute-positive-01.py",
+      "rule_id": "securescan.python.sql-fstring-execute",
+      "sha256": "05fd85ea4d923d2dc1e79baa44bd0d3362881c54d899bd8448b6e544579487d6",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "sql-fstring-execute-positive-02",
+      "category": "positive",
+      "description": "Cursor executes an interpolated DELETE f-string.",
+      "expected_match": true,
+      "relative_path": "corpus/sql-fstring-execute/sql-fstring-execute-positive-02.py",
+      "rule_id": "securescan.python.sql-fstring-execute",
+      "sha256": "16e172f16d69123b72be3240e10a529ae2d7997d214645a37af10bc2aefbf3ac",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "sql-fstring-execute-positive-03",
+      "category": "positive",
+      "description": "Connection cursor executes an interpolated UPDATE.",
+      "expected_match": true,
+      "relative_path": "corpus/sql-fstring-execute/sql-fstring-execute-positive-03.py",
+      "rule_id": "securescan.python.sql-fstring-execute",
+      "sha256": "153f9052db46a17663ac4595df73c48672c373c9488f13a40f5b2684e5829235",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "ssl-unverified-context-negative-01",
+      "category": "negative",
+      "description": "Default verified SSL context is constructed.",
+      "expected_match": false,
+      "relative_path": "corpus/ssl-unverified-context/ssl-unverified-context-negative-01.py",
+      "rule_id": "securescan.python.ssl-unverified-context",
+      "sha256": "b51004f3404b5da6ffe00e52607c2cd8e068d7f468f49b516f5eced9ad36aee9",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "ssl-unverified-context-negative-02",
+      "category": "negative",
+      "description": "Explicit client SSLContext is constructed.",
+      "expected_match": false,
+      "relative_path": "corpus/ssl-unverified-context/ssl-unverified-context-negative-02.py",
+      "rule_id": "securescan.python.ssl-unverified-context",
+      "sha256": "5fd7cefc67cb79d66caa7a2a355fc5b4050860a669a5e55c9340d4a79a21f4bd",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "ssl-unverified-context-negative-03",
+      "category": "negative",
+      "description": "Unrelated factory method has a similar name.",
+      "expected_match": false,
+      "relative_path": "corpus/ssl-unverified-context/ssl-unverified-context-negative-03.py",
+      "rule_id": "securescan.python.ssl-unverified-context",
+      "sha256": "1fba76b261fdefe9b61ecd9bcf97c816b921d0745486a1fa8d02d503bc20c531",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "ssl-unverified-context-positive-01",
+      "category": "positive",
+      "description": "Unverified SSL context is constructed.",
+      "expected_match": true,
+      "relative_path": "corpus/ssl-unverified-context/ssl-unverified-context-positive-01.py",
+      "rule_id": "securescan.python.ssl-unverified-context",
+      "sha256": "da9212488e5e7ae7dbc3267054e03a1aad0074cae6e2cdf30e0486b1920cdd49",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "ssl-unverified-context-positive-02",
+      "category": "positive",
+      "description": "Function returns an unverified SSL context.",
+      "expected_match": true,
+      "relative_path": "corpus/ssl-unverified-context/ssl-unverified-context-positive-02.py",
+      "rule_id": "securescan.python.ssl-unverified-context",
+      "sha256": "e865d75ac5981963fd0a065e89b0b3439516e9133b5e507b9ed7847edfbcb18e",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "ssl-unverified-context-positive-03",
+      "category": "positive",
+      "description": "Unverified context receives a protocol.",
+      "expected_match": true,
+      "relative_path": "corpus/ssl-unverified-context/ssl-unverified-context-positive-03.py",
+      "rule_id": "securescan.python.ssl-unverified-context",
+      "sha256": "607f8081a5ec48a829d882aa1cb0094af2ae1e463b24bedc77f3b466cda986f8",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "subprocess-shell-true-negative-01",
+      "category": "negative",
+      "description": "subprocess.run uses literal shell false.",
+      "expected_match": false,
+      "relative_path": "corpus/subprocess-shell-true/subprocess-shell-true-negative-01.py",
+      "rule_id": "securescan.python.subprocess-shell-true",
+      "sha256": "51ffdb44264c9d81d72101a83302d6a7c6314f7a85383024d2ddfdbcfc9eb6f3",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "subprocess-shell-true-negative-02",
+      "category": "negative",
+      "description": "subprocess.run uses list argv without shell.",
+      "expected_match": false,
+      "relative_path": "corpus/subprocess-shell-true/subprocess-shell-true-negative-02.py",
+      "rule_id": "securescan.python.subprocess-shell-true",
+      "sha256": "3b2e53925487a0f5158018e1c4f44c613265c7fa1e970193d73e779fe21b216a",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "subprocess-shell-true-negative-03",
+      "category": "negative",
+      "description": "subprocess.run uses a dynamic shell boolean.",
+      "expected_match": false,
+      "relative_path": "corpus/subprocess-shell-true/subprocess-shell-true-negative-03.py",
+      "rule_id": "securescan.python.subprocess-shell-true",
+      "sha256": "344a37f7a6c83a84ab9f0c74b3653fa374da5896a7ce36a0aca03dfaea46e6d8",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "subprocess-shell-true-positive-01",
+      "category": "positive",
+      "description": "subprocess.run uses literal shell true.",
+      "expected_match": true,
+      "relative_path": "corpus/subprocess-shell-true/subprocess-shell-true-positive-01.py",
+      "rule_id": "securescan.python.subprocess-shell-true",
+      "sha256": "6a9d4f851795ad74ad8f53a7280eed3c41da0c40834e79086184ea8ac366e5ce",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "subprocess-shell-true-positive-02",
+      "category": "positive",
+      "description": "subprocess.Popen uses literal shell true.",
+      "expected_match": true,
+      "relative_path": "corpus/subprocess-shell-true/subprocess-shell-true-positive-02.py",
+      "rule_id": "securescan.python.subprocess-shell-true",
+      "sha256": "ceef393b49772a8ab6deb0daf46980cc08313b41a4fe1e43bfc5fedd1e50b47e",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "subprocess-shell-true-positive-03",
+      "category": "positive",
+      "description": "subprocess.check_output uses literal shell true.",
+      "expected_match": true,
+      "relative_path": "corpus/subprocess-shell-true/subprocess-shell-true-positive-03.py",
+      "rule_id": "securescan.python.subprocess-shell-true",
+      "sha256": "87f02ff2be97ea9368edbfd7984783d5c646b6849dc95efbbd5a3085f4721593",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-pickle-load-negative-01",
+      "category": "negative",
+      "description": "pickle.dumps serializes a value.",
+      "expected_match": false,
+      "relative_path": "corpus/unsafe-pickle-load/unsafe-pickle-load-negative-01.py",
+      "rule_id": "securescan.python.unsafe-pickle-load",
+      "sha256": "56fc90cfe53b9cefa3f2ea240f5b2743f94ba60d01762ab1db85173716100773",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-pickle-load-negative-02",
+      "category": "negative",
+      "description": "json.loads parses JSON.",
+      "expected_match": false,
+      "relative_path": "corpus/unsafe-pickle-load/unsafe-pickle-load-negative-02.py",
+      "rule_id": "securescan.python.unsafe-pickle-load",
+      "sha256": "36b2fec27808ac9db910270ae2ef12ff36958a6d3266112f8a1e573d3c4a3c1c",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-pickle-load-negative-03",
+      "category": "negative",
+      "description": "Unrelated codec loads method is called.",
+      "expected_match": false,
+      "relative_path": "corpus/unsafe-pickle-load/unsafe-pickle-load-negative-03.py",
+      "rule_id": "securescan.python.unsafe-pickle-load",
+      "sha256": "5f0627c6794e1c21347420a4756e5a313d16cb0e68258c39b5b45bb63cf26921",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-pickle-load-positive-01",
+      "category": "positive",
+      "description": "pickle.loads receives a payload.",
+      "expected_match": true,
+      "relative_path": "corpus/unsafe-pickle-load/unsafe-pickle-load-positive-01.py",
+      "rule_id": "securescan.python.unsafe-pickle-load",
+      "sha256": "08512ce98a42f40b85d12ce658c83f50d5c7d27c8deb3f5dd473a31c4c45bf1c",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-pickle-load-positive-02",
+      "category": "positive",
+      "description": "pickle.load receives a binary stream.",
+      "expected_match": true,
+      "relative_path": "corpus/unsafe-pickle-load/unsafe-pickle-load-positive-02.py",
+      "rule_id": "securescan.python.unsafe-pickle-load",
+      "sha256": "a361e696306e265b8193e3487854dc09a99d974b78d35f896fa8f4a0e08a7647",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-pickle-load-positive-03",
+      "category": "positive",
+      "description": "pickle.loads receives an assigned argument.",
+      "expected_match": true,
+      "relative_path": "corpus/unsafe-pickle-load/unsafe-pickle-load-positive-03.py",
+      "rule_id": "securescan.python.unsafe-pickle-load",
+      "sha256": "d588aa05ec94eb6834356d201669ff91e56a07a62072d7d248dd0b4a9decdec8",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-yaml-load-negative-01",
+      "category": "negative",
+      "description": "yaml.safe_load parses a document.",
+      "expected_match": false,
+      "relative_path": "corpus/unsafe-yaml-load/unsafe-yaml-load-negative-01.py",
+      "rule_id": "securescan.python.unsafe-yaml-load",
+      "sha256": "f5fb2d09abbd953b9485b0e2786b782022d5c628a646d010f3046f06d5628b20",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-yaml-load-negative-02",
+      "category": "negative",
+      "description": "yaml.load uses qualified SafeLoader.",
+      "expected_match": false,
+      "relative_path": "corpus/unsafe-yaml-load/unsafe-yaml-load-negative-02.py",
+      "rule_id": "securescan.python.unsafe-yaml-load",
+      "sha256": "5cffdd1227c4b8adce2cd14ba01b44bb382fd97b94ba3e7f89e8976792025ea8",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-yaml-load-negative-03",
+      "category": "negative",
+      "description": "yaml.load uses FullLoader, which this rule does not classify.",
+      "expected_match": false,
+      "relative_path": "corpus/unsafe-yaml-load/unsafe-yaml-load-negative-03.py",
+      "rule_id": "securescan.python.unsafe-yaml-load",
+      "sha256": "b3e822f9c67f5625233a73794c600728fed56b0924837f2a59daf06357accfd2",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-yaml-load-positive-01",
+      "category": "positive",
+      "description": "yaml.unsafe_load parses a document.",
+      "expected_match": true,
+      "relative_path": "corpus/unsafe-yaml-load/unsafe-yaml-load-positive-01.py",
+      "rule_id": "securescan.python.unsafe-yaml-load",
+      "sha256": "9eb5fc3fc1a8ec02069ad96bad60d29d7c3caa97a5da40514f6a77168bb533c6",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-yaml-load-positive-02",
+      "category": "positive",
+      "description": "yaml.load uses qualified UnsafeLoader.",
+      "expected_match": true,
+      "relative_path": "corpus/unsafe-yaml-load/unsafe-yaml-load-positive-02.py",
+      "rule_id": "securescan.python.unsafe-yaml-load",
+      "sha256": "2301a0ecf8946890679dfd2a2c19143091d395d1b86cc8276c2a5b1a184fc5d7",
+      "source_type": "independent-local"
+    },
+    {
+      "case_id": "unsafe-yaml-load-positive-03",
+      "category": "positive",
+      "description": "yaml.load uses imported positional CLoader.",
+      "expected_match": true,
+      "relative_path": "corpus/unsafe-yaml-load/unsafe-yaml-load-positive-03.py",
+      "rule_id": "securescan.python.unsafe-yaml-load",
+      "sha256": "dd1e51fae6e3fd4d608d094b07cb6b87bb4bcce8f70402da9d9f18361548bd0d",
+      "source_type": "independent-local"
+    }
+  ],
+  "corpus_digest": "2a3b3a3b001ce251a5fceafc82cfd1a1599cd9d8d3d6a81de424ae393113adec",
+  "ruleset": {
+    "digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+    "id": "securescan-python-baseline-v2",
+    "version": "2"
+  },
+  "schema_version": "securescan-python-sast-benchmark-manifest-v1"
+}

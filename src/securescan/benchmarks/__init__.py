@@ -1,0 +1,43 @@
+"""Deterministic evaluation infrastructure for SecureScan capabilities."""
+
+from securescan.benchmarks.python_sast import (
+    BENCHMARK_ID,
+    EXPECTED_SCANNER_VERSION,
+    FROZEN_CORPUS_DIGEST,
+    FROZEN_RULESET_DIGEST,
+    FROZEN_RULESET_ID,
+    FROZEN_RULESET_VERSION,
+    REPORT_SCHEMA_VERSION,
+    SCANNER_ID,
+    BenchmarkCase,
+    BenchmarkEvaluation,
+    BenchmarkManifest,
+    BenchmarkMetrics,
+    CaseEvaluation,
+    canonical_benchmark_report,
+    classify_case,
+    evaluate_benchmark,
+    load_benchmark_manifest,
+    run_frozen_semgrep_benchmark,
+)
+
+__all__ = [
+    "BENCHMARK_ID",
+    "EXPECTED_SCANNER_VERSION",
+    "FROZEN_CORPUS_DIGEST",
+    "FROZEN_RULESET_DIGEST",
+    "FROZEN_RULESET_ID",
+    "FROZEN_RULESET_VERSION",
+    "REPORT_SCHEMA_VERSION",
+    "SCANNER_ID",
+    "BenchmarkCase",
+    "BenchmarkEvaluation",
+    "BenchmarkManifest",
+    "BenchmarkMetrics",
+    "CaseEvaluation",
+    "canonical_benchmark_report",
+    "classify_case",
+    "evaluate_benchmark",
+    "load_benchmark_manifest",
+    "run_frozen_semgrep_benchmark",
+]

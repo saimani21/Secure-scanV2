@@ -36,6 +36,8 @@ Status: COMPLETE
 | v0.3C4 | Terminal projection lifecycle + hostile bridge validation | COMPLETE |
 | v0.3D | Source Semgrep result + actual coverage correlation | COMPLETE |
 | v0.3E | Production Python SAST ruleset | COMPLETE |
+| v0.3F1 | Controlled local Python SAST benchmark | COMPLETE |
+| v0.3F2 | External pinned Python SAST validation | NEXT |
 
 ## Source Intelligence Foundation Freeze
 
@@ -193,11 +195,30 @@ there are no autofixes or network-resolved configurations. `PYTHON_SAST`
 remains `SCANNABLE`. v0.3E makes no precision, recall, F1, benchmarked, or
 product-support claim.
 
+v0.3F adds a deterministic, controlled independent local benchmark corpus and
+evaluation harness for the frozen v0.3E ruleset. The corpus is separate from
+the 51 v0.3E correctness fixtures and contains 102 explicit case/rule
+relations: three positive and three negative cases for each of the 17 rules.
+Its content and ground truth are identified by corpus digest
+`2a3b3a3b001ce251a5fceafc82cfd1a1599cd9d8d3d6a81de424ae393113adec`.
+
+Valid controlled evidence requires scanner `semgrep-ce`, declared engine
+version `1.171.0`, and `securescan-python-baseline-v2` version `2` with digest
+`e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5`.
+The earlier local `1.145.0` observation is preserved separately as uncontrolled
+history; it measured TP/FP/FN/TN `51/0/0/51`, with precision, recall, and F1
+each `1.0000`, and no cross-rule matches. The separately recorded controlled
+`1.171.0` baseline produced the same `51/0/0/51` and `1.0000` results, with
+scanner identity embedded in the canonical report. Those measurements apply
+only to this corpus. This is not a public-corpus, ecosystem-wide,
+taint/dataflow, production-accuracy, or production-readiness benchmark.
+
 ## Next Phase
 
-Detection-quality benchmarking remains deferred to v0.3F. v0.3E does not
-claim benchmarked support or product support and does not promote
-`PYTHON_SAST` beyond `SCANNABLE`.
+v0.3F remains pending methodology and metric review. The benchmark harness does
+not automatically promote maturity or encode production thresholds.
+`PYTHON_SAST` remains `SCANNABLE`; public, pinned corpus evaluation may be
+considered separately after this local harness is approved.
 
 ## Known Non-Blocking Maintenance
 

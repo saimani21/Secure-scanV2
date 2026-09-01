@@ -24,7 +24,9 @@ from securescan.source.planning import TrustedSourceAnalyzer
 _BINDING_STREAM_VERSION = b"securescan-semgrep-source-binding-v0.3B2\0"
 _SCHEMA_VERSION = "0.3B2"
 _SOURCE_ANALYZER_ID = "python-semgrep-v1"
-_CORE_ADAPTER_ID = "semgrep-ce"
+SEMGREP_ADAPTER_ID = "semgrep-ce"
+DECLARED_SEMGREP_TOOL_VERSION = "1.171.0"
+_CORE_ADAPTER_ID = SEMGREP_ADAPTER_ID
 _TOOL_FAMILY = "semgrep"
 _COMMAND_PREFIX = ("semgrep",)
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)

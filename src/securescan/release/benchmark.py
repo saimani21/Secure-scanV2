@@ -26,6 +26,7 @@ from securescan.release.models import (
 from securescan.release.report import release_evidence_digest
 from securescan.scanners.semgrep.factory import create_semgrep_trusted_definition
 from securescan.scanners.semgrep.ruleset import load_baseline_ruleset
+from securescan.scanners.semgrep.source_binding import DECLARED_SEMGREP_TOOL_VERSION
 from securescan.worker.models import WorkerSuccessfulExecution
 from securescan.workspaces.intake import RepositoryWorkspaceManager
 
@@ -305,7 +306,7 @@ class CoreV01ReleaseEvaluator:
         corpus_root: Path,
         semgrep_image: str,
         workspace_base: Path,
-        tool_version: str = "1.171.0",
+        tool_version: str = DECLARED_SEMGREP_TOOL_VERSION,
     ) -> None:
         self._corpus_root = corpus_root
         self._semgrep_image = semgrep_image
