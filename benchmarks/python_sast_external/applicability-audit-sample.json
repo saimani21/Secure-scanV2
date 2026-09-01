@@ -1,0 +1,2261 @@
+{
+  "cases": [
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest00113",
+      "cwe": 89,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest00113",
+        "claim_class": "direct-interpolation-sink",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 9,
+            "relative_source_path": "django/testcode/benchmark_test_00113.py",
+            "source_sha256": "8587798aa03cecc7867ad62dab4d4e75ae0b2ad47d83c4645d76d574860f097b",
+            "start_line": 9
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.sql-fstring-execute",
+        "possible_rule_ids": [
+          "securescan.python.sql-fstring-execute"
+        ],
+        "reason_code": "parameterized-execute",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest00548",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest00548",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 17,
+            "relative_source_path": "django/testcode/benchmark_test_00548.py",
+            "source_sha256": "bd15097dbddff4b21f49a7dbfdaf4012c67d398a825e44609efffff915f59c79",
+            "start_line": 17
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.unsafe-yaml-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "yaml-safe-load",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest00840",
+      "cwe": 295,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest00840",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 9,
+            "relative_source_path": "django/testcode/benchmark_test_00840.py",
+            "source_sha256": "ac6601eff2d3e1d466f7c94c543408948f18830467cdc814544159856f2e1fa2",
+            "start_line": 9
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.requests-verify-false",
+        "possible_rule_ids": [
+          "securescan.python.requests-verify-false"
+        ],
+        "reason_code": "requests-verify-literal-false",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest01166",
+      "cwe": 295,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest01166",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 14,
+            "relative_source_path": "django/testcode/benchmark_test_01166.py",
+            "source_sha256": "7a5505318d366bccc1bbcfe3e810b4981d4d2a3cec07601c6de6773ae062417c",
+            "start_line": 14
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.requests-verify-false",
+        "possible_rule_ids": [
+          "securescan.python.requests-verify-false"
+        ],
+        "reason_code": "requests-verify-literal-false",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest01526",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest01526",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 9,
+            "relative_source_path": "django/testcode/benchmark_test_01526.py",
+            "source_sha256": "61190f6a80a0372c0d963417456087dc3a44c797dd7cc20b5e76ce9d240520c2",
+            "start_line": 9
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.subprocess-shell-true",
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "literal-shell-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest01786",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest01786",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 9,
+            "relative_source_path": "django/testcode/benchmark_test_01786.py",
+            "source_sha256": "f57baecf0288c17f18ca834971aa507dad6150aa10d17b89429e3f81ebb1c31f",
+            "start_line": 9
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.unsafe-yaml-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "yaml-safe-load",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest02099",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest02099",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 12,
+            "relative_source_path": "django/testcode/benchmark_test_02099.py",
+            "source_sha256": "d5d14b6a247ca915d19fe64a725f4bcc42ae1b319d52403037178a34e470fc26",
+            "start_line": 12
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.unsafe-yaml-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "yaml-explicit-unsafe-loader",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest02477",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest02477",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 10,
+            "relative_source_path": "django/testcode/benchmark_test_02477.py",
+            "source_sha256": "75301a03c757d9a92f9f336aea8178db9667e08e29f28bc6ded42cc99444fc7b",
+            "start_line": 10
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.dangerous-exec"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03119",
+      "cwe": 295,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03119",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 13,
+            "relative_source_path": "django/testcode/benchmark_test_03119.py",
+            "source_sha256": "aef50b7251ed3a6e3b1f8f8e465c643ee820ded9c3885613e65d139f3228a42a",
+            "start_line": 13
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.requests-verify-false",
+        "possible_rule_ids": [
+          "securescan.python.requests-verify-false"
+        ],
+        "reason_code": "requests-verify-literal-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03160",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03160",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 15,
+            "relative_source_path": "django/testcode/benchmark_test_03160.py",
+            "source_sha256": "4ad494a25ed0dd28541de5c67eda80349f3300b3fd86d16586f8b49148795d4c",
+            "start_line": 15
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.os-system"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03194",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03194",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 9,
+            "relative_source_path": "django/testcode/benchmark_test_03194.py",
+            "source_sha256": "30fd8dcb8c2304823228795c42b8c963e92aeb6e8105f0b01c7ba86e8ad40c5f",
+            "start_line": 9
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.subprocess-shell-true",
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "literal-shell-false",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03340",
+      "cwe": 95,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03340",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 14,
+            "relative_source_path": "django/testcode/benchmark_test_03340.py",
+            "source_sha256": "5185dc3505f911bd8ea135dc91ccb6cb16dcf13a7bf67d4ee1ebdcb0659af7bd",
+            "start_line": 14
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.dangerous-eval"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03633",
+      "cwe": 95,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03633",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 11,
+            "relative_source_path": "django/testcode/benchmark_test_03633.py",
+            "source_sha256": "bc6bf07f153ce6f7e340fccaa47a549f155b420ee4be507597616dd27873bf2b",
+            "start_line": 11
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.dangerous-eval"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03889",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03889",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 9,
+            "relative_source_path": "django/testcode/benchmark_test_03889.py",
+            "source_sha256": "d3a90862c2219024795b87d2051751f293a68aa87707088cf388db95047e7dc7",
+            "start_line": 9
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.subprocess-shell-true",
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "literal-shell-false",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03983",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest03983",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 9,
+            "relative_source_path": "django/testcode/benchmark_test_03983.py",
+            "source_sha256": "ccecac9803259db8e1602b7b6df9fa8ad3d36a46ae83754b573f6e92c7e11acf",
+            "start_line": 9
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.os-system",
+        "possible_rule_ids": [
+          "securescan.python.os-system"
+        ],
+        "reason_code": "direct-semantic-api-use",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest04196",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest04196",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 15,
+            "relative_source_path": "django/testcode/benchmark_test_04196.py",
+            "source_sha256": "0d334f18de5b89d380747c4b9d0926e7594df68190f735f3e69484037a939dde",
+            "start_line": 15
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.dangerous-eval",
+        "possible_rule_ids": [
+          "securescan.python.dangerous-eval"
+        ],
+        "reason_code": "nonliteral-built-in-source",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest04594",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest04594",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 16,
+            "relative_source_path": "django/testcode/benchmark_test_04594.py",
+            "source_sha256": "c53ce503126daa07c545f68be64cc7186b4bac26b8e09a28eaa59c16dc17adfe",
+            "start_line": 16
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "upstream-safe-label-requires-contextual-mitigation-review",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest05452",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest05452",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 19,
+            "relative_source_path": "django/testcode/benchmark_test_05452.py",
+            "source_sha256": "0bc53f923b149b523bd5d5449745548dfcd7b222813d528ccdb63a391bc7b0d7",
+            "start_line": 19
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "upstream-safe-label-requires-contextual-mitigation-review",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest05562",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest05562",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 17,
+            "relative_source_path": "django/testcode/benchmark_test_05562.py",
+            "source_sha256": "b5b622e43ba6b5804296fde0fa6f66f1dd29538eda1160fac4f2460f00ca24b5",
+            "start_line": 17
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.lxml-resolve-entities",
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "safe-or-standard-library-xml-parser",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest05618",
+      "cwe": 79,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest05618",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "django/testcode/benchmark_test_05618.py",
+            "source_sha256": "cc4c511d3529e1ae36e240e5427ab9b02f00e6e79e5f2319521ddda87b798a31",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.jinja-autoescape-disabled"
+        ],
+        "reason_code": "unrelated-framework-or-output-encoding-pattern",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest05886",
+      "cwe": 89,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/django/BenchmarkTest05886",
+        "claim_class": "direct-interpolation-sink",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 10,
+            "relative_source_path": "django/testcode/benchmark_test_05886.py",
+            "source_sha256": "fe7854392d6df63137d0ef91da9eb6af897c812715cd61a223c71224cbc42e1d",
+            "start_line": 10
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.sql-fstring-execute",
+        "possible_rule_ids": [
+          "securescan.python.sql-fstring-execute"
+        ],
+        "reason_code": "parameterized-execute",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "django",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest00387",
+      "cwe": 79,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest00387",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "fastapi/testcode/benchmark_test_00387.py",
+            "source_sha256": "bad690318464c49f9c96648d5423f8c3267771d307cd5190c86acc215289d113",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.jinja-autoescape-disabled"
+        ],
+        "reason_code": "unrelated-framework-or-output-encoding-pattern",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest00431",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest00431",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 13,
+            "relative_source_path": "fastapi/testcode/benchmark_test_00431.py",
+            "source_sha256": "1feedf06401a7c02bbd92638709e6966786512c8ac5a1fffdd4223c79eb1b587",
+            "start_line": 13
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.os-system",
+        "possible_rule_ids": [
+          "securescan.python.os-system"
+        ],
+        "reason_code": "direct-semantic-api-use",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest00476",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest00476",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 19,
+            "relative_source_path": "fastapi/testcode/benchmark_test_00476.py",
+            "source_sha256": "ee9f5c57dcbac8df4c66fb0dc1fa69f88e2485f32fb1e564b9ac9ded2d2b101c",
+            "start_line": 19
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.dangerous-exec",
+        "possible_rule_ids": [
+          "securescan.python.dangerous-exec"
+        ],
+        "reason_code": "nonliteral-built-in-source",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01451",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01451",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 13,
+            "relative_source_path": "fastapi/testcode/benchmark_test_01451.py",
+            "source_sha256": "9b786f20166664b83e8a1bcda16e4f8c76a9a4e6ed35ef82489b2f69ef59ebba",
+            "start_line": 13
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.subprocess-shell-true",
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "literal-shell-false",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01598",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01598",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 18,
+            "relative_source_path": "fastapi/testcode/benchmark_test_01598.py",
+            "source_sha256": "c7621947ab73848691f74ca0f1918a2abf394237cb26ed4ef1fa62f3d3b4611d",
+            "start_line": 18
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.os-system"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01796",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01796",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 19,
+            "relative_source_path": "fastapi/testcode/benchmark_test_01796.py",
+            "source_sha256": "d99d52d57785ce91029eeb39f1d2c7e395b6f8acdd1c6f31278b6bc1824019f3",
+            "start_line": 19
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.unsafe-pickle-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load"
+        ],
+        "reason_code": "direct-semantic-api-use",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01838",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01838",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "fastapi/testcode/benchmark_test_01838.py",
+            "source_sha256": "991b6f7e76fcff527c01ac22685aeea9d5bad8a1689ca007a7baea12ef547e1b",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load",
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "different-deserialization-api-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01844",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest01844",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "fastapi/testcode/benchmark_test_01844.py",
+            "source_sha256": "9287d4e0d710ed6ce64bd450cd59daedfc44f0054e37bd2b0808dfdc41f18746",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load",
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "different-deserialization-api-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest02381",
+      "cwe": 79,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest02381",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 14,
+            "relative_source_path": "fastapi/testcode/benchmark_test_02381.py",
+            "source_sha256": "27c16fdc33806d0fa9402902ba385fb2ed6c1a7ae054bbcd53134ce5b9d6de9b",
+            "start_line": 14
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.jinja-autoescape-disabled",
+        "possible_rule_ids": [
+          "securescan.python.jinja-autoescape-disabled"
+        ],
+        "reason_code": "jinja-safe-autoescape",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest02766",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest02766",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 14,
+            "relative_source_path": "fastapi/testcode/benchmark_test_02766.py",
+            "source_sha256": "ff720a70b9af00d061a4f45790543b5778dd1818b622f6ad858c090a70eaf474",
+            "start_line": 14
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.lxml-resolve-entities",
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "lxml-resolve-entities-literal-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03063",
+      "cwe": 79,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03063",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 15,
+            "relative_source_path": "fastapi/testcode/benchmark_test_03063.py",
+            "source_sha256": "823a098d3caeb5142f924facedf8fb87aa1f8d8a8ecef74ed5fd74b69b998f2e",
+            "start_line": 15
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.jinja-autoescape-disabled",
+        "possible_rule_ids": [
+          "securescan.python.jinja-autoescape-disabled"
+        ],
+        "reason_code": "jinja-safe-autoescape",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03384",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03384",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 17,
+            "relative_source_path": "fastapi/testcode/benchmark_test_03384.py",
+            "source_sha256": "858448fd0046dec1f3eaab625504c1bace21fd2a8547f6fcb220f6449d909ca0",
+            "start_line": 17
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.unsafe-pickle-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load"
+        ],
+        "reason_code": "direct-semantic-api-use",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03463",
+      "cwe": 79,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03463",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 17,
+            "relative_source_path": "fastapi/testcode/benchmark_test_03463.py",
+            "source_sha256": "5744d2af57febdeb0708a7862b8cac843a432612417e0c13efcbd91a082752db",
+            "start_line": 17
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.jinja-autoescape-disabled",
+        "possible_rule_ids": [
+          "securescan.python.jinja-autoescape-disabled"
+        ],
+        "reason_code": "jinja-safe-autoescape",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03689",
+      "cwe": 295,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03689",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 24,
+            "relative_source_path": "fastapi/testcode/benchmark_test_03689.py",
+            "source_sha256": "e30bedf0e9a4aaf37c042324639c0d78d1e8a39d872261cad4bd87a834ad63b4",
+            "start_line": 24
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.requests-verify-false",
+        "possible_rule_ids": [
+          "securescan.python.requests-verify-false"
+        ],
+        "reason_code": "requests-verify-literal-false",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03727",
+      "cwe": 95,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest03727",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 12,
+            "relative_source_path": "fastapi/testcode/benchmark_test_03727.py",
+            "source_sha256": "1a0be1c759627713b0cf695d1e38ade51962f6a30fb7f923f139441cbc494d28",
+            "start_line": 12
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.dangerous-eval",
+        "possible_rule_ids": [
+          "securescan.python.dangerous-eval"
+        ],
+        "reason_code": "nonliteral-built-in-source",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest04524",
+      "cwe": 489,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest04524",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "fastapi/testcode/benchmark_test_04524.py",
+            "source_sha256": "0e3d96f89627d49f4c8d7928044b65fbaac56a172101c20332d3d9a5e1719be1",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.flask-debug-enabled"
+        ],
+        "reason_code": "different-debug-or-stack-trace-pattern",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest04555",
+      "cwe": 347,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest04555",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "fastapi/testcode/benchmark_test_04555.py",
+            "source_sha256": "9993179d562dc0b0f932082528a6d2edebfaae0155e91eb4e308133cf8c64f1c",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.jwt-signature-verification-disabled"
+        ],
+        "reason_code": "different-api-or-configuration-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest04613",
+      "cwe": 89,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest04613",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "fastapi/testcode/benchmark_test_04613.py",
+            "source_sha256": "a12b3b1bbc62203c5ee225b105b9b9b8dd739f5bc6961233de1320a5b739b2b6",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.sql-fstring-execute"
+        ],
+        "reason_code": "not-direct-fstring-execute",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05017",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05017",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 21,
+            "relative_source_path": "fastapi/testcode/benchmark_test_05017.py",
+            "source_sha256": "db5d9b6e419050bbb97a6b294d2db1f2922ebea149c4cdfe486746fc7d279141",
+            "start_line": 21
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.lxml-resolve-entities",
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "safe-or-standard-library-xml-parser",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05502",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05502",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 17,
+            "relative_source_path": "fastapi/testcode/benchmark_test_05502.py",
+            "source_sha256": "598577a562ed5d8b18c7f91f04114a58ee807acc78bc250b65d4b84598f11aea",
+            "start_line": 17
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.unsafe-yaml-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "yaml-explicit-unsafe-loader",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05746",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05746",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 13,
+            "relative_source_path": "fastapi/testcode/benchmark_test_05746.py",
+            "source_sha256": "eb4717fc8961ea6fd5a7d92af5d591f10abf5da24f037f3afd855bf15d93d9e7",
+            "start_line": 13
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.os-system",
+        "possible_rule_ids": [
+          "securescan.python.os-system"
+        ],
+        "reason_code": "direct-semantic-api-use",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05877",
+      "cwe": 79,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05877",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "fastapi/testcode/benchmark_test_05877.py",
+            "source_sha256": "983971aa5d390df3c3284e59fcea6bcf08481dcd8f6f288a957f0800441c5431",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.jinja-autoescape-disabled"
+        ],
+        "reason_code": "unrelated-framework-or-output-encoding-pattern",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05982",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest05982",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 17,
+            "relative_source_path": "fastapi/testcode/benchmark_test_05982.py",
+            "source_sha256": "914c254089cf8a5fc956aa3794bfb7856dfe282d4510c690be99a82136168a4d",
+            "start_line": 17
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.dangerous-eval"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest06100",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/fastapi/BenchmarkTest06100",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 13,
+            "relative_source_path": "fastapi/testcode/benchmark_test_06100.py",
+            "source_sha256": "34aa1d75db363c5b4527941f6047e01093d4cfd900c165e64991bbc9c8adf581",
+            "start_line": 13
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.subprocess-shell-true",
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "literal-shell-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "fastapi",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00126",
+      "cwe": 347,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00126",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "flask/testcode/benchmark_test_00126.py",
+            "source_sha256": "006a2b600500f1bfb4bddbb6b3967895c00d2450760fb01669f803c4fb739bff",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.jwt-signature-verification-disabled"
+        ],
+        "reason_code": "different-api-or-configuration-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00228",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00228",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "flask/testcode/benchmark_test_00228.py",
+            "source_sha256": "508e486e4e4dc76d5a0c60941be6c0b372ecff53310852f93f1a5b789d18b2f8",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load",
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "different-deserialization-api-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00430",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00430",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 18,
+            "relative_source_path": "flask/testcode/benchmark_test_00430.py",
+            "source_sha256": "6457e6828bb29c5b538ed628b3c2629123f421a239d4ff039b40ae2bb3c51d42",
+            "start_line": 18
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.lxml-resolve-entities",
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "lxml-resolve-entities-literal-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00545",
+      "cwe": 347,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00545",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "flask/testcode/benchmark_test_00545.py",
+            "source_sha256": "b5aa73d6b4c675108ad462e15e00d036289769c3e9ed613bbe50433eab8652e7",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.jwt-signature-verification-disabled"
+        ],
+        "reason_code": "different-api-or-configuration-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00617",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest00617",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 17,
+            "relative_source_path": "flask/testcode/benchmark_test_00617.py",
+            "source_sha256": "5d6c48c4179c35080699984062f2734e94e62982046aa48260abbabef08b9e41",
+            "start_line": 17
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.dangerous-exec"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest01349",
+      "cwe": 295,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest01349",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 14,
+            "relative_source_path": "flask/testcode/benchmark_test_01349.py",
+            "source_sha256": "2e44c035694093a5356adc84c15e2d5c4fe67c6acfdeffd54227a2a57da4c9c0",
+            "start_line": 14
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.requests-verify-false",
+        "possible_rule_ids": [
+          "securescan.python.requests-verify-false"
+        ],
+        "reason_code": "requests-verify-literal-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest01518",
+      "cwe": 89,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest01518",
+        "claim_class": "direct-interpolation-sink",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 14,
+            "relative_source_path": "flask/testcode/benchmark_test_01518.py",
+            "source_sha256": "b75f2de3d3334826f3d7323443e33a58084484bc00ea2f054795e284b48c4be5",
+            "start_line": 14
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.sql-fstring-execute",
+        "possible_rule_ids": [
+          "securescan.python.sql-fstring-execute"
+        ],
+        "reason_code": "parameterized-execute",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest01942",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest01942",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "flask/testcode/benchmark_test_01942.py",
+            "source_sha256": "fda6ebf1649507b73d20571f5bdad0c038fcd240623fc9865bf351a381d286ff",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load",
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "different-deserialization-api-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest01976",
+      "cwe": 295,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest01976",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 17,
+            "relative_source_path": "flask/testcode/benchmark_test_01976.py",
+            "source_sha256": "2fe89b57fc0cb66519f1d6f563c6d3bbc1b8893d158b9b92aba079479c90a709",
+            "start_line": 17
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.requests-verify-false",
+        "possible_rule_ids": [
+          "securescan.python.requests-verify-false"
+        ],
+        "reason_code": "requests-verify-literal-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest02133",
+      "cwe": 95,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest02133",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 12,
+            "relative_source_path": "flask/testcode/benchmark_test_02133.py",
+            "source_sha256": "2d31bcae72ed2d38cca56aec7f86f3e7c44049ba49b48769b72aca700ea6012d",
+            "start_line": 12
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.dangerous-eval",
+        "possible_rule_ids": [
+          "securescan.python.dangerous-eval"
+        ],
+        "reason_code": "nonliteral-built-in-source",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest02450",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest02450",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 16,
+            "relative_source_path": "flask/testcode/benchmark_test_02450.py",
+            "source_sha256": "2ce6f52180a10a389db048d574ed02dc88a02fa0498dd75a95b5a3d03d7a58ed",
+            "start_line": 16
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.subprocess-shell-true",
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "literal-shell-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest02868",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest02868",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 16,
+            "relative_source_path": "flask/testcode/benchmark_test_02868.py",
+            "source_sha256": "c1807f1cb010a0a3346991ea9fad0b0883e1102b58a27c688371b47719f6a322",
+            "start_line": 16
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.lxml-resolve-entities",
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "lxml-resolve-entities-literal-true",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest02968",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest02968",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 15,
+            "relative_source_path": "flask/testcode/benchmark_test_02968.py",
+            "source_sha256": "24356aed529850e93c66ba2129cb9cd9aa54ec0b87b79e9b56ce4e733dcd255d",
+            "start_line": 15
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.dangerous-exec"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04058",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04058",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 13,
+            "relative_source_path": "flask/testcode/benchmark_test_04058.py",
+            "source_sha256": "cfac229b2af9f882529658a5c1dca8d172c07dc8ba7459b40709d8243ba78405",
+            "start_line": 13
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.lxml-resolve-entities",
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "safe-or-standard-library-xml-parser",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04377",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04377",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 24,
+            "relative_source_path": "flask/testcode/benchmark_test_04377.py",
+            "source_sha256": "16e9d8c70dd93f9006d3c56f0fa8c8d8ecc8826aff7553eecc45d310916547d8",
+            "start_line": 24
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.unsafe-yaml-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "yaml-explicit-unsafe-loader",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04429",
+      "cwe": 489,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04429",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "flask/testcode/benchmark_test_04429.py",
+            "source_sha256": "6511967cbb9a636f17428b8cd3108b7dd2a34344e206ade89fd9c19a6776dbed",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.flask-debug-enabled"
+        ],
+        "reason_code": "different-debug-or-stack-trace-pattern",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04831",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04831",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "flask/testcode/benchmark_test_04831.py",
+            "source_sha256": "7fd7e4190c7ffbac0e6198180b971b4566a94b1984b3e8a58ab9c5aaff63bf31",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load",
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "different-deserialization-api-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04942",
+      "cwe": 489,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest04942",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "flask/testcode/benchmark_test_04942.py",
+            "source_sha256": "a1a3661ab5e3b350b19a60f28a3497dd032cbfcedda926ac205638c97b57a0ff",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.flask-debug-enabled"
+        ],
+        "reason_code": "different-debug-or-stack-trace-pattern",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest05147",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest05147",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 12,
+            "relative_source_path": "flask/testcode/benchmark_test_05147.py",
+            "source_sha256": "afb40ca65742a2767a892ee7e77cafac0db483b2a4b74cf1c10897529767ab38",
+            "start_line": 12
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.dangerous-exec",
+        "possible_rule_ids": [
+          "securescan.python.dangerous-exec"
+        ],
+        "reason_code": "nonliteral-built-in-source",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest05462",
+      "cwe": 89,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest05462",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "flask/testcode/benchmark_test_05462.py",
+            "source_sha256": "7a60363db9b4f6cee0d1cac131145bf37cf060d4e21beae0db58c832302bcb9b",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.sql-fstring-execute"
+        ],
+        "reason_code": "not-direct-fstring-execute",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest05866",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "benchproctor-python-quicktest/flask/BenchmarkTest05866",
+        "claim_class": "explicit-insecure-pattern",
+        "disposition": "APPLICABLE_NEGATIVE",
+        "evidence": [
+          {
+            "end_line": 16,
+            "relative_source_path": "flask/testcode/benchmark_test_05866.py",
+            "source_sha256": "1abc2d0e7cad3dfc43859f681ebc1ccacb4ae2ab16f7c74e84992397cb0132b4",
+            "start_line": 16
+          }
+        ],
+        "expected_match": false,
+        "expected_rule_id": "securescan.python.unsafe-yaml-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-yaml-load"
+        ],
+        "reason_code": "yaml-safe-load",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "benchproctor-python-quicktest",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00074",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00074",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 51,
+            "relative_source_path": "testcode/BenchmarkTest00074.py",
+            "source_sha256": "805fe3b4a9d999163593958cb195d76818ee1e58d2a950bc842221a47456240e",
+            "start_line": 51
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.dangerous-exec",
+        "possible_rule_ids": [
+          "securescan.python.dangerous-exec"
+        ],
+        "reason_code": "nonliteral-built-in-source",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00267",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00267",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest00267.py",
+            "source_sha256": "5a084613e1d0d2707291563b6eda8ee1684fa652a1dfa0f27f60f8896596982a",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.os-popen",
+          "securescan.python.os-system",
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "requires-taint-or-dataflow-analysis",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00454",
+      "cwe": 89,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00454",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest00454.py",
+            "source_sha256": "855ea60577a8728f5b52c6fc2f68ba449888f50538ab3a7e151ce96a9b3c754d",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.sql-fstring-execute"
+        ],
+        "reason_code": "not-direct-fstring-execute",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00511",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00511",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest00511.py",
+            "source_sha256": "60eb453e6e3ddcff7e1576e617c58fe4736cca9b736ae11e2c9a5489c95b08e1",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.os-popen",
+          "securescan.python.os-system",
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "requires-taint-or-dataflow-analysis",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00514",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00514",
+        "claim_class": null,
+        "disposition": "EXCLUDED",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest00514.py",
+            "source_sha256": "614dceb9039ca46387092a4439c1af3913a92f0869f2824af77f864b9ed8ba8a",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [],
+        "reason_code": "known-benchmark-cross-category-contamination",
+        "review_state": "fixed-policy-exclusion"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00600",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00600",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 52,
+            "relative_source_path": "testcode/BenchmarkTest00600.py",
+            "source_sha256": "1252055c6d5eb366d70c6f17f50d3db4e5c614374d6eedb2be55e9d6801ee8d4",
+            "start_line": 52
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.dangerous-eval"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00678",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00678",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest00678.py",
+            "source_sha256": "3ac8ec569d7de134d63d585a223f06590120ce03e48ff29f1cea59e66f6a8e1d",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "different-xml-parser-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00894",
+      "cwe": 94,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00894",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 43,
+            "relative_source_path": "testcode/BenchmarkTest00894.py",
+            "source_sha256": "7b3163863c4162d4481f54061c2823e0d3c90a787c4b6c7dbfa94dd20867bc4b",
+            "start_line": 43
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.dangerous-exec",
+        "possible_rule_ids": [
+          "securescan.python.dangerous-exec"
+        ],
+        "reason_code": "nonliteral-built-in-source",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00899",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00899",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest00899.py",
+            "source_sha256": "3011b4f24753f7ff6cbe922efbdffe2d10fcb5f5a981d842143f68e3f3ac22bf",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.os-popen",
+          "securescan.python.os-system",
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "requires-taint-or-dataflow-analysis",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00904",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00904",
+        "claim_class": null,
+        "disposition": "EXCLUDED",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest00904.py",
+            "source_sha256": "dc5b4efb014889418c99debfba01c08190436f440760a44c59c611100f8fc698",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [],
+        "reason_code": "known-benchmark-cross-category-contamination",
+        "review_state": "fixed-policy-exclusion"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00930",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest00930",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest00930.py",
+            "source_sha256": "4978abd49da4f591ce284595222fde6a1894f32f8bce87fb13f62a12ced58514",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "different-xml-parser-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01020",
+      "cwe": 79,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01020",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest01020.py",
+            "source_sha256": "8c40b1fcd86c89d6fd9af52c11c7654d8558b642144fde92d0c2c85bb0c2451d",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.jinja-autoescape-disabled"
+        ],
+        "reason_code": "unrelated-framework-or-output-encoding-pattern",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01025",
+      "cwe": 611,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01025",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest01025.py",
+            "source_sha256": "537232ae459db7bac84efde3c4acf49c54c5683acf04d79d4e5bf2ab0a9f7f8a",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.lxml-resolve-entities"
+        ],
+        "reason_code": "different-xml-parser-family",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01096",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01096",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 47,
+            "relative_source_path": "testcode/BenchmarkTest01096.py",
+            "source_sha256": "cfcb10b5a4f71251514995ea53894cc130f7f50470bf72853c390e8ec1d8926a",
+            "start_line": 47
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load"
+        ],
+        "reason_code": "dangerous-api-safe-label-not-a-negative",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01097",
+      "cwe": 78,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01097",
+        "claim_class": null,
+        "disposition": "OUT_OF_SCOPE",
+        "evidence": [
+          {
+            "end_line": 55,
+            "relative_source_path": "testcode/BenchmarkTest01097.py",
+            "source_sha256": "09cffddc1f408d4fd05026a71f8c6a1179c1fd0e42c7cb3010e83b53b58908d9",
+            "start_line": 55
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [
+          "securescan.python.subprocess-shell-true"
+        ],
+        "reason_code": "upstream-safe-label-requires-contextual-mitigation-review",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01216",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01216",
+        "claim_class": "dangerous-api-observation",
+        "disposition": "APPLICABLE_POSITIVE",
+        "evidence": [
+          {
+            "end_line": 46,
+            "relative_source_path": "testcode/BenchmarkTest01216.py",
+            "source_sha256": "0a45369714c0d66b79a866bdf8a1fe85ec4ee06a156a43b70bf64fb3fcb9cd73",
+            "start_line": 46
+          }
+        ],
+        "expected_match": true,
+        "expected_rule_id": "securescan.python.unsafe-pickle-load",
+        "possible_rule_ids": [
+          "securescan.python.unsafe-pickle-load"
+        ],
+        "reason_code": "direct-semantic-api-use",
+        "review_state": "pending-human-approval"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "vulnerable"
+    },
+    {
+      "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01228",
+      "cwe": 502,
+      "decision": {
+        "candidate_id": "owasp-benchmark-python/flask/BenchmarkTest01228",
+        "claim_class": null,
+        "disposition": "EXCLUDED",
+        "evidence": [
+          {
+            "end_line": 1,
+            "relative_source_path": "testcode/BenchmarkTest01228.py",
+            "source_sha256": "3c026bf63b4d4fbc22f73dc5f4cbecd8a5083b99fbca4c4fe9360ef1cd042d7e",
+            "start_line": 1
+          }
+        ],
+        "expected_match": null,
+        "expected_rule_id": null,
+        "possible_rule_ids": [],
+        "reason_code": "known-benchmark-cross-category-contamination",
+        "review_state": "fixed-policy-exclusion"
+      },
+      "external_source_id": "owasp-benchmark-python",
+      "framework": "flask",
+      "upstream_label": "safe"
+    }
+  ],
+  "proposal_digest": "9c28edc88c99a6f04500faecd0c323a9b74941c59860198a4abadf85a64bba75",
+  "sampling": {
+    "per_rule_and_disposition_limit": 3,
+    "ranking": "SHA-256 of dimension, NUL, and immutable candidate ID",
+    "required": [
+      "all unresolved decisions",
+      "source and framework representatives",
+      "excluded known-contamination representatives"
+    ]
+  },
+  "schema_version": "securescan-python-sast-applicability-audit-v1"
+}

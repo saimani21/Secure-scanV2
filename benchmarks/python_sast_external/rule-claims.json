@@ -1,0 +1,453 @@
+{
+  "frozen_ruleset": {
+    "digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+    "id": "securescan-python-baseline-v2",
+    "version": "2"
+  },
+  "rules": [
+    {
+      "analysis_boundary": [
+        "built-in identity and literal-vs-expression inspection only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "claim_class": "dangerous-api-observation",
+      "explicit_exclusions": [
+        "literal-only source",
+        "unrelated object eval methods",
+        "shadowed or ambiguous built-in binding"
+      ],
+      "external_label_scoring": {
+        "safe": false,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "unshadowed built-in eval called with a non-literal expression"
+      ],
+      "relevant_cwes": [
+        94,
+        95
+      ],
+      "rule_id": "securescan.python.dangerous-eval",
+      "safe_counterparts": [
+        "literal-only direct eval is outside the positive claim"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "built-in identity and literal-vs-expression inspection only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "claim_class": "dangerous-api-observation",
+      "explicit_exclusions": [
+        "literal-only source",
+        "unrelated object exec methods",
+        "shadowed or ambiguous built-in binding"
+      ],
+      "external_label_scoring": {
+        "safe": false,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "unshadowed built-in exec called with a non-literal expression"
+      ],
+      "relevant_cwes": [
+        94,
+        95
+      ],
+      "rule_id": "securescan.python.dangerous-exec",
+      "safe_counterparts": [
+        "literal-only direct exec is outside the positive claim"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "semantic import and alias resolution only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "claim_class": "dangerous-api-observation",
+      "explicit_exclusions": [
+        "unrelated object system methods",
+        "ambiguous or shadowed imports"
+      ],
+      "external_label_scoring": {
+        "safe": false,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "direct semantic use of os.system including unambiguous aliases"
+      ],
+      "relevant_cwes": [
+        78
+      ],
+      "rule_id": "securescan.python.os-system",
+      "safe_counterparts": []
+    },
+    {
+      "analysis_boundary": [
+        "semantic import and alias resolution only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "claim_class": "dangerous-api-observation",
+      "explicit_exclusions": [
+        "unrelated object popen methods",
+        "ambiguous or shadowed imports"
+      ],
+      "external_label_scoring": {
+        "safe": false,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "direct semantic use of os.popen including unambiguous aliases"
+      ],
+      "relevant_cwes": [
+        78
+      ],
+      "rule_id": "securescan.python.os-popen",
+      "safe_counterparts": []
+    },
+    {
+      "analysis_boundary": [
+        "semantic import and alias resolution only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "claim_class": "dangerous-api-observation",
+      "explicit_exclusions": [
+        "unrelated object load or loads methods",
+        "ambiguous or shadowed imports"
+      ],
+      "external_label_scoring": {
+        "safe": false,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "direct semantic use of pickle.load or pickle.loads including unambiguous aliases"
+      ],
+      "relevant_cwes": [
+        502
+      ],
+      "rule_id": "securescan.python.unsafe-pickle-load",
+      "safe_counterparts": []
+    },
+    {
+      "analysis_boundary": [
+        "semantic import and alias resolution only",
+        "no race exploitability or attacker-control claim"
+      ],
+      "claim_class": "dangerous-api-observation",
+      "explicit_exclusions": [
+        "NamedTemporaryFile",
+        "TemporaryFile",
+        "unrelated mktemp methods"
+      ],
+      "external_label_scoring": {
+        "safe": false,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "direct semantic use of tempfile.mktemp including an unambiguous alias"
+      ],
+      "relevant_cwes": [
+        377
+      ],
+      "rule_id": "securescan.python.insecure-tempfile-mktemp",
+      "safe_counterparts": [
+        "tempfile.NamedTemporaryFile",
+        "tempfile.TemporaryFile"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "literal keyword inspection on the frozen subprocess API family",
+        "no shell-command taint or reachability analysis"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "shell omitted",
+        "literal shell false",
+        "dynamic shell values",
+        "subprocess APIs outside run, Popen, and check_output"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "subprocess.run, subprocess.Popen, or subprocess.check_output with literal shell true"
+      ],
+      "relevant_cwes": [
+        78
+      ],
+      "rule_id": "securescan.python.subprocess-shell-true",
+      "safe_counterparts": [
+        "the same API family with literal shell false"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "semantic import and literal loader inspection only",
+        "no deserialization taint or object-flow analysis"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "yaml.safe_load",
+        "SafeLoader",
+        "CSafeLoader",
+        "FullLoader",
+        "ambiguous loader binding"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "yaml.unsafe_load",
+        "yaml.load with Loader, UnsafeLoader, or CLoader in positional or keyword form"
+      ],
+      "relevant_cwes": [
+        502
+      ],
+      "rule_id": "securescan.python.unsafe-yaml-load",
+      "safe_counterparts": [
+        "yaml.safe_load",
+        "yaml.load with SafeLoader or CSafeLoader"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "literal verify keyword inspection on requests get, post, and request",
+        "no TLS reachability or transport analysis"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "verify omitted",
+        "literal verify true",
+        "dynamic verify values",
+        "unrelated client methods"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "requests get, post, or request with literal verify false including unambiguous aliases"
+      ],
+      "relevant_cwes": [
+        295
+      ],
+      "rule_id": "securescan.python.requests-verify-false",
+      "safe_counterparts": [
+        "the same requests API family with literal verify true"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "simple local requests Session object identity and literal assignment only",
+        "no general object or interprocedural dataflow"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "dynamic verify values",
+        "unrelated Session classes",
+        "ambiguous object identity"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "a local requests.Session instance with verify explicitly assigned literal false"
+      ],
+      "relevant_cwes": [
+        295
+      ],
+      "rule_id": "securescan.python.requests-session-verify-false",
+      "safe_counterparts": [
+        "a local requests.Session instance with verify explicitly assigned literal true"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "semantic import and call identity only",
+        "no TLS reachability or transport analysis"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "verified SSL context constructors",
+        "unrelated _create_unverified_context functions"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "semantic invocation of ssl._create_unverified_context including an unambiguous alias"
+      ],
+      "relevant_cwes": [
+        295
+      ],
+      "rule_id": "securescan.python.ssl-unverified-context",
+      "safe_counterparts": [
+        "ssl.create_default_context"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "simple local Paramiko SSHClient identity and semantic constructor resolution",
+        "no general object or interprocedural dataflow"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "unrelated AutoAddPolicy classes",
+        "ambiguous client or policy identity"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "Paramiko SSHClient set_missing_host_key_policy called with paramiko.AutoAddPolicy"
+      ],
+      "relevant_cwes": [
+        295
+      ],
+      "rule_id": "securescan.python.paramiko-autoaddpolicy",
+      "safe_counterparts": [
+        "Paramiko RejectPolicy"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "simple local Flask application identity and literal debug keyword inspection",
+        "no general object or interprocedural dataflow"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "literal debug false",
+        "dynamic debug values",
+        "unrelated run methods"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "a local Flask application run call with literal debug true"
+      ],
+      "relevant_cwes": [
+        489
+      ],
+      "rule_id": "securescan.python.flask-debug-enabled",
+      "safe_counterparts": [
+        "the same Flask run call with literal debug false"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "semantic Environment constructor identity and literal autoescape inspection",
+        "no template-flow or rendering-context analysis"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "literal autoescape true",
+        "select_autoescape",
+        "dynamic autoescape values",
+        "unrelated Environment classes"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "jinja2.Environment with literal autoescape false"
+      ],
+      "relevant_cwes": [
+        79
+      ],
+      "rule_id": "securescan.python.jinja-autoescape-disabled",
+      "safe_counterparts": [
+        "jinja2.Environment with literal autoescape true or select_autoescape"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "direct execute-call argument shape only",
+        "no SQL taint, variable tracking, or interprocedural analysis"
+      ],
+      "claim_class": "direct-interpolation-sink",
+      "explicit_exclusions": [
+        "f-string assigned to a variable before execute",
+        "concatenation passed to execute",
+        "percent formatting passed to execute",
+        "format calls passed to execute"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "an execute method whose direct first argument is an f-string expression"
+      ],
+      "relevant_cwes": [
+        89
+      ],
+      "rule_id": "securescan.python.sql-fstring-execute",
+      "safe_counterparts": [
+        "parameterized execute with a non-f-string query and separate parameters"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "semantic PyJWT decode identity and literal options dictionary inspection",
+        "no token-flow or unrelated validation-option analysis"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "unrelated JWT validation options",
+        "dynamic options dictionaries",
+        "unrelated decode functions"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "PyJWT decode with options containing literal verify_signature false"
+      ],
+      "relevant_cwes": [
+        347
+      ],
+      "rule_id": "securescan.python.jwt-signature-verification-disabled",
+      "safe_counterparts": [
+        "PyJWT decode with verify_signature true or without disabling signature verification"
+      ]
+    },
+    {
+      "analysis_boundary": [
+        "semantic lxml XMLParser identity and literal resolve_entities inspection",
+        "no XML source-flow or parser-object dataflow"
+      ],
+      "claim_class": "explicit-insecure-pattern",
+      "explicit_exclusions": [
+        "resolve_entities false or omitted",
+        "dynamic resolve_entities values",
+        "standard-library and unrelated XMLParser classes"
+      ],
+      "external_label_scoring": {
+        "safe": true,
+        "vulnerable": true
+      },
+      "positive_scope": [
+        "lxml.etree.XMLParser with literal resolve_entities true"
+      ],
+      "relevant_cwes": [
+        611
+      ],
+      "rule_id": "securescan.python.lxml-resolve-entities",
+      "safe_counterparts": [
+        "lxml XMLParser with resolve_entities false",
+        "defused or standard-library XML parsers"
+      ]
+    }
+  ],
+  "schema_version": "securescan-python-sast-rule-claims-v1"
+}

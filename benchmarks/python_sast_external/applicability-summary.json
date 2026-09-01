@@ -1,0 +1,254 @@
+{
+  "audit_sample_count": 83,
+  "candidate_inventory_digest": "84e60a1e411ed2f517356e2a6a11bf1fe03fc4945672d120cdb50ead9d4dd60b",
+  "counts_by_claim_class": {
+    "dangerous-api-observation": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 204,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 218,
+      "UNRESOLVED": 0
+    },
+    "direct-interpolation-sink": {
+      "APPLICABLE_NEGATIVE": 14,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 122,
+      "UNRESOLVED": 0
+    },
+    "explicit-insecure-pattern": {
+      "APPLICABLE_NEGATIVE": 165,
+      "APPLICABLE_POSITIVE": 196,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 549,
+      "UNRESOLVED": 0
+    }
+  },
+  "counts_by_disposition": {
+    "APPLICABLE_NEGATIVE": 179,
+    "APPLICABLE_POSITIVE": 400,
+    "EXCLUDED": 33,
+    "OUT_OF_SCOPE": 848,
+    "UNRESOLVED": 0
+  },
+  "counts_by_external_source": {
+    "benchproctor-python-quicktest": {
+      "APPLICABLE_NEGATIVE": 178,
+      "APPLICABLE_POSITIVE": 360,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 662,
+      "UNRESOLVED": 0
+    },
+    "owasp-benchmark-python": {
+      "APPLICABLE_NEGATIVE": 1,
+      "APPLICABLE_POSITIVE": 40,
+      "EXCLUDED": 33,
+      "OUT_OF_SCOPE": 186,
+      "UNRESOLVED": 0
+    }
+  },
+  "counts_by_framework": {
+    "django": {
+      "APPLICABLE_NEGATIVE": 64,
+      "APPLICABLE_POSITIVE": 120,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 216,
+      "UNRESOLVED": 0
+    },
+    "fastapi": {
+      "APPLICABLE_NEGATIVE": 61,
+      "APPLICABLE_POSITIVE": 120,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 219,
+      "UNRESOLVED": 0
+    },
+    "flask": {
+      "APPLICABLE_NEGATIVE": 54,
+      "APPLICABLE_POSITIVE": 160,
+      "EXCLUDED": 33,
+      "OUT_OF_SCOPE": 413,
+      "UNRESOLVED": 0
+    }
+  },
+  "counts_by_rule": {
+    "securescan.python.dangerous-eval": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 106,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 106,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.dangerous-exec": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 34,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 47,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.flask-debug-enabled": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 120,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.insecure-tempfile-mktemp": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 0,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.jinja-autoescape-disabled": {
+      "APPLICABLE_NEGATIVE": 5,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 204,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.jwt-signature-verification-disabled": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 120,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.lxml-resolve-entities": {
+      "APPLICABLE_NEGATIVE": 60,
+      "APPLICABLE_POSITIVE": 60,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 28,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.os-popen": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 6,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.os-system": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 20,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 23,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.paramiko-autoaddpolicy": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 0,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.requests-session-verify-false": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 0,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.requests-verify-false": {
+      "APPLICABLE_NEGATIVE": 60,
+      "APPLICABLE_POSITIVE": 60,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 0,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.sql-fstring-execute": {
+      "APPLICABLE_NEGATIVE": 14,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 122,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.ssl-unverified-context": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 0,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.subprocess-shell-true": {
+      "APPLICABLE_NEGATIVE": 14,
+      "APPLICABLE_POSITIVE": 47,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 42,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.unsafe-pickle-load": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 44,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 42,
+      "UNRESOLVED": 0
+    },
+    "securescan.python.unsafe-yaml-load": {
+      "APPLICABLE_NEGATIVE": 26,
+      "APPLICABLE_POSITIVE": 29,
+      "EXCLUDED": 0,
+      "OUT_OF_SCOPE": 35,
+      "UNRESOLVED": 0
+    }
+  },
+  "counts_by_upstream_label": {
+    "safe": {
+      "APPLICABLE_NEGATIVE": 179,
+      "APPLICABLE_POSITIVE": 0,
+      "EXCLUDED": 28,
+      "OUT_OF_SCOPE": 558,
+      "UNRESOLVED": 0
+    },
+    "vulnerable": {
+      "APPLICABLE_NEGATIVE": 0,
+      "APPLICABLE_POSITIVE": 400,
+      "EXCLUDED": 5,
+      "OUT_OF_SCOPE": 290,
+      "UNRESOLVED": 0
+    }
+  },
+  "excluded_known_contamination_count": 33,
+  "out_of_scope_reason_counts": {
+    "dangerous-api-safe-label-not-a-negative": 177,
+    "different-api-or-configuration-family": 120,
+    "different-debug-or-stack-trace-pattern": 120,
+    "different-deserialization-api-family": 35,
+    "different-xml-parser-family": 28,
+    "not-direct-fstring-execute": 122,
+    "requires-taint-or-dataflow-analysis": 6,
+    "unrelated-framework-or-output-encoding-pattern": 204,
+    "upstream-safe-label-requires-contextual-mitigation-review": 36
+  },
+  "proposal_digest": "9c28edc88c99a6f04500faecd0c323a9b74941c59860198a4abadf85a64bba75",
+  "proposal_state": "IMPLEMENTED-PENDING-HUMAN-APPROVAL",
+  "reason_counts": {
+    "dangerous-api-safe-label-not-a-negative": 177,
+    "different-api-or-configuration-family": 120,
+    "different-debug-or-stack-trace-pattern": 120,
+    "different-deserialization-api-family": 35,
+    "different-xml-parser-family": 28,
+    "direct-semantic-api-use": 64,
+    "jinja-safe-autoescape": 5,
+    "known-benchmark-cross-category-contamination": 33,
+    "literal-shell-false": 14,
+    "literal-shell-true": 47,
+    "lxml-resolve-entities-literal-true": 60,
+    "nonliteral-built-in-source": 140,
+    "not-direct-fstring-execute": 122,
+    "parameterized-execute": 14,
+    "requests-verify-literal-false": 60,
+    "requests-verify-literal-true": 60,
+    "requires-taint-or-dataflow-analysis": 6,
+    "safe-or-standard-library-xml-parser": 60,
+    "unrelated-framework-or-output-encoding-pattern": 204,
+    "upstream-safe-label-requires-contextual-mitigation-review": 36,
+    "yaml-explicit-unsafe-loader": 29,
+    "yaml-safe-load": 26
+  },
+  "review_selection_digest": "81cb5657d9501bfd0f5aa41125813168bf811788d02d8603ade43e6482384534",
+  "rule_claim_catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+  "schema_version": "securescan-python-sast-applicability-summary-v1",
+  "source_lock_digest": "ded3352210520814c03532686096a834c0fac95de51cdb13b02bda4a6aeefd23",
+  "total_candidate_count": 1460,
+  "unresolved_reason_counts": {}
+}

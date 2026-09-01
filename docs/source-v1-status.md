@@ -39,6 +39,7 @@ Status: COMPLETE
 | v0.3F1 | Controlled local Python SAST benchmark | COMPLETE |
 | v0.3F2A | External benchmark methodology/source selection | COMPLETE |
 | v0.3F2B | Pinned external candidate acquisition | COMPLETE |
+| v0.3F2C | Claim-aligned external applicability review | COMPLETE |
 | v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
 
 ## Source Intelligence Foundation Freeze
@@ -225,10 +226,20 @@ v0.3F2A selects OWASP BenchmarkPython and the BenchProctor Python quicktest
 bundle as complementary external synthetic sources. v0.3F2B pins and
 authenticates their immutable source identities, parses their external ground
 truth, and commits only a deterministic candidate inventory and count summary.
-External code remains in an ignored cache and is not vendored. A matching CWE
-is only a broad candidate filter; claim-aligned applicability review occurs
-before any SecureScan scan. No external candidate has yet been scanned or
-classified as TP, FP, FN, or TN, and no external-corpus metrics exist.
+External code remains in an ignored cache and is not vendored.
+
+v0.3F2C establishes a proposed claim relation before scanning by independently
+inspecting Python syntax and semantic API identities against a human-reviewable
+catalog of the 17 frozen claims. CWE overlap alone is insufficient. Dangerous
+API observation claims are distinct from vulnerability-pattern claims, so an
+arbitrary safe-labeled case that still uses an audited API is not converted into
+a negative. Ambiguous, shadowed, multi-claim, or unparsable cases remain
+unresolved and unscored; the 33 known-contaminated cases remain excluded. Every
+non-excluded proposal remains pending hostile/human approval.
+
+No external candidate has yet been scanned or classified as TP, FP, FN, or TN,
+and no external-corpus precision, recall, or F1 metrics exist. `PYTHON_SAST`
+remains `SCANNABLE`.
 
 OWASP BenchmarkPython pull request 6 is represented as known cross-category
 XSS contamination in 33 deserialization files, not as a dispute of their
@@ -236,9 +247,9 @@ published CWE-502 labels. The original CWEs and vulnerable/safe labels remain
 accepted, while the affected cases are explicitly excluded from later scoring
 pending applicability review.
 
-PySASTBench is deferred to v0.3F2C as a real-world CVE discovery/index source
-only. Its 6.2 GB archive is not acquired in v0.3F2B, and prior scanner-result
-columns may not influence later case selection. v0.3F2 is not complete.
+PySASTBench remains deferred as a possible real-world CVE discovery/index source
+only. Its 6.2 GB archive has not been acquired, and prior scanner-result columns
+may not influence any later case selection. v0.3F2 is not complete.
 
 ## Known Non-Blocking Maintenance
 

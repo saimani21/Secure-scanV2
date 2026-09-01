@@ -54,13 +54,41 @@ Those labels and CWEs therefore remain accepted and unchanged. The separate
 until applicability review resolves their treatment. OWASP issue 1 disputes the CWE-22 label for
 `BenchmarkTest00008`; CWE-22 is outside this candidate filter and the case is not inventoried.
 
-## PySASTBench boundary for v0.3F2C
+## Claim-aligned applicability proposal
 
-The 6.2 GB PySASTBench archive is not downloaded or vendored here. A later v0.3F2C phase may use
+v0.3F2C records a proposed applicability disposition for all 1,460 candidates in
+`applicability-proposal.json`. The proposal is generated before scanner execution from the
+candidate metadata, verified source files, Python AST semantics, and the independent frozen claim
+catalog in `rule-claims.json`. It does not read the production Semgrep YAML. CWE overlap alone is
+not evidence that a candidate exercises a frozen claim.
+
+The catalog distinguishes dangerous-API observations from explicit insecure patterns and the
+direct-interpolation SQL sink. Safe-labeled examples that still use an intentionally audited API
+are not treated as rule negatives. Meaningful literal safe counterparts may be proposed as
+`APPLICABLE_NEGATIVE`; arbitrary same-CWE safe code may not. Ambiguous binding, shadowing,
+multiple claim relations, and parser uncertainty remain `UNRESOLVED` and unscored. The 33 known
+cross-category-contaminated cases remain `EXCLUDED` by fixed policy.
+
+`applicability-audit-sample.json` provides a deterministic, hash-selected hostile-review sample
+without source bodies or host paths. `applicability-summary.json` contains disposition and reason
+counts only. All non-excluded decisions remain `pending-human-approval`; implementation does not
+make them final benchmark truth.
+
+Rebuild these three canonical proposal files from the already verified offline cache with:
+
+```text
+./.venv/bin/python -m securescan.benchmarks.python_sast_applicability_cli
+```
+
+No external benchmark candidate has been scanned by SecureScan or Semgrep. The applicability proposal was generated without scanner output and was reproduced identically in a scanner-blocked environment., and these files contain no TP, FP, FN, TN, precision, recall, or
+F1 measures. `PYTHON_SAST` remains `SCANNABLE`.
+
+## Deferred PySASTBench boundary
+
+The 6.2 GB PySASTBench archive is not downloaded or vendored here. A later phase may use
 PySASTBench only as a real-world CVE discovery/index source. Candidate discovery may use CVE, CWE,
 project, vulnerable position, and affected/fixed version fields. It must not use columns containing
 prior Semgrep, Bandit, or other scanner detection results. Any selected real upstream repository
 must then be pinned and authenticated directly.
 
-Claim-aligned applicability review occurs before any SecureScan scan. There are no external-corpus
-precision, recall, F1 or product-readiness metrics in v0.3F2B.
+The current proposal neither starts that work nor changes the F2B source selection.
