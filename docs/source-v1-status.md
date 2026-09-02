@@ -58,6 +58,7 @@ Status: COMPLETE
 | v0.4C | Defensive Gitleaks parsing and secret-safe normalization | COMPLETE |
 | v0.4D | Gitleaks applicability, Source support, and planning integration | COMPLETE |
 | v0.4E | Stable secret-safe Gitleaks finding identity | COMPLETE |
+| v0.4F1 | Gitleaks benchmark contract and manifest model | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -520,3 +521,35 @@ cross-tool correlation remain outside this checkpoint.
 
 v0.4E performs no filesystem access, network access, scanner execution, policy
 suppression, maturity promotion, or finding deduplication.
+
+## Gitleaks v0.4F1 Benchmark Contract Boundary
+
+v0.4F1 freezes the benchmark law before any scored Gitleaks corpus or benchmark
+result is created.
+
+The contract is bound to Gitleaks 8.30.1, the frozen v0.4A trusted binding,
+the v0.4E baseline commit and tag, and canonical content-addressed benchmark
+metadata.
+
+Each scored case defines exactly one expected detector relation. Expected
+matches and expected non-matches later classify as TP/FN and FP/TN
+respectively. OUT_OF_SCOPE cases are explicitly unscored. Findings from other
+rules are not silently attributed to the case relation and must be accounted
+for separately by later evaluation infrastructure.
+
+The manifest and corpus fail closed for malformed schemas, duplicate case IDs,
+duplicate paths, noncanonical case ordering, changed or missing files, unlisted
+files, traversal-shaped paths, and symlink substitution of benchmark artifacts,
+manifest files, corpus directories, or case files.
+
+The contract permits whole-file SHA-256 only for benchmark corpus integrity.
+Raw secret values, raw Match data, Gitleaks Fingerprint values, and
+secret-derived public identities remain prohibited from benchmark reports.
+
+v0.4F1 does not execute Gitleaks, produce detection metrics, create a maturity
+decision, validate credentials, scan Git history, access the network, traverse
+archives, or perform recursive decoding.
+
+Representative future benchmark evidence will not certify every inherited
+Gitleaks default detector, and perfect bounded-corpus metrics will not imply
+ecosystem-wide zero false positives or zero false negatives.
