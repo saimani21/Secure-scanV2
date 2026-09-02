@@ -1,0 +1,80 @@
+{
+  "accepted_case_set_digest": "60d44ea9cf0f174e1488c5b8dbccde2804524fe4d3bfa31b9db0810e52332a92",
+  "accepted_cve_count": 13,
+  "applicable_relation_count": 7,
+  "applicable_unique_case_family_count": 6,
+  "applicable_unique_project_count": 5,
+  "case_disposition_counts": {
+    "CLAIM_APPLICABLE": 7,
+    "OUTSIDE_FROZEN_RULE_CLAIMS": 6,
+    "UNRESOLVED": 0
+  },
+  "changed_case_count": 1,
+  "changed_cases": [
+    {
+      "cve_id": "CVE-2023-40581",
+      "new_disposition": "CLAIM_APPLICABLE",
+      "new_rule_ids": [
+        "securescan.python.subprocess-shell-true"
+      ],
+      "old_disposition": "OUTSIDE_FROZEN_RULE_CLAIMS",
+      "old_rule_ids": [],
+      "reason": "corrected subprocess claim includes subprocess.call with shell=True; the fixed revision removes that frozen pattern"
+    }
+  ],
+  "discrimination_expectation_counts": {
+    "NOT_EXPECTED_TO_DISCRIMINATE": 4,
+    "SHOULD_DISCRIMINATE": 3
+  },
+  "relations_by_case_family": {
+    "airflow-xcom-pickle-deserialization": 1,
+    "ipython-windows-command-line-shell-injection": 1,
+    "llama-index-safe-eval-restriction-bypass": 2,
+    "transformers-tf-checkpoint-pickle-deserialization": 1,
+    "transformers-transfoxl-rag-pickle-deserialization": 1,
+    "yt-dlp-exec-shell-quoting": 1
+  },
+  "relations_by_cwe": {
+    "502": 3,
+    "77": 1,
+    "78": 2,
+    "94": 2
+  },
+  "relations_by_project": {
+    "airflow": 1,
+    "ipython": 1,
+    "llama-index": 2,
+    "transformers": 2,
+    "yt-dlp": 1
+  },
+  "relations_by_rule": {
+    "securescan.python.dangerous-eval": 2,
+    "securescan.python.os-system": 1,
+    "securescan.python.subprocess-shell-true": 1,
+    "securescan.python.unsafe-pickle-load": 3
+  },
+  "rule_claim_contract_digest": "0e0d9a118a7567049ad26f046b0f097ba8390d74f05f2b721452683ee3c2e62d",
+  "rules_represented_by_real_world_cases": [
+    "securescan.python.dangerous-eval",
+    "securescan.python.os-system",
+    "securescan.python.subprocess-shell-true",
+    "securescan.python.unsafe-pickle-load"
+  ],
+  "rules_without_real_world_applicable_cve": [
+    "securescan.python.dangerous-exec",
+    "securescan.python.flask-debug-enabled",
+    "securescan.python.insecure-tempfile-mktemp",
+    "securescan.python.jinja-autoescape-disabled",
+    "securescan.python.jwt-signature-verification-disabled",
+    "securescan.python.lxml-resolve-entities",
+    "securescan.python.os-popen",
+    "securescan.python.paramiko-autoaddpolicy",
+    "securescan.python.requests-session-verify-false",
+    "securescan.python.requests-verify-false",
+    "securescan.python.sql-fstring-execute",
+    "securescan.python.ssl-unverified-context",
+    "securescan.python.unsafe-yaml-load"
+  ],
+  "schema_version": "securescan-python-sast-realworld-applicability-summary-v2",
+  "source_lock_digest": "0bba4bbe5ce557f1382f61f9af3320adef5cc53ab386d1c63f4983d8cbf48a00"
+}

@@ -48,7 +48,10 @@ same-CWE similarity alone is insufficient. Vulnerable and fixed revisions are
 classified independently because a dangerous-API observation may legitimately
 remain true after a vulnerability is fixed.
 
-The three `applicability-*.json` documents account for all 13 accepted CVEs.
+The three historical v1 `applicability-*.json` documents account for all 13
+accepted CVEs: six were claim-applicable, seven were outside, six relations
+produced 12 revision expectations, and three of 17 rules were represented.
+These are preserved F2E2 values, not the current v2 applicability result.
 `OUTSIDE_FROZEN_RULE_CLAIMS` means that the legitimate CVE implementation is
 outside the current claim boundary; it is not a future false negative and does
 not enter F2E3 evaluation. Generation uses Python AST/source inspection and
@@ -64,6 +67,50 @@ Run the scanner-independent review tooling with the project interpreter:
 .venv/bin/python -m securescan.benchmarks.python_sast_realworld_applicability_cli summary
 ```
 
-F2E2 is implemented but pending hostile/human approval. F2E3 remains future
-work, no real-world scan or metrics exist, and `PYTHON_SAST` remains
-`SCANNABLE`.
+F2E2 remains immutable historical v1 applicability evidence. Its decisions and
+evidence regions were not rewritten when the claim contract was corrected.
+
+## Claim-contract reconciliation
+
+The provisional v0.3F2E3 execution exposed drift between the historical prose
+claim catalog and the already-frozen production rules. In particular, the
+production `subprocess-shell-true` rule also covers `subprocess.call` and
+`subprocess.check_call`, while `requests-verify-false` also covers `options`,
+`head`, `put`, `patch`, and `delete`. The all-rule F2E4 audit also records where
+v1 prose asserted binding identity that the syntactic production patterns do
+not establish. The production ruleset was not changed.
+
+The corrected machine-readable contract is
+`../python_sast_external/rule-claims-v2.json`; the complete 17-rule comparison
+is `../python_sast_external/rule-claim-conformance-audit-v2.json`. Historical
+`rule-claims.json` and all F2E2 v1 evidence remain preserved in place.
+
+F2E4 regenerated applicability from the frozen F2E1 Git blobs and claim
+contract v2 using AST/source inspection only. It did not read provisional F2E3
+outputs and did not execute Semgrep or SecureScan against the CVE corpus. The
+v2 proposal, summary, and full review are recorded separately with `-v2`
+filenames. Their deterministic delta identifies every v1-to-v2 decision change;
+the yt-dlp case is independently reclassified because its vulnerable revision
+contains `subprocess.call(..., shell=True)` and its fixed revision removes that
+pattern.
+
+The current v2 result reviews all 13 CVEs: seven are `CLAIM_APPLICABLE`, six
+are `OUTSIDE_FROZEN_RULE_CLAIMS`, and none are `UNRESOLVED`. Seven applicable
+relations produce 14 revision expectations: 11 expected-positive and three
+expected-negative. Three relations `SHOULD_DISCRIMINATE`; four are
+`NOT_EXPECTED_TO_DISCRIMINATE`. Four of 17 rules are represented:
+`dangerous-eval`, `os-system`, `subprocess-shell-true`, and
+`unsafe-pickle-load`.
+
+Use:
+
+```text
+.venv/bin/python -m securescan.benchmarks.python_sast_rule_claim_contract_v2_cli check
+.venv/bin/python -m securescan.benchmarks.python_sast_rule_claim_contract_v2_cli generate
+.venv/bin/python -m securescan.benchmarks.python_sast_realworld_applicability_v2_cli check
+.venv/bin/python -m securescan.benchmarks.python_sast_realworld_applicability_v2_cli generate
+```
+
+The prior F2E3 metrics were provisional and are superseded rather than frozen.
+Corrected real-world execution remains pending a later checkpoint.
+`PYTHON_SAST` remains `SCANNABLE`, and the maturity decision belongs to F2F.

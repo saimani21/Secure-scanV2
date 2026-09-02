@@ -43,6 +43,8 @@ Status: COMPLETE
 | v0.3F2D | Controlled external Python SAST evaluation | COMPLETE |
 | v0.3F2E1 | Real-world Python CVE discovery and upstream pinning | COMPLETE |
 | v0.3F2E2 | Real-world Python CVE claim applicability | COMPLETE |
+| v0.3F2E3 | Controlled real-world Python SAST evaluation | PROVISIONAL - SUPERSEDED |
+| v0.3F2E4 | Production rule-claim contract reconciliation | COMPLETE |
 | v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
 
 ## Source Intelligence Foundation Freeze
@@ -278,9 +280,31 @@ bound to its F2E1 path, revision role, and source hash. A fixed revision may
 legitimately remain claim-positive for a dangerous-API observation.
 `OUTSIDE_FROZEN_RULE_CLAIMS` records legitimate CVEs whose implementation is
 outside the current rule semantics; those cases are not future false negatives.
-No Semgrep or SecureScan execution occurred, no real-world metrics exist, and
-the proposal remains pending hostile/human approval. F2E3 remains future work,
-`PYTHON_SAST` remains `SCANNABLE`, and v0.3F2 is not complete.
+F2E2 did not execute Semgrep or SecureScan and produced no metrics. Its approved
+proposal is an immutable historical v1 record, not the expectation input for a
+corrected execution. Historical v1 classified six CVEs as applicable and seven
+outside, with six relations, 12 revision expectations, and three of 17 rules
+represented. `PYTHON_SAST` remains `SCANNABLE`, and v0.3F2 is not complete.
+
+The provisional F2E3 execution exposed drift between the historical v1 claim
+prose and the frozen production patterns. Those metrics are superseded and not
+frozen evidence. F2E4 leaves the production Semgrep rules byte-identical,
+preserves the historical v1 claim/applicability artifacts, and records a
+versioned 17-rule conformance audit plus corrected claim contract v2.
+
+Applicability v2 was regenerated scanner-blind from the frozen F2E1 Git blobs.
+It does not import the evaluation implementation and cannot read the provisional
+F2E3 report or review. Its explicit v1-to-v2 delta independently reclassifies
+CVE-2023-40581 because the vulnerable revision uses
+`subprocess.call(..., shell=True)` and the fixed revision removes that frozen
+pattern. Current v2 applicability reviews 13 CVEs: seven are applicable, six
+are outside, and zero are unresolved. Seven relations produce 14 revision
+expectations—11 expected-positive and three expected-negative—with three
+`SHOULD_DISCRIMINATE` and four `NOT_EXPECTED_TO_DISCRIMINATE`. Four of 17 rules
+are represented: `dangerous-eval`, `os-system`, `subprocess-shell-true`, and
+`unsafe-pickle-load`. Corrected real-world execution remains pending.
+`PYTHON_SAST` remains `SCANNABLE`, v0.3F2 is not complete, and the maturity
+decision belongs to F2F.
 
 ## Known Non-Blocking Maintenance
 

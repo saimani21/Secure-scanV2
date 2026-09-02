@@ -1,0 +1,1059 @@
+{
+  "audit_digest": "d9c6b52c77e6fc8fdd4a8ea8ba9a29274bd7f416622c35904a44d3c4348e7d2a",
+  "contract_digest": "0e0d9a118a7567049ad26f046b0f097ba8390d74f05f2b721452683ee3c2e62d",
+  "historical_claim_catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+  "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+  "rules": [
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "syntactic call and static-string exclusion only",
+        "no binding, taint, or reachability claim"
+      ],
+      "corrected_exclusions": [
+        "a direct eval call whose first argument is a static string",
+        "object methods named eval"
+      ],
+      "corrected_safe_counterparts": [
+        "a direct eval call with a static string is outside this rule"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 excluded shadowed eval bindings, but the production pattern does not prove built-in identity"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/dangerous-eval",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "built-in identity and literal-vs-expression inspection only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "e6cba10939d11d2047e469ad417016aebbb7052e9d1d85d508a007accc4ab0cf"
+      },
+      "historical_exclusions": [
+        "literal-only source",
+        "unrelated object eval methods",
+        "shadowed or ambiguous built-in binding"
+      ],
+      "historical_positive_scope": [
+        "unshadowed built-in eval called with a non-literal expression"
+      ],
+      "historical_safe_counterparts": [
+        "literal-only direct eval is outside the positive claim"
+      ],
+      "import_alias_behavior": "direct call spelling; no built-in or shadowing identity guarantee",
+      "production_positive_scope": {
+        "argument_shape": "first argument is not a static string matched by eval(\"...\")",
+        "canonical_call_targets": [
+          "eval"
+        ],
+        "lexical_context": [],
+        "name_resolution": "direct call spelling; no built-in or shadowing identity guarantee",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 excluded shadowed eval bindings, but the production pattern does not prove built-in identity",
+      "rule_id": "securescan.python.dangerous-eval"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "syntactic call and static-string exclusion only",
+        "no binding, taint, or reachability claim"
+      ],
+      "corrected_exclusions": [
+        "a direct exec call whose first argument is a static string",
+        "object methods named exec"
+      ],
+      "corrected_safe_counterparts": [
+        "a direct exec call with a static string is outside this rule"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 excluded shadowed exec bindings, but the production pattern does not prove built-in identity"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/dangerous-exec",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "built-in identity and literal-vs-expression inspection only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "0277e4199b15a25454ce797a5c605bf8f31db64d45304cf421a44bf233c5e3f8"
+      },
+      "historical_exclusions": [
+        "literal-only source",
+        "unrelated object exec methods",
+        "shadowed or ambiguous built-in binding"
+      ],
+      "historical_positive_scope": [
+        "unshadowed built-in exec called with a non-literal expression"
+      ],
+      "historical_safe_counterparts": [
+        "literal-only direct exec is outside the positive claim"
+      ],
+      "import_alias_behavior": "direct call spelling; no built-in or shadowing identity guarantee",
+      "production_positive_scope": {
+        "argument_shape": "first argument is not a static string matched by exec(\"...\")",
+        "canonical_call_targets": [
+          "exec"
+        ],
+        "lexical_context": [],
+        "name_resolution": "direct call spelling; no built-in or shadowing identity guarantee",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 excluded shadowed exec bindings, but the production pattern does not prove built-in identity",
+      "rule_id": "securescan.python.dangerous-exec"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "canonical call surface plus Semgrep import equivalence",
+        "no binding, taint, or reachability claim"
+      ],
+      "corrected_exclusions": [
+        "system methods not normalized to or spelled as os.system"
+      ],
+      "corrected_safe_counterparts": [],
+      "correction_required": true,
+      "differences": [
+        "v1 required unambiguous os identity, while the production pattern also matches the canonical surface without proving that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/os-system",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic import and alias resolution only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "22869d7ac2bf53c861cb8488cf7c67c8ef9e314c830a50df5708e4a240dea044"
+      },
+      "historical_exclusions": [
+        "unrelated object system methods",
+        "ambiguous or shadowed imports"
+      ],
+      "historical_positive_scope": [
+        "direct semantic use of os.system including unambiguous aliases"
+      ],
+      "historical_safe_counterparts": [],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "os.system"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 required unambiguous os identity, while the production pattern also matches the canonical surface without proving that binding",
+      "rule_id": "securescan.python.os-system"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "canonical call surface plus Semgrep import equivalence",
+        "no binding, taint, or reachability claim"
+      ],
+      "corrected_exclusions": [
+        "popen methods not normalized to or spelled as os.popen"
+      ],
+      "corrected_safe_counterparts": [],
+      "correction_required": true,
+      "differences": [
+        "v1 required unambiguous os identity, while the production pattern does not prove that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/os-popen",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic import and alias resolution only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "85f754aad2e10b9c8ecccd95e971554353b1d27407fcbfb8ec7468552e60042e"
+      },
+      "historical_exclusions": [
+        "unrelated object popen methods",
+        "ambiguous or shadowed imports"
+      ],
+      "historical_positive_scope": [
+        "direct semantic use of os.popen including unambiguous aliases"
+      ],
+      "historical_safe_counterparts": [],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "os.popen"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 required unambiguous os identity, while the production pattern does not prove that binding",
+      "rule_id": "securescan.python.os-popen"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "literal shell keyword and five-name call family only",
+        "no binding, command taint, or reachability claim"
+      ],
+      "corrected_exclusions": [
+        "shell omitted",
+        "shell=False",
+        "dynamic shell value",
+        "other subprocess APIs"
+      ],
+      "corrected_safe_counterparts": [
+        "the same five-call API family with shell=False"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 omitted subprocess.call and subprocess.check_call",
+        "v1 asserted semantic binding identity that the production pattern does not establish"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/subprocess-shell-true",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "literal keyword inspection on the frozen subprocess API family",
+        "no shell-command taint or reachability analysis"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "340abd0efac261c7ef4fd1a79921190f87b17fc24f917720575c4cc0cfa5ec4f"
+      },
+      "historical_exclusions": [
+        "shell omitted",
+        "literal shell false",
+        "dynamic shell values",
+        "subprocess APIs outside run, Popen, and check_output"
+      ],
+      "historical_positive_scope": [
+        "subprocess.run, subprocess.Popen, or subprocess.check_output with literal shell true"
+      ],
+      "historical_safe_counterparts": [
+        "the same API family with literal shell false"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "subprocess.run",
+          "subprocess.call",
+          "subprocess.check_call",
+          "subprocess.check_output",
+          "subprocess.Popen"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {
+          "shell": true
+        }
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 omitted subprocess.call and subprocess.check_call; v1 asserted semantic binding identity that the production pattern does not establish",
+      "rule_id": "securescan.python.subprocess-shell-true"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "canonical call surface plus Semgrep import equivalence",
+        "no binding, serialized-data taint, or reachability claim"
+      ],
+      "corrected_exclusions": [
+        "load or loads methods not normalized to or spelled as pickle.load or pickle.loads"
+      ],
+      "corrected_safe_counterparts": [],
+      "correction_required": true,
+      "differences": [
+        "v1 required unambiguous pickle identity, while the production pattern does not prove that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/unsafe-pickle-load",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic import and alias resolution only",
+        "no attacker-control, reachability, or dataflow claim"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "9b9a6c8c9c9cd5efffbe8154a91d2f2ecac10ab8138bc9ab9364dd5719c2ad29"
+      },
+      "historical_exclusions": [
+        "unrelated object load or loads methods",
+        "ambiguous or shadowed imports"
+      ],
+      "historical_positive_scope": [
+        "direct semantic use of pickle.load or pickle.loads including unambiguous aliases"
+      ],
+      "historical_safe_counterparts": [],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "pickle.load",
+          "pickle.loads"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 required unambiguous pickle identity, while the production pattern does not prove that binding",
+      "rule_id": "securescan.python.unsafe-pickle-load"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "enumerated call and loader shapes only",
+        "no binding, deserialization taint, or object-flow claim",
+        "FullLoader remains outside the frozen claim"
+      ],
+      "corrected_exclusions": [
+        "yaml.safe_load",
+        "SafeLoader",
+        "CSafeLoader",
+        "FullLoader",
+        "unlisted or dynamic loader values"
+      ],
+      "corrected_safe_counterparts": [
+        "yaml.safe_load",
+        "yaml.load with SafeLoader or CSafeLoader"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 asserted semantic YAML binding integrity, while module-qualified production alternatives do not prove that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/unsafe-yaml-load",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic import and literal loader inspection only",
+        "no deserialization taint or object-flow analysis"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "239efb97aa9d8ef1d71d1956add939b86591c6759b0dfe17c5592059ce0857f9"
+      },
+      "historical_exclusions": [
+        "yaml.safe_load",
+        "SafeLoader",
+        "CSafeLoader",
+        "FullLoader",
+        "ambiguous loader binding"
+      ],
+      "historical_positive_scope": [
+        "yaml.unsafe_load",
+        "yaml.load with Loader, UnsafeLoader, or CLoader in positional or keyword form"
+      ],
+      "historical_safe_counterparts": [
+        "yaml.safe_load",
+        "yaml.load with SafeLoader or CSafeLoader"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "yaml.load accepts the listed loader in keyword or second-positional form; bare loader names require the corresponding from-yaml import context",
+        "canonical_call_targets": [
+          "yaml.unsafe_load",
+          "yaml.load"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {
+          "loader_names": [
+            "Loader",
+            "UnsafeLoader",
+            "CLoader"
+          ]
+        }
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 asserted semantic YAML binding integrity, while module-qualified production alternatives do not prove that binding",
+      "rule_id": "securescan.python.unsafe-yaml-load"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "literal verify keyword and eight-name call family only",
+        "no binding, TLS reachability, or transport claim"
+      ],
+      "corrected_exclusions": [
+        "verify omitted",
+        "verify=True",
+        "dynamic verify value",
+        "other requests APIs"
+      ],
+      "corrected_safe_counterparts": [
+        "the same eight-call API family with verify=True"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 omitted requests.options, requests.head, requests.put, requests.patch, and requests.delete",
+        "v1 asserted semantic requests binding identity that the production pattern does not establish"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/requests-verify-false",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "literal verify keyword inspection on requests get, post, and request",
+        "no TLS reachability or transport analysis"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "56bd679629e5778a696a176301934617ffe8166122649f141dfe2d08f677aad0"
+      },
+      "historical_exclusions": [
+        "verify omitted",
+        "literal verify true",
+        "dynamic verify values",
+        "unrelated client methods"
+      ],
+      "historical_positive_scope": [
+        "requests get, post, or request with literal verify false including unambiguous aliases"
+      ],
+      "historical_safe_counterparts": [
+        "the same requests API family with literal verify true"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "requests.request",
+          "requests.get",
+          "requests.options",
+          "requests.head",
+          "requests.post",
+          "requests.put",
+          "requests.patch",
+          "requests.delete"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {
+          "verify": false
+        }
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 omitted requests.options, requests.head, requests.put, requests.patch, and requests.delete; v1 asserted semantic requests binding identity that the production pattern does not establish",
+      "rule_id": "securescan.python.requests-verify-false"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "same-scope lexical assignment sequence and literal false only",
+        "no binding, alias-flow, or interprocedural object-identity claim"
+      ],
+      "corrected_exclusions": [
+        "verify=True",
+        "dynamic verify assignment",
+        "absence of the preceding Session assignment pattern",
+        "constructor assignment in an ancestor or sibling lexical scope"
+      ],
+      "corrected_safe_counterparts": [
+        "the same lexical Session assignment sequence with verify=True"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 described verified requests.Session object identity, while production establishes only a lexical constructor-and-assignment sequence"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/requests-session-verify-false",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "simple local requests Session object identity and literal assignment only",
+        "no general object or interprocedural dataflow"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "ffe085effd84de4616646eeed90d9eacb3d33ae158b67c9647a0b4af68dd2492"
+      },
+      "historical_exclusions": [
+        "dynamic verify values",
+        "unrelated Session classes",
+        "ambiguous object identity"
+      ],
+      "historical_positive_scope": [
+        "a local requests.Session instance with verify explicitly assigned literal false"
+      ],
+      "historical_safe_counterparts": [
+        "a local requests.Session instance with verify explicitly assigned literal true"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "requests.Session"
+        ],
+        "lexical_context": [
+          "a name is assigned from requests.Session()",
+          "the same name later receives .verify = False in the same lexical scope"
+        ],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {
+          "verify_assignment": false
+        }
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 described verified requests.Session object identity, while production establishes only a lexical constructor-and-assignment sequence",
+      "rule_id": "securescan.python.requests-session-verify-false"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "canonical call surface plus Semgrep import equivalence",
+        "no binding, TLS reachability, or transport claim"
+      ],
+      "corrected_exclusions": [
+        "constructors not normalized to or spelled as ssl._create_unverified_context"
+      ],
+      "corrected_safe_counterparts": [
+        "ssl.create_default_context"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 required unambiguous ssl identity, while the production pattern does not prove that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/ssl-unverified-context",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic import and call identity only",
+        "no TLS reachability or transport analysis"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "5fc0b2b068076454ba1bc5d4cb958f4b752a55d2cf2e95f6ce4d2205096735b2"
+      },
+      "historical_exclusions": [
+        "verified SSL context constructors",
+        "unrelated _create_unverified_context functions"
+      ],
+      "historical_positive_scope": [
+        "semantic invocation of ssl._create_unverified_context including an unambiguous alias"
+      ],
+      "historical_safe_counterparts": [
+        "ssl.create_default_context"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "ssl._create_unverified_context"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 required unambiguous ssl identity, while the production pattern does not prove that binding",
+      "rule_id": "securescan.python.ssl-unverified-context"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "method name and policy-constructor surface only",
+        "no SSHClient receiver identity, binding, or object-flow claim"
+      ],
+      "corrected_exclusions": [
+        "a policy other than paramiko.AutoAddPolicy()",
+        "a different method name"
+      ],
+      "corrected_safe_counterparts": [
+        "set_missing_host_key_policy(paramiko.RejectPolicy())"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 required a Paramiko SSHClient receiver identity, but production permits any receiver metavariable"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/paramiko-autoaddpolicy",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "simple local Paramiko SSHClient identity and semantic constructor resolution",
+        "no general object or interprocedural dataflow"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "2b36ec94344f4468fbe701942a20b40dba23726b747838de49932e27c703e8cd"
+      },
+      "historical_exclusions": [
+        "unrelated AutoAddPolicy classes",
+        "ambiguous client or policy identity"
+      ],
+      "historical_positive_scope": [
+        "Paramiko SSHClient set_missing_host_key_policy called with paramiko.AutoAddPolicy"
+      ],
+      "historical_safe_counterparts": [
+        "Paramiko RejectPolicy"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "first argument is a zero-argument paramiko.AutoAddPolicy() construction",
+        "canonical_call_targets": [
+          "<any-receiver>.set_missing_host_key_policy"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 required a Paramiko SSHClient receiver identity, but production permits any receiver metavariable",
+      "rule_id": "securescan.python.paramiko-autoaddpolicy"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "canonical call surface plus Semgrep import equivalence",
+        "no binding, race exploitability, or attacker-control claim"
+      ],
+      "corrected_exclusions": [
+        "NamedTemporaryFile",
+        "TemporaryFile",
+        "mktemp methods not normalized to or spelled as tempfile.mktemp"
+      ],
+      "corrected_safe_counterparts": [
+        "tempfile.NamedTemporaryFile",
+        "tempfile.TemporaryFile"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 required unambiguous tempfile identity, while the production pattern does not prove that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/insecure-tempfile-mktemp",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic import and alias resolution only",
+        "no race exploitability or attacker-control claim"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "27fd2b4fa49f2295fec1a0fa51d74bc948931581f8a3d8ab6c01339e987f00ca"
+      },
+      "historical_exclusions": [
+        "NamedTemporaryFile",
+        "TemporaryFile",
+        "unrelated mktemp methods"
+      ],
+      "historical_positive_scope": [
+        "direct semantic use of tempfile.mktemp including an unambiguous alias"
+      ],
+      "historical_safe_counterparts": [
+        "tempfile.NamedTemporaryFile",
+        "tempfile.TemporaryFile"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "tempfile.mktemp"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 required unambiguous tempfile identity, while the production pattern does not prove that binding",
+      "rule_id": "securescan.python.insecure-tempfile-mktemp"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "same-or-ancestor-scope constructor sequence and literal true only",
+        "no binding, deployment, alias-flow, or interprocedural identity claim"
+      ],
+      "corrected_exclusions": [
+        "debug omitted",
+        "debug=False",
+        "dynamic debug value",
+        "absence of the preceding Flask-constructor assignment pattern",
+        "constructor assignment in a sibling lexical scope"
+      ],
+      "corrected_safe_counterparts": [
+        "the same lexical Flask assignment sequence with debug=False"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 described established Flask application identity, while production establishes only a lexical constructor-and-call sequence"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/flask-debug-enabled",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "simple local Flask application identity and literal debug keyword inspection",
+        "no general object or interprocedural dataflow"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "6950c740b95abcb994fecf021115590f86746b3b318c0543eff9214bd5274410"
+      },
+      "historical_exclusions": [
+        "literal debug false",
+        "dynamic debug values",
+        "unrelated run methods"
+      ],
+      "historical_positive_scope": [
+        "a local Flask application run call with literal debug true"
+      ],
+      "historical_safe_counterparts": [
+        "the same Flask run call with literal debug false"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "<assigned-name>.run"
+        ],
+        "lexical_context": [
+          "the same name is assigned from flask.Flask(...) or Flask(...)",
+          "the run call occurs later in the same or a descendant lexical scope"
+        ],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {
+          "debug": true
+        }
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 described established Flask application identity, while production establishes only a lexical constructor-and-call sequence",
+      "rule_id": "securescan.python.flask-debug-enabled"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "canonical constructor surface and literal false only",
+        "no binding, template-flow, or rendering-context claim"
+      ],
+      "corrected_exclusions": [
+        "autoescape omitted",
+        "autoescape=True",
+        "select_autoescape",
+        "dynamic autoescape value"
+      ],
+      "corrected_safe_counterparts": [
+        "jinja2.Environment with autoescape=True or select_autoescape"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 required semantic Jinja identity, while the production pattern does not prove that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/jinja-autoescape-disabled",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic Environment constructor identity and literal autoescape inspection",
+        "no template-flow or rendering-context analysis"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "4d390a97d2e6ef5f2526acda66dd5c4502584dc87def24e2254e94fddbfdc5c6"
+      },
+      "historical_exclusions": [
+        "literal autoescape true",
+        "select_autoescape",
+        "dynamic autoescape values",
+        "unrelated Environment classes"
+      ],
+      "historical_positive_scope": [
+        "jinja2.Environment with literal autoescape false"
+      ],
+      "historical_safe_counterparts": [
+        "jinja2.Environment with literal autoescape true or select_autoescape"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "jinja2.Environment"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {
+          "autoescape": false
+        }
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 required semantic Jinja identity, while the production pattern does not prove that binding",
+      "rule_id": "securescan.python.jinja-autoescape-disabled"
+    },
+    {
+      "alignment_state": "ALIGNED",
+      "corrected_analysis_boundary": [
+        "direct call argument shape only",
+        "no SQL sink identity, taint, variable tracking, or interprocedural claim"
+      ],
+      "corrected_exclusions": [
+        "f-string assigned before execute",
+        "concatenation",
+        "percent formatting",
+        "format call",
+        "non-f-string direct argument"
+      ],
+      "corrected_safe_counterparts": [
+        "execute with a non-f-string query and separate parameters"
+      ],
+      "correction_required": false,
+      "differences": [],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/sql-fstring-execute",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "direct execute-call argument shape only",
+        "no SQL taint, variable tracking, or interprocedural analysis"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "035877425846ab5ef70921c9a27eb1d90a7186616c613f26e07b30cd191248e4"
+      },
+      "historical_exclusions": [
+        "f-string assigned to a variable before execute",
+        "concatenation passed to execute",
+        "percent formatting passed to execute",
+        "format calls passed to execute"
+      ],
+      "historical_positive_scope": [
+        "an execute method whose direct first argument is an f-string expression"
+      ],
+      "historical_safe_counterparts": [
+        "parameterized execute with a non-f-string query and separate parameters"
+      ],
+      "import_alias_behavior": "receiver is intentionally unconstrained",
+      "production_positive_scope": {
+        "argument_shape": "direct first argument is an f-string expression",
+        "canonical_call_targets": [
+          "<any-receiver>.execute"
+        ],
+        "lexical_context": [],
+        "name_resolution": "receiver is intentionally unconstrained",
+        "required_literals": {}
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "production rule and v1 claim describe the same boundary",
+      "rule_id": "securescan.python.sql-fstring-execute"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "canonical call surface and inline literal dictionary entry only",
+        "no binding, token-flow, or unrelated validation-option claim"
+      ],
+      "corrected_exclusions": [
+        "verify_signature omitted or true",
+        "dynamic options dictionary",
+        "other validation-option keys",
+        "decode calls not normalized to or spelled as jwt.decode"
+      ],
+      "corrected_safe_counterparts": [
+        "jwt.decode without disabling signature verification"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 asserted semantic PyJWT identity, while the production pattern does not prove that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/jwt-signature-verification-disabled",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic PyJWT decode identity and literal options dictionary inspection",
+        "no token-flow or unrelated validation-option analysis"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "3bd61fa7ebea8ff40245039474470ee605be48facc772424792ad5b80887cf70"
+      },
+      "historical_exclusions": [
+        "unrelated JWT validation options",
+        "dynamic options dictionaries",
+        "unrelated decode functions"
+      ],
+      "historical_positive_scope": [
+        "PyJWT decode with options containing literal verify_signature false"
+      ],
+      "historical_safe_counterparts": [
+        "PyJWT decode with verify_signature true or without disabling signature verification"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "options is an inline dictionary containing the literal verify_signature false entry",
+        "canonical_call_targets": [
+          "jwt.decode"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {
+          "options.verify_signature": false
+        }
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 asserted semantic PyJWT identity, while the production pattern does not prove that binding",
+      "rule_id": "securescan.python.jwt-signature-verification-disabled"
+    },
+    {
+      "alignment_state": "CLAIM_NARROWER_THAN_PRODUCTION",
+      "corrected_analysis_boundary": [
+        "canonical constructor surface and literal true only",
+        "no binding, XML source-flow, or parser-object dataflow claim"
+      ],
+      "corrected_exclusions": [
+        "resolve_entities omitted",
+        "resolve_entities=False",
+        "dynamic resolve_entities value",
+        "XMLParser surfaces not normalized to or spelled as lxml.etree.XMLParser"
+      ],
+      "corrected_safe_counterparts": [
+        "lxml.etree.XMLParser with resolve_entities=False",
+        "defused or standard-library XML parsers"
+      ],
+      "correction_required": true,
+      "differences": [
+        "v1 required semantic lxml identity, while the production pattern does not prove that binding"
+      ],
+      "existing_production_test_coverage": {
+        "fixture_directory": "tests/fixtures/semgrep/rules/python/lxml-resolve-entities",
+        "fixture_roles": [
+          "near_miss",
+          "safe",
+          "vulnerable"
+        ]
+      },
+      "historical_analysis_boundary": [
+        "semantic lxml XMLParser identity and literal resolve_entities inspection",
+        "no XML source-flow or parser-object dataflow"
+      ],
+      "historical_claim_identity": {
+        "catalog_digest": "02741b7745a8d61648eb67d0132923599c7fb110d8cedbc05bb311b2601befc9",
+        "component_digest": "da8d2f2caba6831b8708fda6df848b72883c62071e1e330ed70cd5f3ea6f3de0"
+      },
+      "historical_exclusions": [
+        "resolve_entities false or omitted",
+        "dynamic resolve_entities values",
+        "standard-library and unrelated XMLParser classes"
+      ],
+      "historical_positive_scope": [
+        "lxml.etree.XMLParser with literal resolve_entities true"
+      ],
+      "historical_safe_counterparts": [
+        "lxml XMLParser with resolve_entities false",
+        "defused or standard-library XML parsers"
+      ],
+      "import_alias_behavior": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+      "production_positive_scope": {
+        "argument_shape": "any arguments accepted by the pattern ellipses",
+        "canonical_call_targets": [
+          "lxml.etree.XMLParser"
+        ],
+        "lexical_context": [],
+        "name_resolution": "Semgrep Python import equivalence may normalize direct imports and aliases, but the rule does not establish runtime binding identity",
+        "required_literals": {
+          "resolve_entities": true
+        }
+      },
+      "production_ruleset_digest": "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5",
+      "review_reason": "v1 required semantic lxml identity, while the production pattern does not prove that binding",
+      "rule_id": "securescan.python.lxml-resolve-entities"
+    }
+  ],
+  "schema_version": "securescan-python-sast-rule-claim-conformance-audit-v2",
+  "summary": {
+    "alignment_state_counts": {
+      "ALIGNED": 1,
+      "CLAIM_BROADER_THAN_PRODUCTION": 0,
+      "CLAIM_NARROWER_THAN_PRODUCTION": 16,
+      "SEMANTICALLY_AMBIGUOUS": 0
+    },
+    "correction_required_count": 16,
+    "rule_count": 17
+  }
+}
