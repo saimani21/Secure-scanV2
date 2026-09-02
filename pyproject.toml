@@ -39,6 +39,7 @@ include = ["securescan*"]
 
 [tool.setuptools.package-data]
 "securescan.scanners.semgrep" = ["rules/*.yml"]
+"securescan.scanners.gitleaks" = ["config/*.toml", "config/*.ignore"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

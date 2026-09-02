@@ -47,7 +47,13 @@ Status: COMPLETE
 | v0.3F2E4 | Production rule-claim contract reconciliation | COMPLETE |
 | v0.3F2E5 | Corrected controlled real-world Python SAST evaluation | COMPLETE |
 | v0.3F2F | Final Python SAST maturity decision | COMPLETE |
-| v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
+| v0.3F2 | External pinned Python SAST validation | COMPLETE |
+
+### Source Gitleaks Integration
+
+| Version | Capability | Status |
+|---|---|---|
+| v0.4A | Gitleaks trusted binding and current-snapshot execution contract | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -225,9 +231,9 @@ taint/dataflow, production-accuracy, or production-readiness benchmark.
 
 ## Next Phase
 
-v0.3F remains pending methodology and metric review. The benchmark harness does
-not automatically promote maturity or encode production thresholds.
-`PYTHON_SAST` remains `SCANNABLE`.
+At the v0.3F1 checkpoint, methodology and metric review remained pending. The
+benchmark harness does not automatically promote maturity or encode production
+thresholds. The later completed review retained `PYTHON_SAST` at `SCANNABLE`.
 
 v0.3F2A selects OWASP BenchmarkPython and the BenchProctor Python quicktest
 bundle as complementary external synthetic sources. v0.3F2B pins and
@@ -286,7 +292,8 @@ F2E2 did not execute Semgrep or SecureScan and produced no metrics. Its approved
 proposal is an immutable historical v1 record, not the expectation input for a
 corrected execution. Historical v1 classified six CVEs as applicable and seven
 outside, with six relations, 12 revision expectations, and three of 17 rules
-represented. `PYTHON_SAST` remains `SCANNABLE`, and v0.3F2 is not complete.
+represented. At the F2E2 checkpoint, `PYTHON_SAST` remained `SCANNABLE` and
+v0.3F2 was not yet complete.
 
 The provisional F2E3 execution exposed drift between the historical v1 claim
 prose and the frozen production patterns. Those metrics are superseded and not
@@ -316,8 +323,9 @@ expectations. Its claim-conformance matrix is TP/FP/FN/TN `11/0/0/3`; all seven
 applicable vulnerable CVEs were detected, all three discrimination pairs
 succeeded, and all four expected-persistent pairs persisted. These results
 apply only to this frozen claim-applicable case set, not universal Python SAST
-accuracy. F2E5 is complete. `PYTHON_SAST` remains `SCANNABLE`, v0.3F2 is not
-complete, and the maturity decision belongs to F2F.
+accuracy. F2E5 is complete. At its freeze, `PYTHON_SAST` remained `SCANNABLE`,
+the v0.3F2 parent had not yet been closed, and the maturity decision belonged to
+F2F.
 
 F2F aggregates the frozen F1, F2D, F2E4, and F2E5 evidence without executing
 Semgrep or changing production behavior. The final evidence decision retains
@@ -326,8 +334,33 @@ are evidence-backed, but only four of 17 rules currently have applicable
 real-world CVE evidence. F2D remains valid for its frozen historical-v1
 expectations and is not presented as complete proof of current production
 semantics. Perfect results on the bounded corpora do not establish universal
-Python SAST accuracy or comprehensive vulnerability coverage. F2F remains
-pending hostile approval.
+Python SAST accuracy or comprehensive vulnerability coverage. F2F is complete;
+`PYTHON_SAST` remains `SCANNABLE`, and its maturity decision is frozen.
+
+## Gitleaks v0.4A Boundary
+
+v0.4A binds the existing `SECRET_DETECTION` capability to a deterministic,
+pre-provisioned Gitleaks 8.30.1 Linux x64 executable and a project-owned
+configuration that extends that version's built-in defaults. It introduces no
+parser, normalized findings, benchmark, scoring, reporting integration, or
+planner registration, so the capability remains `DETECTED`.
+
+Gitleaks scans the immutable current source snapshot only. The fixed contract
+uses Gitleaks `dir`; the separate history-oriented `git` mode and all Git-log,
+remote-clone, and network-acquisition behavior are unavailable through this
+binding. Production scans do not download or install tooling, execute repository
+code, or invoke Git against an acquired repository.
+
+Raw secret material must not be logged, included in API or exception text, used
+as finding identity, placed in metrics labels, or included directly in
+provenance digests. A detected secret is evidence of secret-like material in
+source, not proof that the credential is currently valid, exploitable, or
+active. Provider validation, revocation, and rotation are outside Source v1.
+
+The exact official Gitleaks 8.30.1 Linux x64 binary passed the deterministic
+positive and empty-directory functionality sentinel under this command
+contract: `PINNED_BINARY_FUNCTIONALITY_SENTINEL_PASS`. This is a tool
+functionality check, not benchmark, scoring, or maturity evidence.
 
 ## Known Non-Blocking Maintenance
 

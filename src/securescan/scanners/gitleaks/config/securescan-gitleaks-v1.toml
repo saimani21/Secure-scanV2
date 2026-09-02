@@ -1,0 +1,4 @@
+title = "SecureScan Gitleaks built-in-default binding v1"
+
+[extend]
+useDefault = true
