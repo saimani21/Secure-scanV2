@@ -54,6 +54,7 @@ Status: COMPLETE
 | Version | Capability | Status |
 |---|---|---|
 | v0.4A | Gitleaks trusted binding and current-snapshot execution contract | COMPLETE |
+| v0.4B | Gitleaks Source execution lifecycle integration | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -361,6 +362,37 @@ The exact official Gitleaks 8.30.1 Linux x64 binary passed the deterministic
 positive and empty-directory functionality sentinel under this command
 contract: `PINNED_BINARY_FUNCTIONALITY_SENTINEL_PASS`. This is a tool
 functionality check, not benchmark, scoring, or maturity evidence.
+
+## Gitleaks v0.4B Execution Boundary
+
+v0.4B descends from the frozen `source-v0.4A-gitleaks-binding` baseline at
+`6f8e5002e14385e095af8784a91afc4a1618b017`. It resolves the existing durable
+Source execution context and reopens its C2 immutable projection through the
+authoritative projection manager before the frozen v0.4A binding may launch
+Gitleaks. Callers cannot supply a filesystem path, remote target, Git revision,
+or scanner option through this bridge.
+
+The bounded process result distinguishes completed scans with no findings
+(exit 0), completed scans with opaque findings present (exit 1), scanner
+failure, cancellation, timeout, and output-limit exhaustion. Exit 1 is a
+successful completed scan at this layer. No JSON fields are inspected and no
+finding count or normalized finding is produced in v0.4B.
+
+Raw stdout and stderr remain opaque sensitive bytes in an immutable in-memory
+result envelope for the future parser boundary. They are not logged, placed in
+exception or job-failure text, written to generic database fields, or persisted
+to the generic artifact store. v0.4B adds no protected raw-output persistence;
+v0.4C must either consume the envelope in-process or introduce an explicitly
+protected scanner-evidence boundary.
+
+The shared cancellable process handle supplies graceful termination followed by
+the existing force-kill path. Incomplete output from cancellation, timeout,
+forced termination, or output-limit exhaustion cannot be classified as clean.
+The existing durable Source projection lifecycle retains projections while jobs
+are non-terminal and authorizes cleanup only after terminal durable job truth,
+including success, failure, cancellation, and timeout failure. Secret detection
+remains `DETECTED`; this checkpoint is execution integration, not quality
+evidence or maturity promotion.
 
 ## Known Non-Blocking Maintenance
 

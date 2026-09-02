@@ -3,15 +3,16 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from enum import StrEnum
+from typing import Protocol, runtime_checkable
 
 from securescan.domain.job_state import is_terminal_job_status
 from securescan.jobs.models import JobRecord
-from securescan.jobs.repository import JobRepository, JobRepositoryError
+from securescan.jobs.repository import JobRepositoryError
 from securescan.scanners.semgrep.source_execution import (
     SOURCE_EXECUTION_PAYLOAD_KEY,
     SourceExecutionEnvelope,
-    SourceSemgrepExecutionContextResolver,
 )
+from securescan.source.execution_context import SourceExecutionContext
 from securescan.source.projection import (
     SourceProjectionCleanupError,
     SourceProjectionError,
@@ -38,18 +39,32 @@ class SourceProjectionLifecycleResult:
     projection_id: str | None
 
 
+@runtime_checkable
+class SourceExecutionContextResolver(Protocol):
+    """Resolve one scanner-specific policy-validated durable Source context."""
+
+    def resolve(self, job: JobRecord) -> SourceExecutionContext: ...
+
+
+@runtime_checkable
+class SourceJobRepository(Protocol):
+    """Read the durable job truth required by projection reconciliation."""
+
+    def get_job(self, job_id: str) -> JobRecord | None: ...
+
+
 class SourceProjectionLifecycleService:
     """Reconcile one projection from existing durable job truth."""
 
     def __init__(
         self,
-        job_repository: JobRepository,
-        context_resolver: SourceSemgrepExecutionContextResolver,
+        job_repository: SourceJobRepository,
+        context_resolver: SourceExecutionContextResolver,
         projection_manager: SourceProjectionManager,
     ) -> None:
         if (
-            not isinstance(job_repository, JobRepository)
-            or not isinstance(context_resolver, SourceSemgrepExecutionContextResolver)
+            not isinstance(job_repository, SourceJobRepository)
+            or not isinstance(context_resolver, SourceExecutionContextResolver)
             or not isinstance(projection_manager, SourceProjectionManager)
         ):
             raise TypeError("Source projection lifecycle configuration is invalid")
