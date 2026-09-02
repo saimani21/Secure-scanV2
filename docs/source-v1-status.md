@@ -46,6 +46,7 @@ Status: COMPLETE
 | v0.3F2E3 | Controlled real-world Python SAST evaluation | PROVISIONAL - SUPERSEDED |
 | v0.3F2E4 | Production rule-claim contract reconciliation | COMPLETE |
 | v0.3F2E5 | Corrected controlled real-world Python SAST evaluation | COMPLETE |
+| v0.3F2F | Final Python SAST maturity decision | COMPLETE |
 | v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
 
 ## Source Intelligence Foundation Freeze
@@ -204,7 +205,7 @@ there are no autofixes or network-resolved configurations. `PYTHON_SAST`
 remains `SCANNABLE`. v0.3E makes no precision, recall, F1, benchmarked, or
 product-support claim.
 
-v0.3F adds a deterministic, controlled independent local benchmark corpus and
+v0.3F adds a deterministic, controlled project-owned handcrafted local benchmark corpus and
 evaluation harness for the frozen v0.3E ruleset. The corpus is separate from
 the 51 v0.3E correctness fixtures and contains 102 explicit case/rule
 relations: three positive and three negative cases for each of the 17 rules.
@@ -315,8 +316,18 @@ expectations. Its claim-conformance matrix is TP/FP/FN/TN `11/0/0/3`; all seven
 applicable vulnerable CVEs were detected, all three discrimination pairs
 succeeded, and all four expected-persistent pairs persisted. These results
 apply only to this frozen claim-applicable case set, not universal Python SAST
-accuracy. F2E5 remains pending hostile approval. `PYTHON_SAST` remains
-`SCANNABLE`, v0.3F2 is not complete, and the maturity decision belongs to F2F.
+accuracy. F2E5 is complete. `PYTHON_SAST` remains `SCANNABLE`, v0.3F2 is not
+complete, and the maturity decision belongs to F2F.
+
+F2F aggregates the frozen F1, F2D, F2E4, and F2E5 evidence without executing
+Semgrep or changing production behavior. The final evidence decision retains
+`PYTHON_SAST` at `SCANNABLE`: deterministic execution and bounded rule behavior
+are evidence-backed, but only four of 17 rules currently have applicable
+real-world CVE evidence. F2D remains valid for its frozen historical-v1
+expectations and is not presented as complete proof of current production
+semantics. Perfect results on the bounded corpora do not establish universal
+Python SAST accuracy or comprehensive vulnerability coverage. F2F remains
+pending hostile approval.
 
 ## Known Non-Blocking Maintenance
 

@@ -1,7 +1,7 @@
 # Python SAST local detection-quality benchmark
 
-This controlled independent local benchmark evaluates the frozen 17-rule
-`securescan-python-baseline-v2` ruleset against an independent handcrafted
+This controlled project-owned handcrafted local benchmark evaluates the frozen 17-rule
+`securescan-python-baseline-v2` ruleset against a separate project-owned handcrafted
 local corpus. It does not reuse the v0.3E correctness fixtures and does not
 modify scanner execution, assessment, planning, or maturity policy.
 
