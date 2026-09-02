@@ -28,6 +28,15 @@ from securescan.scanners.gitleaks.binding import (
     canonical_gitleaks_binding_artifact,
     create_default_gitleaks_binding,
 )
+from securescan.scanners.gitleaks.identity import (
+    GITLEAKS_IDENTITY_SCHEMA_VERSION,
+    GITLEAKS_IDENTITY_SCOPE,
+    GITLEAKS_V04D_BASELINE_COMMIT,
+    GitleaksFindingIdentity,
+    GitleaksIdentityError,
+    build_gitleaks_finding_identities,
+    build_gitleaks_finding_identity,
+)
 from securescan.scanners.gitleaks.parser import (
     GITLEAKS_PARSER_SCHEMA_VERSION,
     GITLEAKS_V04B_BASELINE_COMMIT,
@@ -53,6 +62,13 @@ from securescan.scanners.gitleaks.source_execution import (
 )
 
 __all__ = [
+    "GITLEAKS_IDENTITY_SCHEMA_VERSION",
+    "GITLEAKS_IDENTITY_SCOPE",
+    "GITLEAKS_V04D_BASELINE_COMMIT",
+    "GitleaksFindingIdentity",
+    "GitleaksIdentityError",
+    "build_gitleaks_finding_identities",
+    "build_gitleaks_finding_identity",
     "GITLEAKS_APPLICABILITY_SCHEMA_VERSION",
     "GITLEAKS_ARCHIVE_FILENAME",
     "GITLEAKS_ARCHIVE_SHA256",

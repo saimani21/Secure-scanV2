@@ -57,6 +57,7 @@ Status: COMPLETE
 | v0.4B | Gitleaks Source execution lifecycle integration | COMPLETE |
 | v0.4C | Defensive Gitleaks parsing and secret-safe normalization | COMPLETE |
 | v0.4D | Gitleaks applicability, Source support, and planning integration | COMPLETE |
+| v0.4E | Stable secret-safe Gitleaks finding identity | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -485,3 +486,37 @@ No repository scan is performed during availability assessment.
 SECRET_DETECTION is SCANNABLE for this Source-v1 integration. This is an
 execution/support maturity statement, not benchmark evidence. BENCHMARKED and
 PRODUCT_SUPPORTED remain unclaimed.
+
+## Gitleaks v0.4E Finding Identity Boundary
+
+v0.4E introduces a deterministic structural-location identity for normalized
+Gitleaks findings. Identity is derived only from the frozen scanner identity,
+rule identifier, normalized repository-relative path, detection kind, and,
+for CONTENT findings, the normalized source location.
+
+PATH findings intentionally contain no fabricated source coordinates.
+
+The public finding instance identity excludes secret-bearing or secret-derived
+material. Raw Secret, Match, Gitleaks Fingerprint, hashes of secret values,
+file contents, file digests, repository digests, projection identifiers,
+projection digests, and execution context digests do not participate in the
+identity.
+
+Run-specific Source projection and execution provenance therefore do not change
+the identity of the same structural finding.
+
+The identity represents a structural observation, not a credential identity.
+A secret value changing at the same rule/path/location does not create a new
+identity because v0.4E deliberately does not inspect, persist, or derive public
+identity from the secret value.
+
+A CONTENT finding moving to another normalized source location receives a
+different identity. Cross-edit finding tracking is not claimed in v0.4E.
+
+Equal identities do not perform or imply deduplication. Duplicate scanner
+observations remain duplicate observations. Baseline comparison, finding
+lifecycle, cross-scan tracking, suppression, credential grouping, and
+cross-tool correlation remain outside this checkpoint.
+
+v0.4E performs no filesystem access, network access, scanner execution, policy
+suppression, maturity promotion, or finding deduplication.
