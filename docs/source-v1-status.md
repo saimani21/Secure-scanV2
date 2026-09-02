@@ -56,6 +56,7 @@ Status: COMPLETE
 | v0.4A | Gitleaks trusted binding and current-snapshot execution contract | COMPLETE |
 | v0.4B | Gitleaks Source execution lifecycle integration | COMPLETE |
 | v0.4C | Defensive Gitleaks parsing and secret-safe normalization | COMPLETE |
+| v0.4D | Gitleaks applicability, Source support, and planning integration | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -457,3 +458,30 @@ FastAPI/Starlette emits the existing TestClient/httpx deprecation warning.
 
 Some tests may skip when supporting services or tools are unavailable,
 including Docker, PostgreSQL, Semgrep, and strict release environments.
+
+## Gitleaks v0.4D Applicability and Planning Boundary
+
+v0.4D keeps generic Source inventory, coverage, support, and planning contracts
+unchanged. Gitleaks support is declared explicitly as SCANNABLE through the
+existing SourceSupportPolicy. A scanner-specific applicability overlay then
+expands SECRET_DETECTION from the generic text-oriented inventory surface to the
+repository-wide current immutable snapshot, preserving path-only detector
+coverage such as the frozen Gitleaks 8.30.1 pkcs12-file rule.
+
+The overlay cannot independently promote DETECTED, override UNSUPPORTED, or
+rewrite BENCHMARKED/PRODUCT_SUPPORTED maturity. SourceSupportPolicy remains the
+authority for support state.
+
+The frozen Source-v1 Gitleaks planning policy applies no SecureScan path
+exclusions. Binary, generated, vendored, test, documentation, configuration,
+and unknown-language files therefore remain in the declared scanner surface.
+Gitleaks may apply its own frozen detector/file semantics internally; SecureScan
+does not claim that every selected byte is inspected by every detector.
+
+Runtime availability is represented through TrustedSourceAnalyzer using only
+the frozen Gitleaks binding's executable/version/configuration verification.
+No repository scan is performed during availability assessment.
+
+SECRET_DETECTION is SCANNABLE for this Source-v1 integration. This is an
+execution/support maturity statement, not benchmark evidence. BENCHMARKED and
+PRODUCT_SUPPORTED remain unclaimed.

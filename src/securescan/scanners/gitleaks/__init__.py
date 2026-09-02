@@ -1,3 +1,16 @@
+from securescan.scanners.gitleaks.applicability import (
+    GITLEAKS_APPLICABILITY_SCHEMA_VERSION,
+    GITLEAKS_CONFIGURATION_UNAVAILABLE,
+    GITLEAKS_EXECUTABLE_UNAVAILABLE,
+    GITLEAKS_SCANNABLE_REASON,
+    GITLEAKS_V04C_BASELINE_COMMIT,
+    GITLEAKS_VERSION_UNAVAILABLE,
+    GitleaksApplicabilityError,
+    apply_gitleaks_source_applicability,
+    build_gitleaks_source_analyzer_snapshot,
+    with_gitleaks_planning_policy,
+    with_gitleaks_source_support,
+)
 from securescan.scanners.gitleaks.binding import (
     GITLEAKS_ARCHIVE_FILENAME,
     GITLEAKS_ARCHIVE_SHA256,
@@ -40,16 +53,23 @@ from securescan.scanners.gitleaks.source_execution import (
 )
 
 __all__ = [
+    "GITLEAKS_APPLICABILITY_SCHEMA_VERSION",
     "GITLEAKS_ARCHIVE_FILENAME",
     "GITLEAKS_ARCHIVE_SHA256",
+    "GITLEAKS_CONFIGURATION_UNAVAILABLE",
     "GITLEAKS_EXECUTABLE_SHA256",
+    "GITLEAKS_EXECUTABLE_UNAVAILABLE",
     "GITLEAKS_PARSER_SCHEMA_VERSION",
+    "GITLEAKS_SCANNABLE_REASON",
     "GITLEAKS_SCANNER_ID",
     "GITLEAKS_SOURCE_ANALYZER_ID",
     "GITLEAKS_V04A_BASELINE_COMMIT",
     "GITLEAKS_V04B_BASELINE_COMMIT",
+    "GITLEAKS_V04C_BASELINE_COMMIT",
     "GITLEAKS_V8301_PATH_ONLY_RULE_IDS",
     "GITLEAKS_VERSION",
+    "GITLEAKS_VERSION_UNAVAILABLE",
+    "GitleaksApplicabilityError",
     "GitleaksBindingError",
     "GitleaksConfigurationIntegrityError",
     "GitleaksDetectionKind",
@@ -70,8 +90,12 @@ __all__ = [
     "InvalidGitleaksExecutionRequestError",
     "NormalizedGitleaksFinding",
     "TrustedGitleaksBinding",
+    "apply_gitleaks_source_applicability",
     "build_gitleaks_binding_artifact",
+    "build_gitleaks_source_analyzer_snapshot",
     "canonical_gitleaks_binding_artifact",
     "create_default_gitleaks_binding",
     "parse_gitleaks_execution_result",
+    "with_gitleaks_planning_policy",
+    "with_gitleaks_source_support",
 ]
