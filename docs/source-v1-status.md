@@ -55,6 +55,7 @@ Status: COMPLETE
 |---|---|---|
 | v0.4A | Gitleaks trusted binding and current-snapshot execution contract | COMPLETE |
 | v0.4B | Gitleaks Source execution lifecycle integration | COMPLETE |
+| v0.4C | Defensive Gitleaks parsing and secret-safe normalization | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -393,6 +394,60 @@ are non-terminal and authorizes cleanup only after terminal durable job truth,
 including success, failure, cancellation, and timeout failure. Secret detection
 remains `DETECTED`; this checkpoint is execution integration, not quality
 evidence or maturity promotion.
+
+## Gitleaks v0.4C Parsing Boundary
+
+v0.4C descends from `source-v0.4B-gitleaks-source-execution` at
+`4ac76be1ff8b2e2d9081cde4f689c5dae1808080`. Its parser schema is
+`securescan-gitleaks-parser-v0.4C`. Parsing is permitted only for completed
+v0.4B envelopes: exit 0 must decode to an empty JSON array, while exit 1 must
+decode to one or more valid findings. Failed, cancelled, timed-out,
+output-limited, malformed, or contradictory results fail closed with fixed
+messages.
+
+The minimum required Gitleaks fields are `RuleID`, `File`, and `StartLine`.
+`EndLine`, columns, `Description`, `Tags`, `Entropy`, `Secret`, `Match`,
+`SymlinkFile`, `Fingerprint`, and history-related fields are optional but, when
+present, must have their expected bounded types. Unknown fields are rejected.
+The observed Gitleaks 8.30.1 `--redact=100` representation is exactly
+`Secret: "REDACTED"`; any other present value is rejected. `Match` is treated
+as sensitive regardless of its content and is type-checked but discarded.
+
+The normalized intermediate finding contains only scanner identity, detector
+rule ID, manifest-authorized repository-relative path, validated line/column
+location, and projection/context digests. Description, tags, entropy,
+fingerprint, symlink metadata, Git/history metadata, `Secret`, and `Match` are
+validated where applicable but deliberately omitted. Absolute scanner paths
+are accepted only after a lexical proof that they are inside the trusted
+projection root; the normalized result contains only the matching manifest
+path. Projection files are reopened without following a final symlink and are
+checked against their frozen size and digest before location validation.
+
+The exact Gitleaks 8.30.1 built-in configuration contains one path-only rule:
+`pkcs12-file`, with path syntax `(?i)(?:^|/)[^/]+\.p(?:12|fx)$` and no content
+regex. (`nuget-config-password` is the only other built-in rule with a `path`
+property, and it also has a content regex.) The parser therefore freezes the
+complete path-only rule-ID set as `{pkcs12-file}`. A finding for that rule is
+accepted only for a manifest-authorized `.p12` or `.pfx` path with the exact
+scanner location shape `StartLine=0`, `EndLine=0`, `StartColumn=0`, and
+`EndColumn=0`; the normalized finding records `detection_kind=PATH` and all
+four normalized location fields as null. All other rules remain `CONTENT` and
+retain positive bounded line/column validation. Unknown zero-location rules,
+mixed zero/nonzero shapes, and nonzero `pkcs12-file` locations fail closed.
+
+Gitleaks 8.30.1 declares optional `Link` and `Fragment` fields on its report
+finding type. The frozen `dir` producer cannot create `Link` because filesystem
+fragments have no Git commit metadata, and the detector does not assign
+`Fragment`; both fields remain rejected as unreachable scanner states rather
+than broadening the trusted parser schema.
+
+The parse result contains no raw stdout or stderr and is safe to represent.
+Raw bytes remain only in the caller-owned v0.4B envelope and are not copied to
+generic artifacts, database fields, normalized evidence, or errors. Normal
+downstream flow should release that envelope after parsing; Python does not
+provide guaranteed byte-buffer zeroization. Duplicate scanner observations are
+preserved in input order, with no v0.4C identity or deduplication policy.
+`SECRET_DETECTION` remains `DETECTED`.
 
 ## Known Non-Blocking Maintenance
 
