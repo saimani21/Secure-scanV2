@@ -45,6 +45,7 @@ Status: COMPLETE
 | v0.3F2E2 | Real-world Python CVE claim applicability | COMPLETE |
 | v0.3F2E3 | Controlled real-world Python SAST evaluation | PROVISIONAL - SUPERSEDED |
 | v0.3F2E4 | Production rule-claim contract reconciliation | COMPLETE |
+| v0.3F2E5 | Corrected controlled real-world Python SAST evaluation | COMPLETE |
 | v0.3F2 | External pinned Python SAST validation | IN PROGRESS |
 
 ## Source Intelligence Foundation Freeze
@@ -302,9 +303,20 @@ are outside, and zero are unresolved. Seven relations produce 14 revision
 expectations—11 expected-positive and three expected-negative—with three
 `SHOULD_DISCRIMINATE` and four `NOT_EXPECTED_TO_DISCRIMINATE`. Four of 17 rules
 are represented: `dangerous-eval`, `os-system`, `subprocess-shell-true`, and
-`unsafe-pickle-load`. Corrected real-world execution remains pending.
-`PYTHON_SAST` remains `SCANNABLE`, v0.3F2 is not complete, and the maturity
-decision belongs to F2F.
+`unsafe-pickle-load`.
+
+F2E5 is the authoritative corrected execution against the frozen F2E4 v2
+claim and applicability inputs. It scans only the F2E1-bounded source
+projection with the pinned local Semgrep CE 1.171.0 executable and unchanged
+production rules. The historical F2E3 metrics remain provisional and
+superseded; they are not current evidence. The F2E5 evidence covers 13 CVEs and
+26 revisions, with seven claim-applicable relations and 14 revision
+expectations. Its claim-conformance matrix is TP/FP/FN/TN `11/0/0/3`; all seven
+applicable vulnerable CVEs were detected, all three discrimination pairs
+succeeded, and all four expected-persistent pairs persisted. These results
+apply only to this frozen claim-applicable case set, not universal Python SAST
+accuracy. F2E5 remains pending hostile approval. `PYTHON_SAST` remains
+`SCANNABLE`, v0.3F2 is not complete, and the maturity decision belongs to F2F.
 
 ## Known Non-Blocking Maintenance
 

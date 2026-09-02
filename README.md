@@ -74,6 +74,18 @@ bundled three-rule curated micro-benchmark. Read the
 [operations guide](docs/core-v0.1-operations.md), and
 [failure matrix](docs/core-v0.1-failure-matrix.md) before release.
 
+## Source Python SAST evaluation
+
+Source v0.3F2E5 is the authoritative corrected controlled real-world Python
+SAST execution checkpoint. F2E3 exposed drift between provisional claim prose
+and production behavior; F2E4 corrected the versioned claim contract and
+applicability evidence without changing the production rules. F2E5 binds its
+scoring only to those frozen v2 inputs and records new v2 evidence filenames.
+Historical F2E3 metrics remain provisional and superseded. `PYTHON_SAST`
+remains `SCANNABLE`; the maturity decision belongs to F2F. See the
+[Source status](docs/source-v1-status.md) for the exact evidence and result
+boundaries.
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI
