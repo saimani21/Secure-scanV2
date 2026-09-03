@@ -1,0 +1,3 @@
+# SecureScan project-owned synthetic pre-scan fixture.
+# This value is non-live and must never be used as a credential.
+xoxb-1029384756-5647382910-Aa9Zz7Yy5Xx3Cc1Vv8Bb6Nn4

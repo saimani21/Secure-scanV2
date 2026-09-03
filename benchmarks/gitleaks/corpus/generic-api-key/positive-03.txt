@@ -1,0 +1,3 @@
+# SecureScan project-owned synthetic pre-scan fixture.
+# This value is non-live and must never be used as a credential.
+service_token = "Z9xC3vB7nM2qW6eR"

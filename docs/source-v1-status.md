@@ -59,6 +59,7 @@ Status: COMPLETE
 | v0.4D | Gitleaks applicability, Source support, and planning integration | COMPLETE |
 | v0.4E | Stable secret-safe Gitleaks finding identity | COMPLETE |
 | v0.4F1 | Gitleaks benchmark contract and manifest model | COMPLETE |
+| v0.4F2 | Deterministic Gitleaks pre-scan corpus and manifest | IMPLEMENTED - PENDING PRE-SCAN FREEZE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -553,3 +554,27 @@ archives, or perform recursive decoding.
 Representative future benchmark evidence will not certify every inherited
 Gitleaks default detector, and perfect bounded-corpus metrics will not imply
 ecosystem-wide zero false positives or zero false negatives.
+
+## Gitleaks v0.4F2 Pre-Scan Corpus Boundary
+
+v0.4F2 deterministically freezes 48 intended case/rule relations before any
+Gitleaks execution against this corpus: 42 core relations across seven representative inherited
+detectors and six scope/allowlist relations. Each core rule has exactly three
+expected matches and three expected non-matches. The canonical plan is bound
+to the full v0.4F1 commit and the frozen benchmark contract and binding
+identities; the content-addressed manifest is built through the unchanged
+v0.4F1 contract model.
+
+The fixtures contain only deterministic project-owned synthetic and non-live
+values. PEM-shaped private-key fixtures are non-cryptographic text, and PKCS12
+path fixtures contain no usable certificate, key, or credential bundle. The
+generator uses no randomness, clock, environment entropy, network, external
+credential tool, Git repository, or scanner process.
+
+This pre-scan corpus covers seven representative detectors only and does not
+certify all detectors inherited from Gitleaks 8.30.1. SecureScan applicability
+remains repository-wide even where inherited Gitleaks global allowlists may
+internally suppress selected paths. Cross-rule observations are deliberately
+not pre-suppressed. Gitleaks has not been executed against the corpus, and no
+results or detection metrics exist at this checkpoint. Any future perfect
+metrics remain bounded to this corpus. `SECRET_DETECTION` remains `SCANNABLE`.

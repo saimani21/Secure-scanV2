@@ -1,0 +1,3 @@
+# SecureScan project-owned synthetic pre-scan fixture.
+# This value is non-live and must never be used as a credential.
+aws_access_key_id = ASIA3Z5X7C2V4B6N3M5K

@@ -97,3 +97,34 @@ affect maturity. It can be repeated explicitly with:
 
 The helper creates and removes both synthetic directories under `/tmp`; the
 ordinary Python test suite does not require Gitleaks to be installed.
+
+## v0.4F2 pre-scan corpus freeze
+
+The v0.4F2 corpus was designed and content-addressed before any Gitleaks
+execution against this corpus or any v0.4F benchmark observation. `corpus-plan-v1.json` freezes 48 intended case/rule relations: 42
+core relations covering seven representative inherited Gitleaks 8.30.1
+detectors and six scope/allowlist relations. Each core detector has three
+expected matches and three expected non-matches. The plan is bound to the full
+v0.4F1 commit, frozen contract, trusted binding, scanner ID, and scanner
+version. `manifest.json` is produced through the frozen v0.4F1 manifest model.
+
+All token-shaped fixture values are deterministic, project-owned, synthetic,
+and non-live. They must never be used as credentials or submitted to a
+provider. The private-key cases are static non-cryptographic text; the PKCS12
+path cases are empty files or meaningless fixed bytes and contain no usable
+key, certificate, or credential bundle. Generation uses no entropy, network,
+external program, Git repository, or scanner process.
+
+The selected detector families are representative only. This corpus does not
+certify every detector inherited from Gitleaks 8.30.1. SecureScan applicability
+may select docs, generated, test, vendor, dependency, config, and
+unknown-language paths even when an inherited Gitleaks global allowlist
+suppresses a path internally; path selection does not guarantee that every
+detector inspects every selected byte. Cross-rule observations are not
+pre-suppressed and must be accounted for separately during a later evaluation.
+
+Gitleaks has not been executed against this corpus at this checkpoint. No scan
+observations, classifications, accuracy metrics, or maturity decision are part
+of the plan or manifest. Even perfect future metrics would apply only to this
+bounded project-owned corpus. `SECRET_DETECTION` remains `SCANNABLE`, and
+v0.4F2 is implemented pending its pre-scan freeze review.

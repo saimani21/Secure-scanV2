@@ -1,0 +1,494 @@
+{
+  "baseline_commit": "c19e3d0ac78ccc4ab504eeab03c989d1b803acb0",
+  "baseline_tag": "source-v0.4F1-gitleaks-benchmark-contract",
+  "benchmark_id": "securescan-gitleaks-v0.4f-local-v1",
+  "binding_artifact_sha256": "8d0e06a802158827bbe685b7970ffa075ae07f6393debbb088c3b9bf29f1bd44",
+  "binding_digest": "8d9f224e1c5ddabef508a26be2966f51dc2a9c2e5805ea3bffcf444b3cae9561",
+  "case_count": 48,
+  "cases": [
+    {
+      "case_id": "aws-access-token-negative-01",
+      "description": "Pre-scan aws-access-token relation using recipe aws-wrong-prefix.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "aws-wrong-prefix",
+      "relative_path": "corpus/aws-access-token/negative-01.txt",
+      "rule_id": "aws-access-token",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "aws-access-token-negative-02",
+      "description": "Pre-scan aws-access-token relation using recipe aws-wrong-length.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "aws-wrong-length",
+      "relative_path": "corpus/aws-access-token/negative-02.txt",
+      "rule_id": "aws-access-token",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "aws-access-token-negative-03",
+      "description": "Pre-scan aws-access-token relation using recipe aws-explicit-example-suffix.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "aws-explicit-example-suffix",
+      "relative_path": "corpus/aws-access-token/negative-03.txt",
+      "rule_id": "aws-access-token",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "aws-access-token-positive-01",
+      "description": "Pre-scan aws-access-token relation using recipe aws-akia-high-entropy.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "aws-akia-high-entropy",
+      "relative_path": "corpus/aws-access-token/positive-01.txt",
+      "rule_id": "aws-access-token",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "aws-access-token-positive-02",
+      "description": "Pre-scan aws-access-token relation using recipe aws-asia-high-entropy.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "aws-asia-high-entropy",
+      "relative_path": "corpus/aws-access-token/positive-02.txt",
+      "rule_id": "aws-access-token",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "aws-access-token-positive-03",
+      "description": "Pre-scan aws-access-token relation using recipe aws-abia-high-entropy.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "aws-abia-high-entropy",
+      "relative_path": "corpus/aws-access-token/positive-03.txt",
+      "rule_id": "aws-access-token",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "generic-api-key-negative-01",
+      "description": "Pre-scan generic-api-key relation using recipe generic-placeholder.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "generic-placeholder",
+      "relative_path": "corpus/generic-api-key/negative-01.txt",
+      "rule_id": "generic-api-key",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "generic-api-key-negative-02",
+      "description": "Pre-scan generic-api-key relation using recipe generic-low-entropy-alpha.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "generic-low-entropy-alpha",
+      "relative_path": "corpus/generic-api-key/negative-02.txt",
+      "rule_id": "generic-api-key",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "generic-api-key-negative-03",
+      "description": "Pre-scan generic-api-key relation using recipe generic-too-short.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "generic-too-short",
+      "relative_path": "corpus/generic-api-key/negative-03.txt",
+      "rule_id": "generic-api-key",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "generic-api-key-positive-01",
+      "description": "Pre-scan generic-api-key relation using recipe generic-api-assignment.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "generic-api-assignment",
+      "relative_path": "corpus/generic-api-key/positive-01.txt",
+      "rule_id": "generic-api-key",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "generic-api-key-positive-02",
+      "description": "Pre-scan generic-api-key relation using recipe generic-secret-assignment.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "generic-secret-assignment",
+      "relative_path": "corpus/generic-api-key/positive-02.txt",
+      "rule_id": "generic-api-key",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "generic-api-key-positive-03",
+      "description": "Pre-scan generic-api-key relation using recipe generic-token-assignment.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "generic-token-assignment",
+      "relative_path": "corpus/generic-api-key/positive-03.txt",
+      "rule_id": "generic-api-key",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "github-pat-negative-01",
+      "description": "Pre-scan github-pat relation using recipe github-pat-short.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "github-pat-short",
+      "relative_path": "corpus/github-pat/negative-01.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "github-pat-negative-02",
+      "description": "Pre-scan github-pat relation using recipe github-pat-wrong-prefix.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "github-pat-wrong-prefix",
+      "relative_path": "corpus/github-pat/negative-02.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "github-pat-negative-03",
+      "description": "Pre-scan github-pat relation using recipe github-pat-low-entropy-placeholder.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "github-pat-low-entropy-placeholder",
+      "relative_path": "corpus/github-pat/negative-03.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "github-pat-positive-01",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-a.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-a",
+      "relative_path": "corpus/github-pat/positive-01.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "github-pat-positive-02",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-b.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-b",
+      "relative_path": "corpus/github-pat/positive-02.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "github-pat-positive-03",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-c.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-c",
+      "relative_path": "corpus/github-pat/positive-03.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "gitlab-pat-negative-01",
+      "description": "Pre-scan gitlab-pat relation using recipe gitlab-pat-short.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "gitlab-pat-short",
+      "relative_path": "corpus/gitlab-pat/negative-01.txt",
+      "rule_id": "gitlab-pat",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "gitlab-pat-negative-02",
+      "description": "Pre-scan gitlab-pat relation using recipe gitlab-pat-wrong-prefix.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "gitlab-pat-wrong-prefix",
+      "relative_path": "corpus/gitlab-pat/negative-02.txt",
+      "rule_id": "gitlab-pat",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "gitlab-pat-negative-03",
+      "description": "Pre-scan gitlab-pat relation using recipe gitlab-pat-low-entropy-placeholder.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "gitlab-pat-low-entropy-placeholder",
+      "relative_path": "corpus/gitlab-pat/negative-03.txt",
+      "rule_id": "gitlab-pat",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "gitlab-pat-positive-01",
+      "description": "Pre-scan gitlab-pat relation using recipe gitlab-pat-high-entropy-a.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "gitlab-pat-high-entropy-a",
+      "relative_path": "corpus/gitlab-pat/positive-01.txt",
+      "rule_id": "gitlab-pat",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "gitlab-pat-positive-02",
+      "description": "Pre-scan gitlab-pat relation using recipe gitlab-pat-high-entropy-b.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "gitlab-pat-high-entropy-b",
+      "relative_path": "corpus/gitlab-pat/positive-02.txt",
+      "rule_id": "gitlab-pat",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "gitlab-pat-positive-03",
+      "description": "Pre-scan gitlab-pat relation using recipe gitlab-pat-high-entropy-c.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "gitlab-pat-high-entropy-c",
+      "relative_path": "corpus/gitlab-pat/positive-03.txt",
+      "rule_id": "gitlab-pat",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "pkcs12-file-negative-01",
+      "description": "Pre-scan pkcs12-file relation using recipe ordinary-pem-path.",
+      "detection_kind": "PATH",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "ordinary-pem-path",
+      "relative_path": "corpus/pkcs12-file/negative-01.pem",
+      "rule_id": "pkcs12-file",
+      "source_type": "PROJECT_OWNED_BINARY_PATH"
+    },
+    {
+      "case_id": "pkcs12-file-negative-02",
+      "description": "Pre-scan pkcs12-file relation using recipe p12-double-extension.",
+      "detection_kind": "PATH",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "p12-double-extension",
+      "relative_path": "corpus/pkcs12-file/negative-02.p12.txt",
+      "rule_id": "pkcs12-file",
+      "source_type": "PROJECT_OWNED_BINARY_PATH"
+    },
+    {
+      "case_id": "pkcs12-file-negative-03",
+      "description": "Pre-scan pkcs12-file relation using recipe similar-p1-extension.",
+      "detection_kind": "PATH",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "similar-p1-extension",
+      "relative_path": "corpus/pkcs12-file/negative-03.p1",
+      "rule_id": "pkcs12-file",
+      "source_type": "PROJECT_OWNED_BINARY_PATH"
+    },
+    {
+      "case_id": "pkcs12-file-positive-01",
+      "description": "Pre-scan pkcs12-file relation using recipe empty-p12-file.",
+      "detection_kind": "PATH",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "empty-p12-file",
+      "relative_path": "corpus/pkcs12-file/positive-01.p12",
+      "rule_id": "pkcs12-file",
+      "source_type": "PROJECT_OWNED_BINARY_PATH"
+    },
+    {
+      "case_id": "pkcs12-file-positive-02",
+      "description": "Pre-scan pkcs12-file relation using recipe empty-pfx-file.",
+      "detection_kind": "PATH",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "empty-pfx-file",
+      "relative_path": "corpus/pkcs12-file/positive-02.pfx",
+      "rule_id": "pkcs12-file",
+      "source_type": "PROJECT_OWNED_BINARY_PATH"
+    },
+    {
+      "case_id": "pkcs12-file-positive-03",
+      "description": "Pre-scan pkcs12-file relation using recipe binary-p12-file.",
+      "detection_kind": "PATH",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "binary-p12-file",
+      "relative_path": "corpus/pkcs12-file/positive-03.p12",
+      "rule_id": "pkcs12-file",
+      "source_type": "PROJECT_OWNED_BINARY_PATH"
+    },
+    {
+      "case_id": "private-key-negative-01",
+      "description": "Pre-scan private-key relation using recipe public-key-block.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "public-key-block",
+      "relative_path": "corpus/private-key/negative-01.pem",
+      "rule_id": "private-key",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "private-key-negative-02",
+      "description": "Pre-scan private-key relation using recipe private-key-short-body.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "private-key-short-body",
+      "relative_path": "corpus/private-key/negative-02.pem",
+      "rule_id": "private-key",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "private-key-negative-03",
+      "description": "Pre-scan private-key relation using recipe private-key-missing-end.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "private-key-missing-end",
+      "relative_path": "corpus/private-key/negative-03.pem",
+      "rule_id": "private-key",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "private-key-positive-01",
+      "description": "Pre-scan private-key relation using recipe synthetic-pkcs8-private-key-block.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "synthetic-pkcs8-private-key-block",
+      "relative_path": "corpus/private-key/positive-01.pem",
+      "rule_id": "private-key",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "private-key-positive-02",
+      "description": "Pre-scan private-key relation using recipe synthetic-rsa-private-key-block.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "synthetic-rsa-private-key-block",
+      "relative_path": "corpus/private-key/positive-02.pem",
+      "rule_id": "private-key",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "private-key-positive-03",
+      "description": "Pre-scan private-key relation using recipe synthetic-ec-private-key-block.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "synthetic-ec-private-key-block",
+      "relative_path": "corpus/private-key/positive-03.pem",
+      "rule_id": "private-key",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "scope-docs-positive",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-scope.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-scope",
+      "relative_path": "corpus/scope/docs/secret.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SCOPE_SENTINEL"
+    },
+    {
+      "case_id": "scope-generated-positive",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-scope.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-scope",
+      "relative_path": "corpus/scope/generated/secret.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SCOPE_SENTINEL"
+    },
+    {
+      "case_id": "scope-node-modules-allowlisted",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-scope.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-scope",
+      "relative_path": "corpus/scope/node_modules/pkg/secret.js",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SCOPE_SENTINEL"
+    },
+    {
+      "case_id": "scope-tests-positive",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-scope.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-scope",
+      "relative_path": "corpus/scope/tests/secret.txt",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SCOPE_SENTINEL"
+    },
+    {
+      "case_id": "scope-unknown-extension-positive",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-scope.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-scope",
+      "relative_path": "corpus/scope/unknown/secret.weird",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SCOPE_SENTINEL"
+    },
+    {
+      "case_id": "scope-vendor-allowlisted",
+      "description": "Pre-scan github-pat relation using recipe github-pat-high-entropy-scope.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "github-pat-high-entropy-scope",
+      "relative_path": "corpus/scope/vendor/github.com/example/pkg/secret.go",
+      "rule_id": "github-pat",
+      "source_type": "PROJECT_OWNED_SCOPE_SENTINEL"
+    },
+    {
+      "case_id": "slack-bot-token-negative-01",
+      "description": "Pre-scan slack-bot-token relation using recipe slack-wrong-prefix.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "slack-wrong-prefix",
+      "relative_path": "corpus/slack-bot-token/negative-01.txt",
+      "rule_id": "slack-bot-token",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "slack-bot-token-negative-02",
+      "description": "Pre-scan slack-bot-token relation using recipe slack-too-short.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "slack-too-short",
+      "relative_path": "corpus/slack-bot-token/negative-02.txt",
+      "rule_id": "slack-bot-token",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "slack-bot-token-negative-03",
+      "description": "Pre-scan slack-bot-token relation using recipe slack-placeholder.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_NO_MATCH",
+      "fixture_recipe": "slack-placeholder",
+      "relative_path": "corpus/slack-bot-token/negative-03.txt",
+      "rule_id": "slack-bot-token",
+      "source_type": "PROJECT_OWNED_NEAR_MISS"
+    },
+    {
+      "case_id": "slack-bot-token-positive-01",
+      "description": "Pre-scan slack-bot-token relation using recipe slack-bot-high-entropy-a.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "slack-bot-high-entropy-a",
+      "relative_path": "corpus/slack-bot-token/positive-01.txt",
+      "rule_id": "slack-bot-token",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "slack-bot-token-positive-02",
+      "description": "Pre-scan slack-bot-token relation using recipe slack-bot-high-entropy-b.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "slack-bot-high-entropy-b",
+      "relative_path": "corpus/slack-bot-token/positive-02.txt",
+      "rule_id": "slack-bot-token",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    },
+    {
+      "case_id": "slack-bot-token-positive-03",
+      "description": "Pre-scan slack-bot-token relation using recipe slack-bot-high-entropy-c.",
+      "detection_kind": "CONTENT",
+      "expectation": "EXPECTED_MATCH",
+      "fixture_recipe": "slack-bot-high-entropy-c",
+      "relative_path": "corpus/slack-bot-token/positive-03.txt",
+      "rule_id": "slack-bot-token",
+      "source_type": "PROJECT_OWNED_SYNTHETIC"
+    }
+  ],
+  "contract_sha256": "ec5d76590370a979abbdff2170f35c13dda24db7f303c5c4570e6a3e31335b08",
+  "scanner_id": "gitleaks",
+  "scanner_version": "8.30.1",
+  "schema_version": "securescan-gitleaks-corpus-plan-v1"
+}
