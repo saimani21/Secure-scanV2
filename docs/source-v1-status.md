@@ -59,7 +59,8 @@ Status: COMPLETE
 | v0.4D | Gitleaks applicability, Source support, and planning integration | COMPLETE |
 | v0.4E | Stable secret-safe Gitleaks finding identity | COMPLETE |
 | v0.4F1 | Gitleaks benchmark contract and manifest model | COMPLETE |
-| v0.4F2 | Deterministic Gitleaks pre-scan corpus and manifest | IMPLEMENTED - PENDING PRE-SCAN FREEZE |
+| v0.4F2 | Deterministic Gitleaks pre-scan corpus and manifest | COMPLETE |
+| v0.4F3A | Controlled Gitleaks benchmark evaluator and production-path harness | IMPLEMENTED - PENDING FREEZE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -578,3 +579,26 @@ internally suppress selected paths. Cross-rule observations are deliberately
 not pre-suppressed. Gitleaks has not been executed against the corpus, and no
 results or detection metrics exist at this checkpoint. Any future perfect
 metrics remain bounded to this corpus. `SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F3A Controlled Benchmark Machinery
+
+v0.4F3A implements the pure F2 relation evaluator, canonical
+`securescan-gitleaks-benchmark-report-v1` schema, and controlled production-path
+harness. The harness prepares only `benchmarks/gitleaks/corpus` with the Source
+workspace, durable context, artifact, and projection infrastructure, then uses
+the existing Gitleaks Source bridge, parser, and stable structural finding
+identity implementation unchanged.
+
+Intended path/rule/detection-kind relations are scored independently of
+unexpected cross-rule observations. Duplicate findings remain duplicate
+observations without inflating a relation classification. Unknown paths and
+any failed execution or integrity stage fail closed without metrics or
+recording. A pre-parse confidentiality gate requires all deterministic frozen
+fixture sentinels to be absent from raw stdout and stderr; the raw streams and
+sentinels are never persisted in benchmark evidence. Pure evaluation makes no
+confidentiality assertion. That assertion exists only on a controlled report
+constructed after the gate validates the exact scanned projection bytes.
+
+F3A has not executed Gitleaks against the F2 corpus and has not created
+`initial-v0.4f-baseline.json`. Detection metrics remain unavailable until the
+separately reviewed F3B execution. `SECRET_DETECTION` remains `SCANNABLE`.

@@ -127,4 +127,30 @@ Gitleaks has not been executed against this corpus at this checkpoint. No scan
 observations, classifications, accuracy metrics, or maturity decision are part
 of the plan or manifest. Even perfect future metrics would apply only to this
 bounded project-owned corpus. `SECRET_DETECTION` remains `SCANNABLE`, and
-v0.4F2 is implemented pending its pre-scan freeze review.
+v0.4F2 is frozen by `source-v0.4F2-gitleaks-prescan-corpus` at
+`98034c4e124e935e2bb5a893c45013ed5090f6e3`.
+
+## v0.4F3A controlled benchmark machinery
+
+v0.4F3A implements the pure relation evaluator, deterministic report schema,
+production-path harness, narrow CLI and runner, raw-output confidentiality
+gate, and atomic first-baseline recording policy. The F2 ground truth remains
+immutable. Scanner launch is delegated to the production Source bridge, and
+the production parser and v0.4E structural finding identity implementation are
+reused unchanged. The benchmark does not construct a separate Gitleaks command
+or parse scanner JSON itself.
+
+Each manifest case remains one intended path/rule/detection-kind relation.
+Repeated matching observations remain individually represented but count once
+for relation classification. Findings from a different rule remain separate
+unexpected cross-rule observations, including parser-valid inherited rules
+outside the seven representative families. A finding on a path outside the 48
+frozen cases fails the evaluation.
+
+Raw scanner stdout and stderr remain memory-only. Before parsing, deterministic
+synthetic fixture values derived from the frozen corpus must be absent from
+both streams. The pure evaluator makes no raw-output confidentiality claim;
+only the controlled production-path report built after this validation may
+carry the successful boolean assertion. No real Gitleaks execution against the
+F2 corpus has occurred in F3A, no F3 detection metrics or baseline exist, and
+no maturity decision is made. `SECRET_DETECTION` remains `SCANNABLE`.
