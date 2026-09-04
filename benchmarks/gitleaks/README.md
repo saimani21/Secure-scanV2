@@ -154,3 +154,38 @@ only the controlled production-path report built after this validation may
 carry the successful boolean assertion. No real Gitleaks execution against the
 F2 corpus has occurred in F3A, no F3 detection metrics or baseline exist, and
 no maturity decision is made. `SECRET_DETECTION` remains `SCANNABLE`.
+
+## v0.4F3B immutable initial baseline
+
+F3B froze the first controlled F2-corpus observation at commit
+`d183336c129977c4279cd1058bbe060742de0e54` and tag
+`source-v0.4F3B-gitleaks-initial-baseline`. The immutable report contains 22 TP,
+23 TN, 0 FP, and 3 FN across 48 intended relations, with no unexpected
+cross-rule observations. Its SHA-256 is
+`62f9c00f79c659d56490a181de231f0aa3cdca6a418f2ca5a9215f7ed1bbbb34`.
+
+The three frozen misses are `generic-api-key-positive-01`,
+`pkcs12-file-positive-01`, and `pkcs12-file-positive-02`. F4 does not replace,
+recalculate, or rewrite this accuracy baseline.
+
+## v0.4F4A adversarial characterization pre-scan contract
+
+F4A freezes thirteen deterministic diagnostic cases before the next scanner
+observation. The cases bound the three F3B misses using high-entropy `alpha`
+stopword probes, a low-entropy boundary, a generic high-entropy control,
+zero-byte and one-byte PKCS12 path cases, case and suffix path boundaries, and
+inherited `node_modules`/`vendor/github.com` allowlist controls.
+
+This is characterization, not another representative accuracy benchmark.
+Expectations use only `EXPECTED_OBSERVED` and `EXPECTED_ABSENT`; no precision,
+recall, F1, benchmark maturity, or replacement F3B metrics are produced. The
+static verifier checks structural regex compatibility, deterministic Shannon
+entropy, stopword isolation, exact fixture sizes, PKCS12 path semantics,
+allowlist path boundaries, canonical artifact identity, and complete corpus
+membership without executing Gitleaks.
+
+All detector-shaped values are deterministic, synthetic, project-owned, and
+non-live. No credentials are validated, no network behavior occurs, and whole
+fixture SHA-256 values exist only for corpus integrity. No F4 real scan has
+occurred and the reserved `adversarial-v1-result.json` artifact does not exist.
+`SECRET_DETECTION` remains `SCANNABLE`.

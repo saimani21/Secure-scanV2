@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import subprocess
@@ -906,7 +907,7 @@ def test_record_is_atomic_idempotent_and_never_replaces_different_evidence(
         record_gitleaks_benchmark_report(repository, report)
 
 
-def test_record_rejects_symlink_and_real_repository_has_no_baseline(
+def test_record_rejects_symlink_and_preserves_frozen_real_baseline(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -922,7 +923,10 @@ def test_record_rejects_symlink_and_real_repository_has_no_baseline(
         record_gitleaks_benchmark_report(repository, _report())
 
     assert target.read_bytes() == b"outside\n"
-    assert not (ROOT / GITLEAKS_BENCHMARK_BASELINE_PATH).exists()
+    assert (
+        hashlib.sha256((ROOT / GITLEAKS_BENCHMARK_BASELINE_PATH).read_bytes()).hexdigest()
+        == "62f9c00f79c659d56490a181de231f0aa3cdca6a418f2ca5a9215f7ed1bbbb34"
+    )
 
 
 def test_record_race_cannot_replace_evidence_created_by_another_writer(
@@ -1037,7 +1041,7 @@ def test_cli_check_is_non_scanning_and_report_does_not_write(
     assert not (repository / GITLEAKS_BENCHMARK_BASELINE_PATH).exists()
 
 
-def test_cli_record_uses_atomic_recorder_with_fake_report(
+def test_cli_record_uses_atomic_recorder_and_preserves_frozen_real_baseline(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capfd: pytest.CaptureFixture[str],
@@ -1059,7 +1063,10 @@ def test_cli_record_uses_atomic_recorder_with_fake_report(
     assert output.out == f"recorded {GITLEAKS_BENCHMARK_BASELINE_PATH}\n"
     assert output.err == ""
     assert (repository / GITLEAKS_BENCHMARK_BASELINE_PATH).read_bytes() == (report.canonical_json())
-    assert not (ROOT / GITLEAKS_BENCHMARK_BASELINE_PATH).exists()
+    assert (
+        hashlib.sha256((ROOT / GITLEAKS_BENCHMARK_BASELINE_PATH).read_bytes()).hexdigest()
+        == "62f9c00f79c659d56490a181de231f0aa3cdca6a418f2ca5a9215f7ed1bbbb34"
+    )
 
 
 def test_shell_runner_is_narrow_and_contains_no_direct_scanner_invocation() -> None:

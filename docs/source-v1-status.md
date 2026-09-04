@@ -60,7 +60,9 @@ Status: COMPLETE
 | v0.4E | Stable secret-safe Gitleaks finding identity | COMPLETE |
 | v0.4F1 | Gitleaks benchmark contract and manifest model | COMPLETE |
 | v0.4F2 | Deterministic Gitleaks pre-scan corpus and manifest | COMPLETE |
-| v0.4F3A | Controlled Gitleaks benchmark evaluator and production-path harness | IMPLEMENTED - PENDING FREEZE |
+| v0.4F3A | Controlled Gitleaks benchmark evaluator and production-path harness | COMPLETE |
+| v0.4F3B | Initial controlled Gitleaks benchmark baseline | COMPLETE |
+| v0.4F4A | Gitleaks adversarial characterization contract and corpus | IMPLEMENTED - PENDING PRE-SCAN FREEZE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -599,6 +601,25 @@ sentinels are never persisted in benchmark evidence. Pure evaluation makes no
 confidentiality assertion. That assertion exists only on a controlled report
 constructed after the gate validates the exact scanned projection bytes.
 
-F3A has not executed Gitleaks against the F2 corpus and has not created
-`initial-v0.4f-baseline.json`. Detection metrics remain unavailable until the
-separately reviewed F3B execution. `SECRET_DETECTION` remains `SCANNABLE`.
+At the F3A freeze, Gitleaks had not been executed against the F2 corpus and no
+baseline existed. F3B subsequently froze the initial controlled baseline at
+`d183336c129977c4279cd1058bbe060742de0e54`: 22 TP, 23 TN, 0 FP, and 3 FN
+across the 48 intended relations. Its report SHA-256 is
+`62f9c00f79c659d56490a181de231f0aa3cdca6a418f2ca5a9215f7ed1bbbb34`.
+`SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F4A Adversarial Pre-Scan Characterization
+
+v0.4F4A freezes thirteen deterministic, project-owned cases that characterize
+the three F3B misses and nearby controls. It records only
+`EXPECTED_OBSERVED`/`EXPECTED_ABSENT` expectations for stopword, entropy,
+empty-file source delivery, path-only matching, suffix boundaries, inherited
+global path allowlists, and controls. This diagnostic contract does not replace
+the F3B accuracy baseline and publishes no precision, recall, F1, or maturity
+claim.
+
+Static validators prove the intended bounded recipe properties without
+reimplementing the complete Gitleaks detector. No F4 scanner observation has
+occurred and `benchmarks/gitleaks/adversarial-v1-result.json` does not exist.
+The F3B baseline and all earlier evidence remain immutable.
+`SECRET_DETECTION` remains `SCANNABLE`.
