@@ -63,7 +63,7 @@ Status: COMPLETE
 | v0.4F3A | Controlled Gitleaks benchmark evaluator and production-path harness | COMPLETE |
 | v0.4F3B | Initial controlled Gitleaks benchmark baseline | COMPLETE |
 | v0.4F4A | Gitleaks adversarial characterization contract and corpus | COMPLETE |
-| v0.4F4B1 | Controlled Gitleaks adversarial evaluator and runner | IMPLEMENTED - PENDING FREEZE |
+| v0.4F4B1 | Controlled Gitleaks adversarial evaluator and runner | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
