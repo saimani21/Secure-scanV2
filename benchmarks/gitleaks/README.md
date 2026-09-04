@@ -189,3 +189,27 @@ non-live. No credentials are validated, no network behavior occurs, and whole
 fixture SHA-256 values exist only for corpus integrity. No F4 real scan has
 occurred and the reserved `adversarial-v1-result.json` artifact does not exist.
 `SECRET_DETECTION` remains `SCANNABLE`.
+
+## v0.4F4B1 controlled adversarial evaluator and runner
+
+F4B1 freezes how later F4 observations are interpreted. Each of the thirteen
+immutable F4A relations produces only `PASS` or `FAIL`: an
+`EXPECTED_OBSERVED` case passes when its exact path, rule, and detection kind
+is present, while an `EXPECTED_ABSENT` case passes when that exact relation is
+absent. Duplicate observations remain individually represented without
+creating extra case relations. Other-rule and wrong-kind observations remain
+separate: wrong-rule observations are recorded as cross-rule observations,
+while same-rule wrong-kind observations are recorded as detection-kind
+mismatches. Neither category alters the intended relation.
+
+The controlled runner uses the existing Source workspace, immutable projection,
+durable context, trusted Gitleaks bridge, production parser, and structural
+finding identity path. Its confidentiality proof is derived from the exact
+scanned projection and bound to the exact safe parsed observation digest. Raw
+streams remain in-memory only. Recording uses exclusive atomic publication and
+refuses every pre-existing result filesystem entry.
+
+F4A remains immutable, the F3B accuracy baseline remains unchanged, and no
+precision, recall, F1, TP, TN, FP, FN, or maturity result is produced. No real
+adversarial scan has occurred and `adversarial-v1-result.json` does not exist.
+`SECRET_DETECTION` remains `SCANNABLE`.

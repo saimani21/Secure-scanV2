@@ -62,7 +62,8 @@ Status: COMPLETE
 | v0.4F2 | Deterministic Gitleaks pre-scan corpus and manifest | COMPLETE |
 | v0.4F3A | Controlled Gitleaks benchmark evaluator and production-path harness | COMPLETE |
 | v0.4F3B | Initial controlled Gitleaks benchmark baseline | COMPLETE |
-| v0.4F4A | Gitleaks adversarial characterization contract and corpus | IMPLEMENTED - PENDING PRE-SCAN FREEZE |
+| v0.4F4A | Gitleaks adversarial characterization contract and corpus | COMPLETE |
+| v0.4F4B1 | Controlled Gitleaks adversarial evaluator and runner | IMPLEMENTED - PENDING FREEZE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -622,4 +623,20 @@ Static validators prove the intended bounded recipe properties without
 reimplementing the complete Gitleaks detector. No F4 scanner observation has
 occurred and `benchmarks/gitleaks/adversarial-v1-result.json` does not exist.
 The F3B baseline and all earlier evidence remain immutable.
+`SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F4B1 Controlled Adversarial Evaluator
+
+v0.4F4B1 implements the deterministic PASS/FAIL characterization evaluator,
+controlled production-path runner, confidentiality-bound canonical result,
+narrow CLI, and atomic first-result recording policy. F4A remains immutable,
+the F3B accuracy baseline remains unchanged, and F4 does not calculate or
+replace accuracy metrics.
+
+No real adversarial scanner observation has occurred. The reserved
+`benchmarks/gitleaks/adversarial-v1-result.json` artifact does not exist, and
+only fake execution envelopes are used by F4B1 tests. Findings for another rule
+are represented as cross-rule observations; findings for the intended rule with
+the wrong detection kind are represented separately as detection-kind
+mismatches. Neither can satisfy or invalidate an intended relation.
 `SECRET_DETECTION` remains `SCANNABLE`.
