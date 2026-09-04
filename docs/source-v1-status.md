@@ -65,6 +65,7 @@ Status: COMPLETE
 | v0.4F4A | Gitleaks adversarial characterization contract and corpus | COMPLETE |
 | v0.4F4B1 | Controlled Gitleaks adversarial evaluator and runner | COMPLETE |
 | v0.4F4B2 | Initial controlled Gitleaks adversarial characterization | COMPLETE |
+| v0.4F4C | Gitleaks limitation, coverage, confidentiality and failure characterization | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -621,9 +622,10 @@ the F3B accuracy baseline and publishes no precision, recall, F1, or maturity
 claim.
 
 Static validators prove the intended bounded recipe properties without
-reimplementing the complete Gitleaks detector. No F4 scanner observation has
-occurred and `benchmarks/gitleaks/adversarial-v1-result.json` does not exist.
-The F3B baseline and all earlier evidence remain immutable.
+reimplementing the complete Gitleaks detector. At the F4A freeze, no F4
+scanner observation had occurred and
+`benchmarks/gitleaks/adversarial-v1-result.json` did not exist. The F3B
+baseline and all earlier evidence remain immutable.
 `SECRET_DETECTION` remains `SCANNABLE`.
 
 ## Gitleaks v0.4F4B1 Controlled Adversarial Evaluator
@@ -634,10 +636,38 @@ narrow CLI, and atomic first-result recording policy. F4A remains immutable,
 the F3B accuracy baseline remains unchanged, and F4 does not calculate or
 replace accuracy metrics.
 
-No real adversarial scanner observation has occurred. The reserved
-`benchmarks/gitleaks/adversarial-v1-result.json` artifact does not exist, and
-only fake execution envelopes are used by F4B1 tests. Findings for another rule
+At the F4B1 freeze, no real adversarial scanner observation had occurred and
+the reserved `benchmarks/gitleaks/adversarial-v1-result.json` artifact did not
+exist; only fake execution envelopes were used by F4B1 tests. Findings for another rule
 are represented as cross-rule observations; findings for the intended rule with
 the wrong detection kind are represented separately as detection-kind
 mismatches. Neither can satisfy or invalidate an intended relation.
 `SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F4C Conservative Characterization
+
+F4B2 subsequently reproduced all thirteen frozen F4A hypotheses: thirteen
+cases passed, none failed, five findings were parsed, and neither unexpected
+observation category was populated. F3B remains the historical bounded
+accuracy evidence; F4C does not recompute or reinterpret its metrics.
+
+F4C records six machine-readable, evidence-bound characterizations covering
+upstream generic-rule suppression and entropy behavior, empty-file directory
+source behavior, path-only detection, inherited global path allowlists,
+SecureScan fail-closed execution, and sanitized credential-independent
+evidence. Scanner behavior, SecureScan behavior, and future product-policy
+boundaries remain explicit and separate. F4C executes no scanner, creates no
+new corpus, and makes no maturity promotion. `SECRET_DETECTION` remains
+`SCANNABLE`.
+## v0.4F4C Freeze Validation Note
+
+The F4C focused and combined Gitleaks regression gates passed. The authoritative
+full Python suite was not completed at this checkpoint because
+`tests/test_api.py::test_health` intermittently stalled during Starlette
+`TestClient.__enter__` while waiting for AnyIO portal startup. Faulthandler
+localized the stall before application request execution. F4C modifies no API,
+production Source, production Gitleaks, or dependency code; those surfaces
+remain byte-identical to the preceding checkpoint whose authoritative full
+regression completed successfully. This infrastructure/test-harness stall is
+therefore recorded as a non-F4C regression waiver rather than represented as a
+successful full-suite run.

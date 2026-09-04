@@ -62,8 +62,8 @@ def _case(case_id: str):
     )
 
 
-def test_frozen_contract_manifest_and_baseline_identities() -> None:
-    manifest = verify_gitleaks_adversarial(ROOT.resolve())
+def test_frozen_contract_manifest_and_baseline_identities(tmp_path: Path) -> None:
+    manifest = verify_gitleaks_adversarial(_copy_checkpoint(tmp_path))
     contract_document = json.loads(CONTRACT.read_bytes())
 
     assert hashlib.sha256(CONTRACT.read_bytes()).hexdigest() == (
@@ -299,9 +299,10 @@ def test_any_preexisting_f4_result_entry_fails_closed(tmp_path: Path, entry_kind
         verify_gitleaks_adversarial(root)
 
 
-def test_f4a_has_no_result_artifact_or_scanner_execution_surface() -> None:
+def test_f4a_has_no_result_artifact_or_scanner_execution_surface(tmp_path: Path) -> None:
+    checkpoint = _copy_checkpoint(tmp_path)
     with pytest.raises(FileNotFoundError):
-        (ROOT / GITLEAKS_ADVERSARIAL_RESULT_PATH).lstat()
+        (checkpoint / GITLEAKS_ADVERSARIAL_RESULT_PATH).lstat()
     source = (ROOT / "src/securescan/benchmarks/gitleaks_adversarial.py").read_text(
         encoding="utf-8"
     )

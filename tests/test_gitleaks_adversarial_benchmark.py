@@ -24,7 +24,7 @@ from securescan.benchmarks.gitleaks_adversarial import (
     GITLEAKS_F3B_BASELINE_PATH,
     GITLEAKS_F3B_BASELINE_SHA256,
     GitleaksAdversarialExpectation,
-    verify_gitleaks_adversarial,
+    load_gitleaks_adversarial_manifest,
 )
 from securescan.benchmarks.gitleaks_adversarial_benchmark import (
     _CONFIDENTIALITY_PROOF_TOKEN,
@@ -61,7 +61,9 @@ PROJECTION_DIGEST = "b" * 64
 
 
 def _manifest():
-    return verify_gitleaks_adversarial(ROOT.resolve())
+    return load_gitleaks_adversarial_manifest(
+        ROOT / GITLEAKS_ADVERSARIAL_MANIFEST_PATH
+    )
 
 
 def _finding(
@@ -559,8 +561,9 @@ def test_fake_controlled_run_traverses_bridge_confidentiality_parser_and_evaluat
 ) -> None:
     binding = _fake_binding(tmp_path, monkeypatch)
     executor = _Executor(_process_result(return_code=1, stdout=_scanner_all_pass()))
+    checkpoint = _copy_checkpoint(tmp_path / "checkpoint")
 
-    report = _run_with_dependencies(ROOT.resolve(), binding, executor)
+    report = _run_with_dependencies(checkpoint, binding, executor)
 
     assert report.pass_count == 13
     assert report.fail_count == 0
@@ -596,8 +599,9 @@ def test_fake_failed_or_invalid_execution_cannot_produce_report(
     result: CancellableProcessResult,
 ) -> None:
     binding = _fake_binding(tmp_path, monkeypatch)
+    checkpoint = _copy_checkpoint(tmp_path / "checkpoint")
     with pytest.raises(GitleaksAdversarialBenchmarkError):
-        _run_with_dependencies(ROOT.resolve(), binding, _Executor(result))
+        _run_with_dependencies(checkpoint, binding, _Executor(result))
 
 
 def test_raw_projection_sentinel_leak_fails_confidentiality(
@@ -606,13 +610,14 @@ def test_raw_projection_sentinel_leak_fails_confidentiality(
 ) -> None:
     binding = _fake_binding(tmp_path, monkeypatch)
     raw = (ROOT / GITLEAKS_ADVERSARIAL_CORPUS_PATH / "scope/docs/secret.txt").read_bytes()
+    checkpoint = _copy_checkpoint(tmp_path / "checkpoint")
 
     with pytest.raises(
         GitleaksAdversarialConfidentialityError,
         match="^Gitleaks adversarial confidentiality validation failed$",
     ) as raised:
         _run_with_dependencies(
-            ROOT.resolve(),
+            checkpoint,
             binding,
             _Executor(_process_result(return_code=1, stdout=raw)),
         )
@@ -692,7 +697,10 @@ def test_check_verifies_runtime_without_scan(
         calls.append(self.executable_path)
 
     monkeypatch.setattr(TrustedGitleaksBinding, "verify_runtime", verify_runtime)
-    result = check_controlled_gitleaks_adversarial(ROOT.resolve(), executable)
+    result = check_controlled_gitleaks_adversarial(
+        _copy_checkpoint(tmp_path / "checkpoint"),
+        executable,
+    )
 
     assert calls == [executable]
     assert result["runtime_verified"] is True
@@ -725,8 +733,9 @@ def test_cli_report_does_not_write_and_runner_has_no_direct_scanner_command(
     assert "check|test|report|record)" in runner
 
 
-def test_f4b1_repository_has_no_result() -> None:
-    assert not os.path.lexists(ROOT / GITLEAKS_ADVERSARIAL_RESULT_PATH)
+def test_f4b1_repository_has_no_result(tmp_path: Path) -> None:
+    checkpoint = _copy_checkpoint(tmp_path)
+    assert not os.path.lexists(checkpoint / GITLEAKS_ADVERSARIAL_RESULT_PATH)
     assert (
         hashlib.sha256((ROOT / GITLEAKS_F3B_BASELINE_PATH).read_bytes()).hexdigest()
         == GITLEAKS_F3B_BASELINE_SHA256

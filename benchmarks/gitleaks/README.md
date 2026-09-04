@@ -186,9 +186,9 @@ membership without executing Gitleaks.
 
 All detector-shaped values are deterministic, synthetic, project-owned, and
 non-live. No credentials are validated, no network behavior occurs, and whole
-fixture SHA-256 values exist only for corpus integrity. No F4 real scan has
-occurred and the reserved `adversarial-v1-result.json` artifact does not exist.
-`SECRET_DETECTION` remains `SCANNABLE`.
+fixture SHA-256 values exist only for corpus integrity. At the F4A freeze, no
+F4 real scan had occurred and the reserved `adversarial-v1-result.json`
+artifact did not exist. `SECRET_DETECTION` remains `SCANNABLE`.
 
 ## v0.4F4B1 controlled adversarial evaluator and runner
 
@@ -210,6 +210,24 @@ streams remain in-memory only. Recording uses exclusive atomic publication and
 refuses every pre-existing result filesystem entry.
 
 F4A remains immutable, the F3B accuracy baseline remains unchanged, and no
-precision, recall, F1, TP, TN, FP, FN, or maturity result is produced. No real
-adversarial scan has occurred and `adversarial-v1-result.json` does not exist.
+precision, recall, F1, TP, TN, FP, FN, or maturity result is produced. At the
+F4B1 freeze, no real adversarial scan had occurred and
+`adversarial-v1-result.json` did not exist. `SECRET_DETECTION` remains
+`SCANNABLE`.
+
+## v0.4F4C conservative limitation and behavior characterization
+
+The frozen F4B2 result reproduced all thirteen F4A hypotheses with thirteen
+passes, zero failures, five parsed findings, and no unexpected rule or
+detection-kind observations. F3B remains historical accuracy evidence; F4C
+does not recompute or reinterpret its metrics.
+
+`adversarial-v1-characterization.json` records six conservative categories:
+upstream generic-rule suppression and entropy semantics, upstream empty-file
+directory-source behavior, confirmed path-only behavior, inherited global path
+allowlists, SecureScan fail-closed execution, and SecureScan confidentiality.
+Every claim binds exact frozen commits, tags, artifact hashes, and relevant case
+or hostile-test IDs. The artifact contains no scanner streams, credential
+values, credential hashes, host paths, mutable HEAD identity, or accuracy
+metrics. F4C executes no scanner, adds no corpus, and does not promote maturity.
 `SECRET_DETECTION` remains `SCANNABLE`.
