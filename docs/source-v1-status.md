@@ -66,6 +66,7 @@ Status: COMPLETE
 | v0.4F4B1 | Controlled Gitleaks adversarial evaluator and runner | COMPLETE |
 | v0.4F4B2 | Initial controlled Gitleaks adversarial characterization | COMPLETE |
 | v0.4F4C | Gitleaks limitation, coverage, confidentiality and failure characterization | COMPLETE |
+| v0.4F5A | Gitleaks bounded real-world evaluation contract | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -671,3 +672,33 @@ remain byte-identical to the preceding checkpoint whose authoritative full
 regression completed successfully. This infrastructure/test-harness stall is
 therefore recorded as a non-F4C regression waiver rather than represented as a
 successful full-suite run.
+
+## Gitleaks v0.4F5A Bounded Real-World Contract
+
+F5A freezes six operational repository roles and the future acquisition,
+current-snapshot execution, repeatability, review, confidentiality, and
+fail-closed contracts before repository selection. Repository names, URLs,
+commits, archives, and snapshots remain unresolved; no acquisition, network
+access, or real-world Gitleaks scan occurred, and no F5 result exists.
+
+Future snapshots use the existing SecureScan `RepositoryManifest` identity
+(`content_digest`, `file_count`, and `total_bytes`). F5B must freeze bounded,
+containment-safe untrusted-archive extraction policy and record pre-scan role
+eligibility evidence before selecting six distinct repositories.
+
+F3B remains controlled accuracy evidence, while F4C remains limitation and
+claim evidence. F5 is operational evaluation without complete ground truth and
+does not authorize precision, recall, F1, TP, TN, FP, or FN. No maturity
+promotion occurs; `SECRET_DETECTION` remains `SCANNABLE`.
+## v0.4F5A Freeze Validation Note
+
+The focused F5A and combined Gitleaks regression gates passed. The authoritative
+full Python suite was not completed because the isolated API health test again
+stalled during Starlette TestClient startup while waiting for the AnyIO portal,
+before application request execution. F5A modifies no API, production Source,
+production Gitleaks, or dependency code. This recurring test-harness condition
+is recorded as a non-F5A regression waiver rather than represented as a
+successful full-suite run.
+
+No repository acquisition, network operation, or Gitleaks execution occurred.
+No real-world result artifact exists and SECRET_DETECTION remains SCANNABLE.
