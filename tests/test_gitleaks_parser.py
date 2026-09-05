@@ -553,6 +553,34 @@ def test_match_is_type_checked_but_its_value_is_not_propagated(tmp_path: Path) -
     )
 
 
+def test_multiline_tabbed_gitleaks_match_is_validated_and_discarded(
+    tmp_path: Path,
+) -> None:
+    match = "synthetic-prefix\r\n\tsynthetic-suffix"
+
+    result, _environment_value, _envelope_value = _parse(
+        tmp_path,
+        [_finding(Match=match)],
+    )
+
+    assert result.finding_count == 1
+    assert not hasattr(result.findings[0], "match")
+    assert match not in repr(result)
+    assert match.encode() not in result.canonical_json()
+
+
+@pytest.mark.parametrize("control", ("\x00", "\x08", "\x0b", "\x0c", "\x7f"))
+def test_non_layout_match_controls_remain_rejected(
+    tmp_path: Path,
+    control: str,
+) -> None:
+    _assert_failure(
+        tmp_path,
+        [_finding(Match=f"synthetic-prefix{control}synthetic-suffix")],
+        GitleaksParserFailureCode.OUTPUT_INVALID_SCHEMA,
+    )
+
+
 @pytest.mark.parametrize(
     "file_path",
     (

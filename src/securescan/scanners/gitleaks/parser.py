@@ -287,6 +287,18 @@ def _valid_bounded_string(
     )
 
 
+def _valid_bounded_match(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) <= _MAX_IGNORED_STRING_LENGTH
+        and all(
+            character in {"\t", "\n", "\r"}
+            or not unicodedata.category(character).startswith("C")
+            for character in value
+        )
+    )
+
+
 def _valid_normalized_relative_path(value: object) -> bool:
     if (
         not isinstance(value, str)
@@ -544,11 +556,7 @@ def _validate_schema_strings(finding: dict[str, Any]) -> None:
                 )
     if "Match" in finding:
         match = finding["Match"]
-        if not _valid_bounded_string(
-            match,
-            maximum_length=_MAX_IGNORED_STRING_LENGTH,
-            allow_empty=True,
-        ):
+        if not _valid_bounded_match(match):
             raise GitleaksParserError(
                 GitleaksParserFailureCode.OUTPUT_INVALID_SCHEMA
             )

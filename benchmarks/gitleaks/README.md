@@ -130,6 +130,15 @@ bounded project-owned corpus. `SECRET_DETECTION` remains `SCANNABLE`, and
 v0.4F2 is frozen by `source-v0.4F2-gitleaks-prescan-corpus` at
 `98034c4e124e935e2bb5a893c45013ed5090f6e3`.
 
+## v0.4C1 parser compatibility correction
+
+The frozen Gitleaks 8.30.1 `dir` producer can emit multiline `Match` strings
+containing tab, line-feed, and carriage-return layout characters. v0.4C1
+accepts only those layout controls in the bounded, sensitive `Match` field and
+continues to discard that field completely. Other control characters, unknown
+fields, non-redacted `Secret` values, and every existing structural violation
+still fail closed. No normalized or canonical finding gains sensitive content.
+
 ## v0.4F3A controlled benchmark machinery
 
 v0.4F3A implements the pure relation evaluator, deterministic report schema,
