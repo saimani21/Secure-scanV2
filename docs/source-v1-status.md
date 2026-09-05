@@ -67,7 +67,7 @@ Status: COMPLETE
 | v0.4F4B2 | Initial controlled Gitleaks adversarial characterization | COMPLETE |
 | v0.4F4C | Gitleaks limitation, coverage, confidentiality and failure characterization | COMPLETE |
 | v0.4F5A | Gitleaks bounded real-world evaluation contract | COMPLETE |
-| v0.4F5B1 | Gitleaks real-world acquisition policy and manifest schema | IMPLEMENTED - PENDING FREEZE |
+| v0.4F5B1 | Gitleaks real-world acquisition policy and manifest schema | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
