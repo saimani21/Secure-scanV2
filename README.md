@@ -94,7 +94,7 @@ to an exact commit and a commit-addressed HTTPS archive resource:
 
 | Role | Repository | Commit |
 |---|---|---|
-| Small application | `miniflux/v2` | `a84533db6ca0a2ff9a47800fbf0326be6d9b3170` |
+| Small application | `charmbracelet/gum` | `4d089f95507708a71f64dacfe7ca513219dd5267` |
 | Library/package | `psf/requests` | `dae7ef63b4df6eded86637f251fc4e3a06c3b479` |
 | Documentation/examples-heavy | `pallets/flask` | `d318b683471101618febed18996405ad26462110` |
 | Dependency/generated-path-heavy | `Quad4-Software/Reticulum-Go` | `5bf60debb7fdcd27b175d4db2585dd994a3d1b66` |
@@ -106,6 +106,12 @@ the frozen F5B1 vocabulary. No archive was downloaded or extracted, no
 repository code or Gitleaks process ran, and all archive/snapshot measurement
 fields remain unresolved. No real-world result exists and `SECRET_DETECTION`
 remains `SCANNABLE`.
+
+F5B2R1 corrects only the small-application selection after the frozen Miniflux
+archive failed the F5B1 acquisition policy because it contained a symlink.
+Gum was selected from repository metadata, not scanner output; its exact Git
+tree has 142 entries, no symlink or submodule modes, a maximum path length of
+37 bytes, and a maximum depth of three.
 
 ## API and CLI
 

@@ -69,6 +69,7 @@ Status: COMPLETE
 | v0.4F5A | Gitleaks bounded real-world evaluation contract | COMPLETE |
 | v0.4F5B1 | Gitleaks real-world acquisition policy and manifest schema | COMPLETE |
 | v0.4F5B2 | Gitleaks real-world repository selection | COMPLETE |
+| v0.4F5B2R1 | Gitleaks real-world selection compatibility correction | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -612,6 +613,28 @@ baseline existed. F3B subsequently froze the initial controlled baseline at
 `d183336c129977c4279cd1058bbe060742de0e54`: 22 TP, 23 TN, 0 FP, and 3 FN
 across the 48 intended relations. Its report SHA-256 is
 `62f9c00f79c659d56490a181de231f0aa3cdca6a418f2ca5a9215f7ed1bbbb34`.
+`SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F5B2R1 Selection Compatibility Correction
+
+The first F5B3 acquisition attempt requested only the frozen Miniflux archive.
+Its receipt was 985,853 bytes with SHA-256
+`68fcd009c78c35ef4be5db07cde25cd44ea1edcce27e68bb5793c9409c702e3a`.
+Complete pre-materialization validation found the member
+`internal/reader/readability/testdata`, type `SYMLINK`, targeting
+`../../reader/sanitizer/testdata/`. The archive was rejected before extraction
+acceptance; zero SecureScan workspaces were created, the other five archives
+were not requested, and Gitleaks did not execute.
+
+F5B2R1 replaces only RW01 with the public MIT-licensed standalone CLI
+`charmbracelet/gum` at commit
+`4d089f95507708a71f64dacfe7ca513219dd5267`. Its complete authoritative Git
+tree metadata contains 142 entries, no mode `120000` symlinks, no mode `160000`
+submodules, a maximum path length of 37 bytes, and maximum depth three. The
+replacement is solely an acquisition-policy compatibility correction; no
+scanner result informed selection. RW02 through RW06 and every F5B1 security
+requirement remain unchanged. The manifest remains `SELECTED`, all acquisition
+fields remain null, no archive was downloaded for the corrected selection, and
 `SECRET_DETECTION` remains `SCANNABLE`.
 
 ## Gitleaks v0.4F4A Adversarial Pre-Scan Characterization

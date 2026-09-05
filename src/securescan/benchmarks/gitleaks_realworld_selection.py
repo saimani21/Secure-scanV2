@@ -33,8 +33,13 @@ from securescan.benchmarks.gitleaks_realworld_contract import (
 
 GITLEAKS_F5B1_COMMIT: Final = "b5a65d961b136966095ad97c5afb9945d56a6f08"
 GITLEAKS_F5B1_TAG: Final = "source-v0.4F5B1-gitleaks-acquisition-policy"
-GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256: Final = (
+GITLEAKS_F5B2_COMMIT: Final = "f8237a01879f437c3fdf958416663f957afcbe21"
+GITLEAKS_F5B2_TAG: Final = "source-v0.4F5B2-gitleaks-repository-selection"
+GITLEAKS_F5B2_SELECTED_MANIFEST_SHA256: Final = (
     "2af9aa332be75b069e948c5d01db95c2a7b5138d654e12ed5ce8e748cd632679"
+)
+GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256: Final = (
+    "cde25ca550f76ec35ea1b09e7c4d113beb8b205865c8ebf278e9c16159e2d510"
 )
 
 _MAX_MANIFEST_BYTES = 1024 * 1024
@@ -50,18 +55,18 @@ def gitleaks_realworld_selected_model() -> GitleaksRealworldAcquisitionManifestM
         GitleaksRealworldAcquisitionManifestEntry(
             slot_id="RW01",
             role=GitleaksRealworldRepositoryRole.RW01_SMALL_APPLICATION,
-            repository_id="miniflux-v2",
-            upstream_url="https://github.com/miniflux/v2",
+            repository_id="charmbracelet-gum",
+            upstream_url="https://github.com/charmbracelet/gum",
             archive_url=(
-                "https://github.com/miniflux/v2/archive/"
-                "a84533db6ca0a2ff9a47800fbf0326be6d9b3170.tar.gz"
+                "https://github.com/charmbracelet/gum/archive/"
+                "4d089f95507708a71f64dacfe7ca513219dd5267.tar.gz"
             ),
-            exact_commit_sha="a84533db6ca0a2ff9a47800fbf0326be6d9b3170",
-            license_identifier="Apache-2.0",
+            exact_commit_sha="4d089f95507708a71f64dacfe7ca513219dd5267",
+            license_identifier="MIT",
             acquisition_method=GitleaksRealworldAcquisitionMethod.UPSTREAM_ARCHIVE,
             pre_scan_role_evidence=("application_entrypoint", "package_manifest"),
             pre_scan_role_rationale=(
-                "Public Go feed-reader application with a server entry point and Go "
+                "Public standalone Go CLI application with a main entry point and Go "
                 "module manifest in a compact source layout."
             ),
         ),
@@ -310,25 +315,27 @@ def _git(
         raise GitleaksRealworldSelectionError from None
 
 
-def _verify_f5b1_git_boundary(repository_root: Path) -> None:
+def _verify_selection_git_boundary(repository_root: Path) -> None:
     branch = _git(repository_root, "branch", "--show-current").stdout.strip()
     resolved = _git(
         repository_root,
         "rev-parse",
-        f"{GITLEAKS_F5B1_TAG}^{{commit}}",
+        f"{GITLEAKS_F5B2_TAG}^{{commit}}",
     ).stdout.strip()
     ancestry = _git(
         repository_root,
         "merge-base",
         "--is-ancestor",
-        GITLEAKS_F5B1_COMMIT,
+        GITLEAKS_F5B2_COMMIT,
         "HEAD",
         check=False,
     )
     if (
         branch != "source/v0.3-semgrep"
-        or resolved != GITLEAKS_F5B1_COMMIT
+        or resolved != GITLEAKS_F5B2_COMMIT
         or ancestry.returncode != 0
+        or GITLEAKS_F5B2_SELECTED_MANIFEST_SHA256
+        != "2af9aa332be75b069e948c5d01db95c2a7b5138d654e12ed5ce8e748cd632679"
     ):
         raise GitleaksRealworldSelectionError
 
@@ -349,7 +356,7 @@ def verify_gitleaks_realworld_selection(repository_root: Path) -> dict[str, obje
         GitleaksRealworldContractError,
     ):
         raise GitleaksRealworldSelectionError from None
-    _verify_f5b1_git_boundary(repository_root)
+    _verify_selection_git_boundary(repository_root)
     document = load_gitleaks_realworld_selection(
         repository_root / GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH
     )

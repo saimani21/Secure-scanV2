@@ -73,3 +73,23 @@ evidence types. Future extraction may materialize only regular files and
 directories. The template contains no repository identity, acquisition,
 scanner-result, finding, or secret data. No populated acquisition manifest or
 F5 result exists.
+
+## F5B2R1 repository-selection correction
+
+F5B2 initially selected Miniflux for RW01. The first controlled F5B3 request
+received its 985,853-byte archive with SHA-256
+`68fcd009c78c35ef4be5db07cde25cd44ea1edcce27e68bb5793c9409c702e3a`.
+Before extraction acceptance, validation rejected
+`internal/reader/readability/testdata` because it is a `SYMLINK` to
+`../../reader/sanitizer/testdata/`. Nothing was extracted, zero workspaces were
+created, the other five archives were not requested, and Gitleaks did not run.
+
+F5B2R1 therefore replaces only RW01 with `charmbracelet/gum`, a public
+MIT-licensed standalone Go CLI application, at exact commit
+`4d089f95507708a71f64dacfe7ca513219dd5267`. Authoritative recursive Git-tree
+metadata for that commit was complete: 142 entries, zero `120000` symlink
+entries, zero `160000` submodule entries, maximum path length 37 bytes, and
+maximum depth three. Role evidence remains `application_entrypoint` and
+`package_manifest` from the frozen vocabulary. This is an acquisition-policy
+compatibility correction, not scanner-result-driven selection. RW02 through
+RW06 remain byte-identical to F5B2 and all acquisition fields remain null.

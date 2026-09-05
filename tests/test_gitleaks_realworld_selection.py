@@ -23,6 +23,9 @@ from securescan.benchmarks.gitleaks_realworld_contract import (
 from securescan.benchmarks.gitleaks_realworld_selection import (
     GITLEAKS_F5B1_COMMIT,
     GITLEAKS_F5B1_TAG,
+    GITLEAKS_F5B2_COMMIT,
+    GITLEAKS_F5B2_SELECTED_MANIFEST_SHA256,
+    GITLEAKS_F5B2_TAG,
     GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256,
     GitleaksRealworldSelectionError,
     gitleaks_realworld_selected_model,
@@ -43,11 +46,11 @@ _EXPECTED_IDENTITIES = (
     (
         "RW01",
         "RW01_SMALL_APPLICATION",
-        "miniflux-v2",
-        "https://github.com/miniflux/v2",
-        "https://github.com/miniflux/v2/archive/a84533db6ca0a2ff9a47800fbf0326be6d9b3170.tar.gz",
-        "a84533db6ca0a2ff9a47800fbf0326be6d9b3170",
-        "Apache-2.0",
+        "charmbracelet-gum",
+        "https://github.com/charmbracelet/gum",
+        "https://github.com/charmbracelet/gum/archive/4d089f95507708a71f64dacfe7ca513219dd5267.tar.gz",
+        "4d089f95507708a71f64dacfe7ca513219dd5267",
+        "MIT",
     ),
     (
         "RW02",
@@ -117,6 +120,9 @@ def test_selected_manifest_is_canonical_digest_bound_and_verified() -> None:
     assert hashlib.sha256(payload).hexdigest() == (
         GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256
     )
+    assert GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256 == (
+        "cde25ca550f76ec35ea1b09e7c4d113beb8b205865c8ebf278e9c16159e2d510"
+    )
     assert payload == canonical_gitleaks_realworld_acquisition(
         gitleaks_realworld_selection_document()
     )
@@ -144,6 +150,51 @@ def test_f5b1_boundary_is_exact_and_current_head_is_a_descendant() -> None:
     assert GITLEAKS_F5B1_TAG == "source-v0.4F5B1-gitleaks-acquisition-policy"
     assert resolved == GITLEAKS_F5B1_COMMIT
     assert ancestry.returncode == 0
+
+
+def test_f5b2_boundary_is_exact_and_current_head_is_a_descendant() -> None:
+    resolved = subprocess.run(
+        ["git", "rev-parse", f"{GITLEAKS_F5B2_TAG}^{{commit}}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    ancestry = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", GITLEAKS_F5B2_COMMIT, "HEAD"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert GITLEAKS_F5B2_COMMIT == "f8237a01879f437c3fdf958416663f957afcbe21"
+    assert GITLEAKS_F5B2_TAG == "source-v0.4F5B2-gitleaks-repository-selection"
+    assert GITLEAKS_F5B2_SELECTED_MANIFEST_SHA256 == (
+        "2af9aa332be75b069e948c5d01db95c2a7b5138d654e12ed5ce8e748cd632679"
+    )
+    assert resolved == GITLEAKS_F5B2_COMMIT
+    assert ancestry.returncode == 0
+
+
+def test_rw02_through_rw06_are_byte_equivalent_to_historical_f5b2() -> None:
+    historical_payload = subprocess.run(
+        [
+            "git",
+            "show",
+            f"{GITLEAKS_F5B2_COMMIT}:{GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH}",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    historical = json.loads(historical_payload)
+    corrected = gitleaks_realworld_selection_document()
+
+    assert canonical_gitleaks_realworld_acquisition(
+        historical["repository_slots"][1:]
+    ) == canonical_gitleaks_realworld_acquisition(corrected["repository_slots"][1:])
+    assert historical["repository_slots"][0] != corrected["repository_slots"][0]
 
 
 def test_exact_selected_repository_identities_are_frozen() -> None:
