@@ -86,6 +86,27 @@ remains `SCANNABLE`; the maturity decision belongs to F2F. See the
 [Source status](docs/source-v1-status.md) for the exact evidence and result
 boundaries.
 
+## Source Gitleaks real-world selection
+
+Source v0.4F5B2 freezes a metadata-only, six-repository selection for the
+future bounded Gitleaks real-world evaluation. Each public upstream is pinned
+to an exact commit and a commit-addressed HTTPS archive resource:
+
+| Role | Repository | Commit |
+|---|---|---|
+| Small application | `miniflux/v2` | `a84533db6ca0a2ff9a47800fbf0326be6d9b3170` |
+| Library/package | `psf/requests` | `dae7ef63b4df6eded86637f251fc4e3a06c3b479` |
+| Documentation/examples-heavy | `pallets/flask` | `d318b683471101618febed18996405ad26462110` |
+| Dependency/generated-path-heavy | `Quad4-Software/Reticulum-Go` | `5bf60debb7fdcd27b175d4db2585dd994a3d1b66` |
+| Multi-language | `git/git` | `3cb9185f65410273787f74333cc027d2ea5daada` |
+| Binary/config assets | `SSLMate/go-pkcs12` | `c0472edb16891765fbc86573ea468365b7fd2197` |
+
+Selection used only public upstream metadata and pre-scan role evidence from
+the frozen F5B1 vocabulary. No archive was downloaded or extracted, no
+repository code or Gitleaks process ran, and all archive/snapshot measurement
+fields remain unresolved. No real-world result exists and `SECRET_DETECTION`
+remains `SCANNABLE`.
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI

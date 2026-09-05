@@ -68,6 +68,7 @@ Status: COMPLETE
 | v0.4F4C | Gitleaks limitation, coverage, confidentiality and failure characterization | COMPLETE |
 | v0.4F5A | Gitleaks bounded real-world evaluation contract | COMPLETE |
 | v0.4F5B1 | Gitleaks real-world acquisition policy and manifest schema | COMPLETE |
+| v0.4F5B2 | Gitleaks real-world repository selection | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -722,3 +723,20 @@ No repository was selected, no network access or archive acquisition occurred,
 no archive was extracted, and neither repository code nor Gitleaks executed.
 The F5A contract remains frozen, no populated acquisition manifest or F5 result
 exists, and `SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F5B2 Repository Selection
+
+F5B2 advances the acquisition manifest to `SELECTED` and freezes exactly one
+public repository for each of the six F5A roles. The selections are
+`miniflux/v2`, `psf/requests`, `pallets/flask`,
+`Quad4-Software/Reticulum-Go`, `git/git`, and `SSLMate/go-pkcs12`; each records
+an exact 40-character commit, HTTPS upstream and commit-addressed archive URLs,
+an SPDX-compatible license identifier, frozen-vocabulary pre-scan role
+evidence, and a concise role rationale.
+
+The selected repositories and archive resources are distinct under every F5B1
+selection constraint. Archive SHA-256, archive byte count, snapshot digest,
+file count, and byte count remain null until an explicit later acquisition
+checkpoint. F5B2 downloaded or extracted no archive, cloned no repository,
+executed neither repository code nor Gitleaks, and created no evaluation result.
+`SECRET_DETECTION` remains `SCANNABLE`.

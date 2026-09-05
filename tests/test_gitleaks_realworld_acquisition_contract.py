@@ -167,12 +167,16 @@ def _manifest_model(
     return GitleaksRealworldAcquisitionManifestModel(state=state, entries=entries)
 
 
-def test_frozen_policy_and_manifest_schema_are_canonical_and_verified() -> None:
+def test_frozen_policy_and_manifest_schema_are_canonical_and_verified(
+    tmp_path: Path,
+) -> None:
     policy_bytes = (ROOT / GITLEAKS_REALWORLD_ACQUISITION_POLICY_PATH).read_bytes()
     schema_bytes = (
         ROOT / GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SCHEMA_PATH
     ).read_bytes()
-    policy, schema = verify_gitleaks_realworld_acquisition_contract(ROOT.resolve())
+    policy, schema = verify_gitleaks_realworld_acquisition_contract(
+        _copy_checkpoint(tmp_path)
+    )
 
     assert policy == gitleaks_realworld_acquisition_policy_document()
     assert schema == gitleaks_realworld_acquisition_manifest_schema_document()
@@ -702,12 +706,15 @@ def test_future_distinctness_and_primary_slot_requirements_are_exact() -> None:
     }
 
 
-def test_preselection_artifacts_remain_scannable_and_results_absent() -> None:
-    policy, schema = verify_gitleaks_realworld_acquisition_contract(ROOT.resolve())
+def test_preselection_artifacts_remain_scannable_and_results_absent(
+    tmp_path: Path,
+) -> None:
+    root = _copy_checkpoint(tmp_path)
+    policy, schema = verify_gitleaks_realworld_acquisition_contract(root)
 
     assert policy["maturity"] == schema["maturity"] == "SCANNABLE"
-    assert not os.path.lexists(ROOT / GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH)
-    assert not os.path.lexists(ROOT / GITLEAKS_REALWORLD_RESULT_PATH)
+    assert not os.path.lexists(root / GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH)
+    assert not os.path.lexists(root / GITLEAKS_REALWORLD_RESULT_PATH)
 
 
 @pytest.mark.parametrize(
