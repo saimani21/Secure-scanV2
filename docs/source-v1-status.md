@@ -72,6 +72,8 @@ Status: COMPLETE
 | v0.4F5B2R1 | Gitleaks real-world selection compatibility correction | COMPLETE |
 | v0.4F5B2R2 | Gitleaks consolidated acquisition-compatible repository selection | COMPLETE |
 | v0.4F5B3 | Gitleaks real-world bounded acquisition and snapshot freeze | COMPLETE |
+| v0.4F5C | Gitleaks real-world first execution | COMPLETE |
+| v0.4F5D | Gitleaks real-world repeatability characterization | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -701,6 +703,49 @@ unique, and the canonical acquired-manifest SHA-256 is
 `3a7f55e43210427974985c4e4009a1027fc4db12f3d94e119b490df8f0fc3b52`.
 No real-world result artifact exists and `SECRET_DETECTION` remains
 `SCANNABLE`.
+
+## Gitleaks v0.4F5C Fail-Closed Execution Attempt
+
+F5C used only the six retained F5B3 SecureScan workspaces. Before execution,
+the production projection inventory verifier reproduced each frozen snapshot
+digest, file count, and byte count. The trusted Gitleaks 8.30.1 binding then
+ran only through the durable Source context, immutable projection, production
+Gitleaks execution bridge, and frozen parser path. No network, Git history,
+repository code, package manager, build, hook, or provider validation ran.
+
+RW01 Gum and RW02 Click completed with return code 0 and no parsed findings.
+RW03 Flask completed with return code 1 and six sanitized structural findings.
+RW04 Reticulum-Go reached the production parser, which rejected the completed
+scanner output with fixed failure code `GITLEAKS_OUTPUT_INVALID_SCHEMA`.
+Following the frozen failure semantics, RW04 was not represented as clean,
+RW05 and RW06 were not evaluated as part of a completed run, no F5C result was
+recorded, and F5D repeatability execution did not start.
+
+This is an incomplete operational characterization, not an accuracy benchmark.
+No TP, FP, FN, TN, precision, recall, F1, credential-validity, or live-secret
+claim is made. At that fail-closed point both reserved result paths were absent
+and `SECRET_DETECTION` remained `SCANNABLE`.
+
+The second full restart passed RW04 after v0.4C1, then failed closed at RW05
+when two legitimate multiline findings used end-line-relative columns smaller
+than their start-line-relative columns. That attempt also recorded no result
+and did not start F5D.
+
+The first and second attempts remain historical fail-closed evidence. After
+the v0.4C1 Match-layout and v0.4C2 multiline-location compatibility checkpoints
+were frozen independently, F5C restarted from RW01 and all six repositories
+completed. Per-slot parsed/content/path counts were `0/0/0`, `0/0/0`, `6/6/0`,
+`8/8/0`, `123/123/0`, and `1/1/0`. All 138 observations have unique structural
+identities; no duplicate observation was recorded. The canonical F5C SHA-256
+is `33062f73834e348492349ce00b509f478ed5509b4b1b40183eba034be3a74313`.
+
+Immediate F5D run #2 reproduced the same per-slot counts and canonical
+structural sets. Every repository and the six-repository aggregate have zero
+missing and zero new identities. The F5D artifact SHA-256 is
+`8fde25f35da87d1e9abff97e087bf8bdb77116f622095b08e040278c21332303`.
+This remains operational generalization and repeatability characterization,
+not TP/FP/FN/TN, precision, recall, F1, or credential-validation evidence.
+`SECRET_DETECTION` remains `SCANNABLE`.
 
 ## Gitleaks v0.4F4A Adversarial Pre-Scan Characterization
 

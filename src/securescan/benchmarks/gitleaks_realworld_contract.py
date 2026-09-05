@@ -618,16 +618,6 @@ def _load_canonical_json(path: Path, expected_sha256: str) -> dict[str, object]:
     return value
 
 
-def _require_absent(path: Path) -> None:
-    try:
-        path.lstat()
-    except FileNotFoundError:
-        return
-    except OSError:
-        raise GitleaksRealworldContractError from None
-    raise GitleaksRealworldContractError
-
-
 def _verify_frozen_inputs(repository_root: Path) -> None:
     f3b = _load_canonical_json(
         repository_root / GITLEAKS_F3B_REPORT_PATH,
@@ -674,5 +664,4 @@ def verify_gitleaks_realworld_contract(repository_root: Path) -> dict[str, objec
     contract = load_gitleaks_realworld_contract(
         repository_root / GITLEAKS_REALWORLD_CONTRACT_PATH
     )
-    _require_absent(repository_root / GITLEAKS_REALWORLD_RESULT_PATH)
     return contract

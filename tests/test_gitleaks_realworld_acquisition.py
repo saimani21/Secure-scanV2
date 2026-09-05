@@ -36,9 +36,6 @@ from securescan.benchmarks.gitleaks_realworld_acquisition_contract import (
     GitleaksRealworldAcquisitionManifestState,
     canonical_gitleaks_realworld_acquisition,
 )
-from securescan.benchmarks.gitleaks_realworld_contract import (
-    GITLEAKS_REALWORLD_RESULT_PATH,
-)
 from securescan.benchmarks.gitleaks_realworld_selection import (
     GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256,
     gitleaks_realworld_selection_document,
@@ -825,4 +822,3 @@ def test_module_exposes_no_scanner_or_repository_execution_surface() -> None:
         "securescan.scanners.gitleaks",
     ):
         assert forbidden not in source
-    assert not os.path.lexists(ROOT / GITLEAKS_REALWORLD_RESULT_PATH)

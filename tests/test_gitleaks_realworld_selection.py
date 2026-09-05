@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import subprocess
 from pathlib import Path
 
@@ -17,7 +16,6 @@ from securescan.benchmarks.gitleaks_realworld_acquisition_contract import (
 )
 from securescan.benchmarks.gitleaks_realworld_contract import (
     GITLEAKS_MATURITY,
-    GITLEAKS_REALWORLD_RESULT_PATH,
     GitleaksRealworldAcquisitionMethod,
 )
 from securescan.benchmarks.gitleaks_realworld_selection import (
@@ -337,7 +335,7 @@ def test_role_evidence_uses_only_the_frozen_vocabulary() -> None:
         assert entry.pre_scan_role_rationale
 
 
-def test_selection_preserves_frozen_bindings_maturity_and_result_absence() -> None:
+def test_selection_preserves_frozen_bindings_and_maturity() -> None:
     document = gitleaks_realworld_selection_document()
 
     assert document["bindings"]["acquisition_policy_sha256"] == (
@@ -345,7 +343,6 @@ def test_selection_preserves_frozen_bindings_maturity_and_result_absence() -> No
     )
     assert document["maturity"] == GITLEAKS_MATURITY == "SCANNABLE"
     assert document["contains_result_or_finding_data"] is False
-    assert not os.path.lexists(ROOT / GITLEAKS_REALWORLD_RESULT_PATH)
 
 
 @pytest.mark.parametrize("invalid", ("modified", "noncanonical", "symlink"))

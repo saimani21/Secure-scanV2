@@ -33,7 +33,6 @@ from securescan.benchmarks.gitleaks_realworld_acquisition_contract import (
 )
 from securescan.benchmarks.gitleaks_realworld_contract import (
     GITLEAKS_MATURITY,
-    GITLEAKS_REALWORLD_RESULT_PATH,
     GitleaksRealworldContractError,
     verify_gitleaks_realworld_contract,
 )
@@ -900,10 +899,4 @@ def verify_gitleaks_realworld_acquisition(repository_root: Path) -> dict[str, ob
     )
     if document.get("maturity") != GITLEAKS_MATURITY:
         raise GitleaksRealworldAcquisitionError
-    try:
-        (repository_root / GITLEAKS_REALWORLD_RESULT_PATH).lstat()
-    except FileNotFoundError:
-        return document
-    except OSError:
-        raise GitleaksRealworldAcquisitionError from None
-    raise GitleaksRealworldAcquisitionError
+    return document

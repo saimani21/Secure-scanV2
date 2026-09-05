@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 import shutil
 from collections.abc import Callable
 from dataclasses import replace
@@ -474,7 +473,7 @@ def test_modified_frozen_input_is_rejected(tmp_path: Path, relative: str) -> Non
 
 
 @pytest.mark.parametrize("entry_kind", ("file", "directory", "valid-symlink", "broken-symlink"))
-def test_any_preexisting_realworld_result_entry_is_rejected(
+def test_future_result_entry_does_not_change_f5a_contract_integrity(
     tmp_path: Path,
     entry_kind: str,
 ) -> None:
@@ -491,7 +490,9 @@ def test_any_preexisting_realworld_result_entry_is_rejected(
         result.symlink_to(target)
     else:
         result.symlink_to(tmp_path / "missing-result-target")
-    _rejects(root)
+    assert verify_gitleaks_realworld_contract(root)["schema_version"] == (
+        "securescan-gitleaks-realworld-contract-v1"
+    )
 
 
 def test_contract_module_has_no_scanner_or_network_execution_path() -> None:
@@ -503,4 +504,3 @@ def test_contract_module_has_no_scanner_or_network_execution_path() -> None:
     assert "import socket" not in source
     assert "import requests" not in source
     assert "gitleaks dir" not in source
-    assert not os.path.lexists(ROOT / GITLEAKS_REALWORLD_RESULT_PATH)

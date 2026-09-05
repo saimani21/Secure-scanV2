@@ -766,7 +766,7 @@ def test_symlinked_required_artifact_is_rejected(tmp_path: Path, relative: str) 
     (GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH, GITLEAKS_REALWORLD_RESULT_PATH),
 )
 @pytest.mark.parametrize("entry_kind", ("file", "directory", "valid-symlink", "broken-symlink"))
-def test_any_reserved_output_entry_is_rejected(
+def test_future_phase_output_entry_does_not_change_f5b1_artifact_integrity(
     tmp_path: Path,
     relative: str,
     entry_kind: str,
@@ -784,7 +784,8 @@ def test_any_reserved_output_entry_is_rejected(
         output.symlink_to(target)
     else:
         output.symlink_to(tmp_path / "missing-output-target")
-    _rejects(root)
+    policy, schema = verify_gitleaks_realworld_acquisition_contract(root)
+    assert policy["maturity"] == schema["maturity"] == "SCANNABLE"
 
 
 def test_module_exposes_no_downloader_extractor_scanner_or_network_surface() -> None:

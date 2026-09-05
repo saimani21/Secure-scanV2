@@ -148,3 +148,40 @@ completed. Its canonical SHA-256 is
 No host or temporary path is present in the artifact. No repository code or
 Gitleaks process executed, no real-world result exists, and maturity remains
 `SCANNABLE`.
+
+## F5C fail-closed execution attempt
+
+The controlled F5C harness verified all retained F5B3 snapshot identities and
+used the production durable-context, immutable-projection, Gitleaks bridge,
+parser, and v0.4E structural-identity path. RW01 and RW02 completed with no
+findings; RW03 completed with six parsed structural findings. RW04 reached the
+frozen parser, which rejected the completed output as
+`GITLEAKS_OUTPUT_INVALID_SCHEMA`.
+
+The run therefore stopped fail closed. RW04 is not represented as clean, no
+canonical F5C result exists, and F5D did not start. No scanner tuning, parser
+change, network access, repository execution, provider validation, or
+credential validation occurred. This phase publishes no accuracy metrics and
+maturity remains `SCANNABLE`.
+
+After v0.4C1, a second restart passed RW04 with eight parsed findings but
+failed closed at RW05 with `GITLEAKS_LOCATION_INVALID`: two legitimate
+multiline findings used columns relative to their respective start and end
+lines. No result was recorded and F5D again did not start.
+
+## F5C/F5D corrected execution and repeatability
+
+Following the separately frozen v0.4C1 and v0.4C2 parser compatibility
+corrections, F5C restarted at RW01 and completed all six frozen F5B3 snapshots.
+The canonical run contains 138 parsed content findings, zero path findings,
+138 unique structural identities, and zero duplicate observations. Its
+SHA-256 is
+`33062f73834e348492349ce00b509f478ed5509b4b1b40183eba034be3a74313`.
+
+The immediately following F5D run #2 reproduced counts `0, 0, 6, 8, 123, 1`
+for RW01 through RW06. Every repository has zero identities missing from run
+#2, zero new identities, and an equal canonical structural set. The
+repeatability artifact SHA-256 is
+`8fde25f35da87d1e9abff97e087bf8bdb77116f622095b08e040278c21332303`.
+No accuracy or credential-validity metrics are inferred, and maturity remains
+`SCANNABLE`.

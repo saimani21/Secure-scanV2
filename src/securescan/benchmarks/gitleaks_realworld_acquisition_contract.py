@@ -23,7 +23,6 @@ from securescan.benchmarks.gitleaks_realworld_contract import (
     GITLEAKS_MATURITY,
     GITLEAKS_REALWORLD_CONTRACT_PATH,
     GITLEAKS_REALWORLD_CONTRACT_SHA256,
-    GITLEAKS_REALWORLD_RESULT_PATH,
     GITLEAKS_SCANNER_ID,
     GITLEAKS_SCANNER_VERSION,
     GitleaksRealworldAcquisitionMethod,
@@ -679,16 +678,6 @@ def _load_canonical_json(path: Path, expected_sha256: str) -> dict[str, object]:
     return value
 
 
-def _require_absent(path: Path) -> None:
-    try:
-        path.lstat()
-    except FileNotFoundError:
-        return
-    except OSError:
-        raise GitleaksRealworldAcquisitionContractError from None
-    raise GitleaksRealworldAcquisitionContractError
-
-
 def load_gitleaks_realworld_acquisition_policy(path: Path) -> dict[str, object]:
     value = _load_canonical_json(path, GITLEAKS_REALWORLD_ACQUISITION_POLICY_SHA256)
     if value != gitleaks_realworld_acquisition_policy_document():
@@ -732,6 +721,4 @@ def verify_gitleaks_realworld_acquisition_contract(
             expected_sha256
         ):
             raise GitleaksRealworldAcquisitionContractError
-    _require_absent(repository_root / GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH)
-    _require_absent(repository_root / GITLEAKS_REALWORLD_RESULT_PATH)
     return policy, manifest_schema

@@ -130,6 +130,25 @@ now `ACQUIRED` with SHA-256
 No repository code or Gitleaks process ran, no real-world result exists, and
 `SECRET_DETECTION` remains `SCANNABLE`.
 
+The first F5C production-path execution attempt then failed closed at RW04:
+the frozen parser rejected completed scanner output as
+`GITLEAKS_OUTPUT_INVALID_SCHEMA`. RW01 and RW02 completed with no findings and
+RW03 produced six sanitized structural findings, but no partial run is treated
+as complete or clean. No F5C result was recorded, F5D did not start, and no
+accuracy or credential-validity claim is made.
+
+A second full restart passed RW04 after v0.4C1 but failed closed at RW05 when
+the parser rejected two legitimate multiline, line-relative column tuples.
+That attempt likewise produced no canonical result and did not start F5D.
+
+After the v0.4C1 Match-layout and v0.4C2 multiline-location parser
+compatibility corrections, F5C completed against all six frozen F5B3
+snapshots. It recorded 138 sanitized structural findings, all content findings,
+with 138 unique identities and zero duplicate observations. Immediate F5D
+run #2 reproduced every per-repository canonical set with zero missing or new
+identities. These operational observations are not accuracy metrics;
+`SECRET_DETECTION` remains `SCANNABLE`.
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI
