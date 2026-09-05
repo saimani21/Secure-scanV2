@@ -653,10 +653,10 @@ def test_identity_path_contract_rejects_overlong_path() -> None:
         identity.canonical_data()
 
 
-def test_identity_location_contract_matches_parser_column_ordering() -> None:
+def test_identity_location_contract_rejects_reversed_same_line_columns() -> None:
     finding = _content_finding(
         start_line=12,
-        end_line=13,
+        end_line=12,
         start_column=3,
         end_column=9,
     )
@@ -673,6 +673,38 @@ def test_identity_location_contract_matches_parser_column_ordering() -> None:
 
     with pytest.raises(GitleaksIdentityError):
         identity.canonical_data()
+
+
+@pytest.mark.parametrize(
+    ("start_line", "end_line", "start_column", "end_column"),
+    (
+        (235, 236, 46, 19),
+        (37, 38, 41, 26),
+    ),
+)
+def test_multiline_parser_locations_generate_stable_structural_identity(
+    start_line: int,
+    end_line: int,
+    start_column: int,
+    end_column: int,
+) -> None:
+    finding = _content_finding(
+        start_line=start_line,
+        end_line=end_line,
+        start_column=start_column,
+        end_column=end_column,
+    )
+
+    first = build_gitleaks_finding_identity(finding)
+    second = build_gitleaks_finding_identity(finding)
+
+    assert first == second
+    assert (
+        first.start_line,
+        first.end_line,
+        first.start_column,
+        first.end_column,
+    ) == (start_line, end_line, start_column, end_column)
 
 
 @pytest.mark.parametrize(

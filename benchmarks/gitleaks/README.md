@@ -139,6 +139,16 @@ continues to discard that field completely. Other control characters, unknown
 fields, non-redacted `Secret` values, and every existing structural violation
 still fail closed. No normalized or canonical finding gains sensitive content.
 
+## v0.4C2 multiline-location compatibility correction
+
+Gitleaks 8.30.1 reports each content column relative to its own line. v0.4C2
+therefore preserves positive bounded columns independently for multiline
+findings and compares `EndColumn >= StartColumn` only when both coordinates
+refer to the same line. Line ordering, file bounds, path-only locations,
+projection authorization, redaction, and all other parser checks remain
+unchanged. The v0.4E structural identity material and digest algorithm are
+unchanged and consume the corrected validated coordinate tuple.
+
 ## v0.4F3A controlled benchmark machinery
 
 v0.4F3A implements the pure relation evaluator, deterministic report schema,

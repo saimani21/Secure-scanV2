@@ -116,7 +116,7 @@ def _valid_identity_location(
     return (
         _valid_positive_location(start_column)
         and _valid_positive_location(end_column)
-        and end_column >= start_column
+        and (end_line > start_line or end_column >= start_column)
     )
 
 

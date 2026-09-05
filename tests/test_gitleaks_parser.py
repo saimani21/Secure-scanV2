@@ -14,6 +14,7 @@ from test_gitleaks_source_execution import (
     _process_result,
 )
 
+import securescan.scanners.gitleaks.parser as parser_module
 from securescan.scanners.gitleaks import (
     GITLEAKS_PARSER_SCHEMA_VERSION,
     GITLEAKS_V04B_BASELINE_COMMIT,
@@ -650,11 +651,101 @@ def test_reversed_line_range_is_rejected(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
+    ("start_line", "end_line", "start_column", "end_column"),
+    (
+        (235, 236, 46, 19),
+        (37, 38, 41, 26),
+    ),
+)
+def test_exact_gitleaks_multiline_locations_are_accepted_and_normalized(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    start_line: int,
+    end_line: int,
+    start_column: int,
+    end_column: int,
+) -> None:
+    app_content = (b"x" * 80 + b"\n") * 240
+    monkeypatch.setattr(
+        parser_module,
+        "_read_verified_file",
+        lambda _entry, _projection: app_content,
+    )
+    result, _environment_value, _envelope_value = _parse(
+        tmp_path,
+        [
+            _finding(
+                StartLine=start_line,
+                EndLine=end_line,
+                StartColumn=start_column,
+                EndColumn=end_column,
+                Match="synthetic-prefix\n\tsynthetic-suffix",
+            )
+        ],
+    )
+
+    finding = result.findings[0]
+    assert (
+        finding.start_line,
+        finding.end_line,
+        finding.start_column,
+        finding.end_column,
+    ) == (start_line, end_line, start_column, end_column)
+    assert not hasattr(finding, "match")
+    assert not hasattr(finding, "secret")
+    assert b"synthetic-prefix" not in result.canonical_json()
+    assert b"REDACTED" not in result.canonical_json()
+
+
+def test_same_line_forward_columns_are_accepted(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    app_content = (b"x" * 20 + b"\n") * 10
+    monkeypatch.setattr(
+        parser_module,
+        "_read_verified_file",
+        lambda _entry, _projection: app_content,
+    )
+    result, _environment_value, _envelope_value = _parse(
+        tmp_path,
+        [
+            _finding(
+                StartLine=10,
+                EndLine=10,
+                StartColumn=5,
+                EndColumn=9,
+            )
+        ],
+    )
+
+    assert result.findings[0].start_column == 5
+    assert result.findings[0].end_column == 9
+
+
+def test_same_line_reversed_columns_are_rejected(tmp_path: Path) -> None:
+    _assert_failure(
+        tmp_path,
+        [
+            _finding(
+                StartLine=1,
+                EndLine=1,
+                StartColumn=9,
+                EndColumn=5,
+            )
+        ],
+        GitleaksParserFailureCode.LOCATION_INVALID,
+    )
+
+
+@pytest.mark.parametrize(
     "changes",
     (
         {"StartColumn": True, "EndColumn": 5},
         {"StartColumn": 1, "EndColumn": False},
         {"StartColumn": 0, "EndColumn": 5},
+        {"StartColumn": -1, "EndColumn": 5},
+        {"StartColumn": 1, "EndColumn": -1},
         {"StartColumn": 5, "EndColumn": 4},
         {"StartColumn": 999, "EndColumn": 999},
         {"StartColumn": 1},

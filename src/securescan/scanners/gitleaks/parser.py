@@ -339,7 +339,7 @@ def _valid_location_tuple(
     return (
         _valid_location(start_column)
         and _valid_location(end_column)
-        and end_column >= start_column
+        and (end_line > start_line or end_column >= start_column)
     )
 
 
