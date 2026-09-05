@@ -67,6 +67,7 @@ Status: COMPLETE
 | v0.4F4B2 | Initial controlled Gitleaks adversarial characterization | COMPLETE |
 | v0.4F4C | Gitleaks limitation, coverage, confidentiality and failure characterization | COMPLETE |
 | v0.4F5A | Gitleaks bounded real-world evaluation contract | COMPLETE |
+| v0.4F5B1 | Gitleaks real-world acquisition policy and manifest schema | IMPLEMENTED - PENDING FREEZE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -702,3 +703,22 @@ successful full-suite run.
 
 No repository acquisition, network operation, or Gitleaks execution occurred.
 No real-world result artifact exists and SECRET_DETECTION remains SCANNABLE.
+
+## Gitleaks v0.4F5B1 Acquisition Policy and Manifest Schema
+
+F5B1 freezes the bounded untrusted-archive acquisition policy and unresolved
+six-slot acquisition-manifest schema before repository selection. Archive
+transport limits are distinct from, and archive expansion limits align with,
+the unchanged production `RepositoryIntakeLimits`. Snapshot identity remains
+the existing `RepositoryManifest` content digest, file count, and total bytes.
+
+The manifest state machine is `PRE_SELECTION` to `SELECTED` to `ACQUIRED`.
+Selection freezes distinct repository and immutable archive HTTPS identities,
+exact commits, licenses, acquisition methods, and role evidence before archive
+or snapshot outputs exist. Only regular files and directories may later be
+materialized from an archive.
+
+No repository was selected, no network access or archive acquisition occurred,
+no archive was extracted, and neither repository code nor Gitleaks executed.
+The F5A contract remains frozen, no populated acquisition manifest or F5 result
+exists, and `SECRET_DETECTION` remains `SCANNABLE`.

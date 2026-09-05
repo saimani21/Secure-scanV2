@@ -40,3 +40,36 @@ No repository acquisition or real-world Gitleaks scan has occurred in F5A, and
 `realworld-result-v1.json` does not exist. F3B remains controlled accuracy
 evidence, F4C remains limitation and claim evidence, and `SECRET_DETECTION`
 remains `SCANNABLE`.
+
+## F5B1 acquisition policy and manifest schema
+
+F5B1 freezes acquisition policy before repository selection. Only `tar.gz`
+archives are permitted. Downloaded archives are limited to 268,435,456 bytes;
+archive member count, expanded bytes, individual member size, path bytes, and
+path depth align with the unchanged production `RepositoryIntakeLimits`:
+50,000 members, 1,073,741,824 expanded bytes, 33,554,432 bytes per member,
+4,096 normalized relative-path bytes, and depth 64.
+
+Every archive must be SHA-256 verified before extraction acceptance. Extraction
+is member-by-member after validation; blind standard-library `extractall` use,
+absolute or traversing paths, containment escapes, normalized collisions,
+links, and special entries are forbidden. Extraction occurs in a temporary
+location outside the repository without code execution, package installation,
+builds, hooks, Git checkout, submodules, or recursive acquisition. The ordinary
+local tree then passes through `RepositoryWorkspaceManager`.
+
+`acquisition-manifest-schema-v1.json` is an unresolved `PRE_SELECTION`
+template. The state machine is exactly `PRE_SELECTION`, `SELECTED`, and
+`ACQUIRED`: selection resolves repository, immutable archive URL, commit,
+license, method, and role evidence before acquisition; archive and snapshot
+outputs remain null until acquisition succeeds. Repository URL and archive URL
+are separate provider-neutral HTTPS identities without userinfo, query, or
+fragment, and the archive resource must be explicitly associated with the
+selected exact commit.
+
+The schema binds the F5A contract, acquisition policy, scanner, binding,
+configuration, and ignore identities and freezes the ten permitted role
+evidence types. Future extraction may materialize only regular files and
+directories. The template contains no repository identity, acquisition,
+scanner-result, finding, or secret data. No populated acquisition manifest or
+F5 result exists.
