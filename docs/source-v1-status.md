@@ -71,6 +71,7 @@ Status: COMPLETE
 | v0.4F5B2 | Gitleaks real-world repository selection | COMPLETE |
 | v0.4F5B2R1 | Gitleaks real-world selection compatibility correction | COMPLETE |
 | v0.4F5B2R2 | Gitleaks consolidated acquisition-compatible repository selection | COMPLETE |
+| v0.4F5B3 | Gitleaks real-world bounded acquisition and snapshot freeze | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -675,6 +676,31 @@ to F5B2R1. The manifest remains `SELECTED`; archive and snapshot output fields
 remain null. No archive for the consolidated selection was acquired, no
 repository was cloned or executed, no Gitleaks result informed selection, and
 `SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F5B3 Bounded Acquisition and Snapshot Freeze
+
+F5B3 acquired the six exact F5B2R2 commit-addressed archives through bounded
+HTTPS streaming. Each archive was treated as hostile input, completely
+validated before materialization, extracted member by member outside the
+repository, and passed as inert source data to `RepositoryWorkspaceManager`.
+No repository code, package manager, build tool, test, hook, Git operation
+against acquired content, or Gitleaks process executed.
+
+| Slot | Repository | Archive SHA-256 | Archive bytes | Snapshot digest | Files | Snapshot bytes |
+|---|---|---|---:|---|---:|---:|
+| RW01 | `charmbracelet/gum` | `d8830519d8ae7c99c61df6d0568c1632f44f0c4d95d882a5c122ef328808249f` | 71,736 | `005226ad3e96e24a56abf837e4f61b845891408528c2e8938d941ff60bbfb8d8` | 115 | 228,095 |
+| RW02 | `pallets/click` | `0fa792fe26295cb0b2568e811bec22b19fc0d4dc90f5f9d698c0e0202d3ac89e` | 495,302 | `082137a8ff57a6d04c77aa00fd86efb537d70607d98f7cebebf0bffb40a91a3f` | 166 | 1,604,094 |
+| RW03 | `pallets/flask` | `d9e95f6100bb2479247da4b8055b80a52ef8c059cd74ade5b7df46ce01033d77` | 765,027 | `32ced363f940ccf3b79c960b0b7cc12b0934cff72afc47f2b32ecb385478f690` | 236 | 1,870,682 |
+| RW04 | `Quad4-Software/Reticulum-Go` | `a3e8fccb17e438c489e2d785223a7324b6c237249e13e947ac48704018475488` | 9,758,061 | `74c4f655346c330b4090e189bc3c7e4ffd5998e3a76aeadfc8c5ae30d2aa07fe` | 5,982 | 50,227,481 |
+| RW05 | `golang/go` | `362076280e37336993ebfdee92df2df3da2d72a00255cd6a5dfb2719684344a1` | 35,924,320 | `559abdc68125411009df49c80ba17ae79153857b1ea41620ddd0f82d7da595bd` | 15,899 | 152,648,293 |
+| RW06 | `SSLMate/go-pkcs12` | `12bc72ac6ebfcd39b1aa006c81642c1f0ad719d1bf9fbc33f87cf0683d8655d2` | 52,146 | `dd392cfc612c5cede44c17a9d0c898fbf2eb553295577f2a12f399d98c46d45e` | 29 | 153,628 |
+
+All six slots completed before the manifest atomically transitioned from
+`SELECTED` to `ACQUIRED`. Archive and snapshot identities are present and
+unique, and the canonical acquired-manifest SHA-256 is
+`3a7f55e43210427974985c4e4009a1027fc4db12f3d94e119b490df8f0fc3b52`.
+No real-world result artifact exists and `SECRET_DETECTION` remains
+`SCANNABLE`.
 
 ## Gitleaks v0.4F4A Adversarial Pre-Scan Characterization
 

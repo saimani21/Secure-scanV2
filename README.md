@@ -122,6 +122,14 @@ passed a complete metadata-only tree preflight with no symlink, gitlink, or
 unexpected modes. These choices were made without scanner execution or result
 data; the manifest remains `SELECTED` and all acquisition fields remain null.
 
+F5B3 subsequently acquired those exact six commit-addressed archives through
+the bounded hostile-archive path and froze their archive receipts and
+`RepositoryWorkspaceManager` snapshot identities. The acquisition manifest is
+now `ACQUIRED` with SHA-256
+`3a7f55e43210427974985c4e4009a1027fc4db12f3d94e119b490df8f0fc3b52`.
+No repository code or Gitleaks process ran, no real-world result exists, and
+`SECRET_DETECTION` remains `SCANNABLE`.
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI

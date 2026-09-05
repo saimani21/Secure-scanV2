@@ -39,6 +39,7 @@ from securescan.benchmarks.gitleaks_realworld_selection import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+_F5B2R2_TAG = "source-v0.4F5B2R2-gitleaks-repository-selection-correction"
 _ACQUISITION_FIELDS = (
     "archive_sha256",
     "archive_byte_count",
@@ -117,9 +118,21 @@ _EXPECTED_ROLE_EVIDENCE = (
 )
 
 
-def test_selected_manifest_is_canonical_digest_bound_and_verified() -> None:
-    path = ROOT / GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH
-    payload = path.read_bytes()
+def test_historical_selected_manifest_is_canonical_digest_bound(
+    tmp_path: Path,
+) -> None:
+    payload = subprocess.run(
+        [
+            "git",
+            "show",
+            f"{_F5B2R2_TAG}:{GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH}",
+        ],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    ).stdout
+    path = tmp_path / "selected-manifest.json"
+    path.write_bytes(payload)
 
     assert hashlib.sha256(payload).hexdigest() == (
         GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256
@@ -131,7 +144,8 @@ def test_selected_manifest_is_canonical_digest_bound_and_verified() -> None:
         gitleaks_realworld_selection_document()
     )
     assert load_gitleaks_realworld_selection(path) == json.loads(payload)
-    assert verify_gitleaks_realworld_selection(ROOT.resolve()) == json.loads(payload)
+    with pytest.raises(GitleaksRealworldSelectionError):
+        verify_gitleaks_realworld_selection(ROOT.resolve())
 
 
 def test_f5b1_boundary_is_exact_and_current_head_is_a_descendant() -> None:
