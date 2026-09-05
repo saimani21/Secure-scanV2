@@ -88,17 +88,17 @@ boundaries.
 
 ## Source Gitleaks real-world selection
 
-Source v0.4F5B2 freezes a metadata-only, six-repository selection for the
+Source v0.4F5B2R2 freezes a metadata-only, six-repository selection for the
 future bounded Gitleaks real-world evaluation. Each public upstream is pinned
 to an exact commit and a commit-addressed HTTPS archive resource:
 
 | Role | Repository | Commit |
 |---|---|---|
 | Small application | `charmbracelet/gum` | `4d089f95507708a71f64dacfe7ca513219dd5267` |
-| Library/package | `psf/requests` | `dae7ef63b4df6eded86637f251fc4e3a06c3b479` |
+| Library/package | `pallets/click` | `36baa15ff831b939a22bc527cd76ce653ef6f66d` |
 | Documentation/examples-heavy | `pallets/flask` | `d318b683471101618febed18996405ad26462110` |
 | Dependency/generated-path-heavy | `Quad4-Software/Reticulum-Go` | `5bf60debb7fdcd27b175d4db2585dd994a3d1b66` |
-| Multi-language | `git/git` | `3cb9185f65410273787f74333cc027d2ea5daada` |
+| Multi-language | `golang/go` | `c5941983810b68ba93c30f0ef22c91ad63fb3e5c` |
 | Binary/config assets | `SSLMate/go-pkcs12` | `c0472edb16891765fbc86573ea468365b7fd2197` |
 
 Selection used only public upstream metadata and pre-scan role evidence from
@@ -112,6 +112,15 @@ archive failed the F5B1 acquisition policy because it contained a symlink.
 Gum was selected from repository metadata, not scanner output; its exact Git
 tree has 142 entries, no symlink or submodule modes, a maximum path length of
 37 bytes, and a maximum depth of three.
+
+F5B2R2 consolidates the remaining acquisition-policy compatibility corrections
+before another acquisition attempt. Click replaces Requests after the frozen
+Requests archive exposed two symlinks during complete pre-materialization
+validation. Go replaces Git after complete provider tree metadata exposed three
+symlinks and one gitlink. Click, Flask, Reticulum-Go, Go, and go-pkcs12 each
+passed a complete metadata-only tree preflight with no symlink, gitlink, or
+unexpected modes. These choices were made without scanner execution or result
+data; the manifest remains `SELECTED` and all acquisition fields remain null.
 
 ## API and CLI
 

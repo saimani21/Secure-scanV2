@@ -26,7 +26,11 @@ from securescan.benchmarks.gitleaks_realworld_selection import (
     GITLEAKS_F5B2_COMMIT,
     GITLEAKS_F5B2_SELECTED_MANIFEST_SHA256,
     GITLEAKS_F5B2_TAG,
+    GITLEAKS_F5B2R1_COMMIT,
+    GITLEAKS_F5B2R1_SELECTED_MANIFEST_SHA256,
+    GITLEAKS_F5B2R1_TAG,
     GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256,
+    GITLEAKS_SELECTION_COMPATIBILITY_REPLACEMENTS,
     GitleaksRealworldSelectionError,
     gitleaks_realworld_selected_model,
     gitleaks_realworld_selection_document,
@@ -55,11 +59,11 @@ _EXPECTED_IDENTITIES = (
     (
         "RW02",
         "RW02_LIBRARY_PACKAGE",
-        "psf-requests",
-        "https://github.com/psf/requests",
-        "https://github.com/psf/requests/archive/dae7ef63b4df6eded86637f251fc4e3a06c3b479.tar.gz",
-        "dae7ef63b4df6eded86637f251fc4e3a06c3b479",
-        "Apache-2.0",
+        "pallets-click",
+        "https://github.com/pallets/click",
+        "https://github.com/pallets/click/archive/36baa15ff831b939a22bc527cd76ce653ef6f66d.tar.gz",
+        "36baa15ff831b939a22bc527cd76ce653ef6f66d",
+        "BSD-3-Clause",
     ),
     (
         "RW03",
@@ -82,11 +86,11 @@ _EXPECTED_IDENTITIES = (
     (
         "RW05",
         "RW05_MULTI_LANGUAGE",
-        "git-git",
-        "https://github.com/git/git",
-        "https://github.com/git/git/archive/3cb9185f65410273787f74333cc027d2ea5daada.tar.gz",
-        "3cb9185f65410273787f74333cc027d2ea5daada",
-        "GPL-2.0-only",
+        "golang-go",
+        "https://github.com/golang/go",
+        "https://github.com/golang/go/archive/c5941983810b68ba93c30f0ef22c91ad63fb3e5c.tar.gz",
+        "c5941983810b68ba93c30f0ef22c91ad63fb3e5c",
+        "BSD-3-Clause",
     ),
     (
         "RW06",
@@ -121,7 +125,7 @@ def test_selected_manifest_is_canonical_digest_bound_and_verified() -> None:
         GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256
     )
     assert GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256 == (
-        "cde25ca550f76ec35ea1b09e7c4d113beb8b205865c8ebf278e9c16159e2d510"
+        "c4843b6558fbccff370d66cd621a42927ec9c1fb1bc26cb2f036c6656b24673b"
     )
     assert payload == canonical_gitleaks_realworld_acquisition(
         gitleaks_realworld_selection_document()
@@ -177,12 +181,12 @@ def test_f5b2_boundary_is_exact_and_current_head_is_a_descendant() -> None:
     assert ancestry.returncode == 0
 
 
-def test_rw02_through_rw06_are_byte_equivalent_to_historical_f5b2() -> None:
+def test_rw01_and_unchanged_slots_are_byte_equivalent_to_f5b2r1() -> None:
     historical_payload = subprocess.run(
         [
             "git",
             "show",
-            f"{GITLEAKS_F5B2_COMMIT}:{GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH}",
+            f"{GITLEAKS_F5B2R1_COMMIT}:{GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_PATH}",
         ],
         cwd=ROOT,
         check=True,
@@ -191,10 +195,57 @@ def test_rw02_through_rw06_are_byte_equivalent_to_historical_f5b2() -> None:
     historical = json.loads(historical_payload)
     corrected = gitleaks_realworld_selection_document()
 
-    assert canonical_gitleaks_realworld_acquisition(
-        historical["repository_slots"][1:]
-    ) == canonical_gitleaks_realworld_acquisition(corrected["repository_slots"][1:])
-    assert historical["repository_slots"][0] != corrected["repository_slots"][0]
+    for position in (0, 2, 3, 5):
+        assert canonical_gitleaks_realworld_acquisition(
+            historical["repository_slots"][position]
+        ) == canonical_gitleaks_realworld_acquisition(
+            corrected["repository_slots"][position]
+        )
+    for position in (1, 4):
+        assert historical["repository_slots"][position] != corrected[
+            "repository_slots"
+        ][position]
+
+
+def test_f5b2r1_boundary_is_exact_and_current_head_is_a_descendant() -> None:
+    resolved = subprocess.run(
+        ["git", "rev-parse", f"{GITLEAKS_F5B2R1_TAG}^{{commit}}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    ancestry = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", GITLEAKS_F5B2R1_COMMIT, "HEAD"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert GITLEAKS_F5B2R1_COMMIT == "d7aede2a8ad0425756b330026c4bd7172648ce90"
+    assert GITLEAKS_F5B2R1_TAG == (
+        "source-v0.4F5B2R1-gitleaks-repository-selection-correction"
+    )
+    assert GITLEAKS_F5B2R1_SELECTED_MANIFEST_SHA256 == (
+        "cde25ca550f76ec35ea1b09e7c4d113beb8b205865c8ebf278e9c16159e2d510"
+    )
+    assert resolved == GITLEAKS_F5B2R1_COMMIT
+    assert ancestry.returncode == 0
+
+
+def test_replacements_are_only_for_f5b1_acquisition_compatibility() -> None:
+    entries = gitleaks_realworld_selected_model().entries
+
+    assert entries[0].repository_id == "charmbracelet-gum"
+    assert entries[1].repository_id == "pallets-click"
+    assert entries[4].repository_id == "golang-go"
+    assert "psf-requests" not in {entry.repository_id for entry in entries}
+    assert "git-git" not in {entry.repository_id for entry in entries}
+    assert GITLEAKS_SELECTION_COMPATIBILITY_REPLACEMENTS == (
+        ("RW02", "F5B1_ACQUISITION_POLICY_SYMLINK"),
+        ("RW05", "F5B1_ACQUISITION_POLICY_SYMLINK_AND_GITLINK"),
+    )
 
 
 def test_exact_selected_repository_identities_are_frozen() -> None:

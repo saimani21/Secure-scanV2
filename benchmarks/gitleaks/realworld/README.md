@@ -93,3 +93,35 @@ maximum depth three. Role evidence remains `application_entrypoint` and
 `package_manifest` from the frozen vocabulary. This is an acquisition-policy
 compatibility correction, not scanner-result-driven selection. RW02 through
 RW06 remain byte-identical to F5B2 and all acquisition fields remain null.
+
+## F5B2R2 consolidated acquisition-compatible selection
+
+The next controlled F5B3 attempt successfully validated, extracted, and
+ingested Gum before complete validation rejected the frozen Requests archive.
+That 3,333,932-byte archive had SHA-256
+`55999922723576238c243ca02183f2c367c9b0c197a3c1afc671b35c2daf96c2` and
+contained `tests/certs/mtls/client/ca` as a symlink to `../../expired/ca/` and
+`tests/certs/valid/ca` as a symlink to `../expired/ca`. Requests was rejected
+before extraction acceptance; the Gum workspace was rolled back, zero
+workspaces remain, RW03 through RW06 were not requested, no snapshot identity
+was persisted, and Gitleaks did not run.
+
+F5B2R2 therefore performs complete provider-tree metadata preflight before a
+new acquisition. The measurements are:
+
+| Slot | Repository and exact commit | Entries | Blobs | Blob bytes | Max blob | Max path bytes | Max depth | Symlinks | Gitlinks | Other modes | Decision |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| RW02 | `pallets/click@36baa15ff831b939a22bc527cd76ce653ef6f66d` | 190 | 166 | 1,604,094 | 258,440 | 48 | 5 | 0 | 0 | 0 | selected |
+| RW03 | `pallets/flask@d318b683471101618febed18996405ad26462110` | 287 | 236 | 1,870,682 | 364,065 | 72 | 8 | 0 | 0 | 0 | retained |
+| RW04 | `Quad4-Software/Reticulum-Go@5bf60debb7fdcd27b175d4db2585dd994a3d1b66` | 6,650 | 5,982 | 50,227,481 | 945,502 | 105 | 11 | 0 | 0 | 0 | retained |
+| RW05 | `git/git@3cb9185f65410273787f74333cc027d2ea5daada` | 5,074 | 4,846 | 48,313,504 | 1,088,754 | 83 | 8 | 3 | 1 | 0 | rejected |
+| RW05 | `golang/go@c5941983810b68ba93c30f0ef22c91ad63fb3e5c` | 17,697 | 15,899 | 152,648,293 | 4,170,206 | 105 | 14 | 0 | 0 | 0 | selected |
+| RW06 | `SSLMate/go-pkcs12@c0472edb16891765fbc86573ea468365b7fd2197` | 32 | 29 | 153,628 | 34,195 | 36 | 3 | 0 | 0 | 0 | retained |
+
+All accepted trees were complete and stayed within every F5B1 count, byte,
+path, and depth bound while containing only modes `040000`, `100644`, and
+`100755`. Click replaces Requests and Go replaces Git solely for F5B1
+acquisition-policy compatibility. RW01 Gum remains exact, and RW03, RW04, and
+RW06 remain byte-identical to F5B2R1. The canonical manifest remains
+`SELECTED`; all acquisition outputs are null. No scanner output, expected
+finding count, secret content, or Gitleaks behavior informed selection.

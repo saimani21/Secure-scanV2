@@ -70,6 +70,7 @@ Status: COMPLETE
 | v0.4F5B1 | Gitleaks real-world acquisition policy and manifest schema | COMPLETE |
 | v0.4F5B2 | Gitleaks real-world repository selection | COMPLETE |
 | v0.4F5B2R1 | Gitleaks real-world selection compatibility correction | COMPLETE |
+| v0.4F5B2R2 | Gitleaks consolidated acquisition-compatible repository selection | COMPLETE |
 
 ## Source Intelligence Foundation Freeze
 
@@ -635,6 +636,44 @@ replacement is solely an acquisition-policy compatibility correction; no
 scanner result informed selection. RW02 through RW06 and every F5B1 security
 requirement remain unchanged. The manifest remains `SELECTED`, all acquisition
 fields remain null, no archive was downloaded for the corrected selection, and
+`SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F5B2R2 Consolidated Acquisition-Compatible Selection
+
+The corrected F5B3 attempt acquired and ingested RW01 Gum, then rejected RW02
+Requests during complete pre-materialization validation. The Requests archive
+was 3,333,932 bytes with SHA-256
+`55999922723576238c243ca02183f2c367c9b0c197a3c1afc671b35c2daf96c2` and
+contained two forbidden symlinks:
+
+- `tests/certs/mtls/client/ca` to `../../expired/ca/`
+- `tests/certs/valid/ca` to `../expired/ca`
+
+Requests was rejected before extraction acceptance. The Gum workspace was
+rolled back, zero workspaces remain, RW03 through RW06 were not requested, no
+snapshot identity was persisted, no result artifact was created, and Gitleaks
+did not execute.
+
+Before another acquisition, complete authoritative Git-tree metadata was
+checked for RW02 through RW06. Only tree mode `040000` and blob modes `100644`
+and `100755` were accepted:
+
+| Slot | Repository and exact commit | Entries | Blobs | Blob bytes | Max blob | Max path bytes | Max depth | Symlinks | Gitlinks | Other modes | Result |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| RW02 | `pallets/click@36baa15ff831b939a22bc527cd76ce653ef6f66d` | 190 | 166 | 1,604,094 | 258,440 | 48 | 5 | 0 | 0 | 0 | accepted |
+| RW03 | `pallets/flask@d318b683471101618febed18996405ad26462110` | 287 | 236 | 1,870,682 | 364,065 | 72 | 8 | 0 | 0 | 0 | unchanged |
+| RW04 | `Quad4-Software/Reticulum-Go@5bf60debb7fdcd27b175d4db2585dd994a3d1b66` | 6,650 | 5,982 | 50,227,481 | 945,502 | 105 | 11 | 0 | 0 | 0 | unchanged |
+| RW05 | `git/git@3cb9185f65410273787f74333cc027d2ea5daada` | 5,074 | 4,846 | 48,313,504 | 1,088,754 | 83 | 8 | 3 | 1 | 0 | rejected |
+| RW05 | `golang/go@c5941983810b68ba93c30f0ef22c91ad63fb3e5c` | 17,697 | 15,899 | 152,648,293 | 4,170,206 | 105 | 14 | 0 | 0 | 0 | accepted |
+| RW06 | `SSLMate/go-pkcs12@c0472edb16891765fbc86573ea468365b7fd2197` | 32 | 29 | 153,628 | 34,195 | 36 | 3 | 0 | 0 | 0 | unchanged |
+
+Click is the public BSD-3-Clause reusable Python library selected for RW02.
+Go is the public BSD-3-Clause multi-language toolchain selected for RW05.
+Both replacements are solely F5B1 acquisition-policy compatibility
+corrections. RW01 Gum and compatible RW03, RW04, and RW06 remain byte-identical
+to F5B2R1. The manifest remains `SELECTED`; archive and snapshot output fields
+remain null. No archive for the consolidated selection was acquired, no
+repository was cloned or executed, no Gitleaks result informed selection, and
 `SECRET_DETECTION` remains `SCANNABLE`.
 
 ## Gitleaks v0.4F4A Adversarial Pre-Scan Characterization

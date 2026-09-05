@@ -38,8 +38,19 @@ GITLEAKS_F5B2_TAG: Final = "source-v0.4F5B2-gitleaks-repository-selection"
 GITLEAKS_F5B2_SELECTED_MANIFEST_SHA256: Final = (
     "2af9aa332be75b069e948c5d01db95c2a7b5138d654e12ed5ce8e748cd632679"
 )
-GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256: Final = (
+GITLEAKS_F5B2R1_COMMIT: Final = "d7aede2a8ad0425756b330026c4bd7172648ce90"
+GITLEAKS_F5B2R1_TAG: Final = (
+    "source-v0.4F5B2R1-gitleaks-repository-selection-correction"
+)
+GITLEAKS_F5B2R1_SELECTED_MANIFEST_SHA256: Final = (
     "cde25ca550f76ec35ea1b09e7c4d113beb8b205865c8ebf278e9c16159e2d510"
+)
+GITLEAKS_SELECTION_COMPATIBILITY_REPLACEMENTS: Final = (
+    ("RW02", "F5B1_ACQUISITION_POLICY_SYMLINK"),
+    ("RW05", "F5B1_ACQUISITION_POLICY_SYMLINK_AND_GITLINK"),
+)
+GITLEAKS_REALWORLD_ACQUISITION_MANIFEST_SHA256: Final = (
+    "c4843b6558fbccff370d66cd621a42927ec9c1fb1bc26cb2f036c6656b24673b"
 )
 
 _MAX_MANIFEST_BYTES = 1024 * 1024
@@ -73,14 +84,14 @@ def gitleaks_realworld_selected_model() -> GitleaksRealworldAcquisitionManifestM
         GitleaksRealworldAcquisitionManifestEntry(
             slot_id="RW02",
             role=GitleaksRealworldRepositoryRole.RW02_LIBRARY_PACKAGE,
-            repository_id="psf-requests",
-            upstream_url="https://github.com/psf/requests",
+            repository_id="pallets-click",
+            upstream_url="https://github.com/pallets/click",
             archive_url=(
-                "https://github.com/psf/requests/archive/"
-                "dae7ef63b4df6eded86637f251fc4e3a06c3b479.tar.gz"
+                "https://github.com/pallets/click/archive/"
+                "36baa15ff831b939a22bc527cd76ce653ef6f66d.tar.gz"
             ),
-            exact_commit_sha="dae7ef63b4df6eded86637f251fc4e3a06c3b479",
-            license_identifier="Apache-2.0",
+            exact_commit_sha="36baa15ff831b939a22bc527cd76ce653ef6f66d",
+            license_identifier="BSD-3-Clause",
             acquisition_method=GitleaksRealworldAcquisitionMethod.UPSTREAM_ARCHIVE,
             pre_scan_role_evidence=(
                 "package_manifest",
@@ -88,8 +99,8 @@ def gitleaks_realworld_selected_model() -> GitleaksRealworldAcquisitionManifestM
                 "tests_directory",
             ),
             pre_scan_role_rationale=(
-                "Public Python HTTP client library with package metadata, maintained "
-                "documentation, and a dedicated test tree."
+                "Public reusable Python command-line interface library with package "
+                "metadata, maintained documentation, and a dedicated test tree."
             ),
         ),
         GitleaksRealworldAcquisitionManifestEntry(
@@ -138,14 +149,14 @@ def gitleaks_realworld_selected_model() -> GitleaksRealworldAcquisitionManifestM
         GitleaksRealworldAcquisitionManifestEntry(
             slot_id="RW05",
             role=GitleaksRealworldRepositoryRole.RW05_MULTI_LANGUAGE,
-            repository_id="git-git",
-            upstream_url="https://github.com/git/git",
+            repository_id="golang-go",
+            upstream_url="https://github.com/golang/go",
             archive_url=(
-                "https://github.com/git/git/archive/"
-                "3cb9185f65410273787f74333cc027d2ea5daada.tar.gz"
+                "https://github.com/golang/go/archive/"
+                "c5941983810b68ba93c30f0ef22c91ad63fb3e5c.tar.gz"
             ),
-            exact_commit_sha="3cb9185f65410273787f74333cc027d2ea5daada",
-            license_identifier="GPL-2.0-only",
+            exact_commit_sha="c5941983810b68ba93c30f0ef22c91ad63fb3e5c",
+            license_identifier="BSD-3-Clause",
             acquisition_method=GitleaksRealworldAcquisitionMethod.UPSTREAM_ARCHIVE,
             pre_scan_role_evidence=(
                 "documentation_directory",
@@ -153,8 +164,8 @@ def gitleaks_realworld_selected_model() -> GitleaksRealworldAcquisitionManifestM
                 "multiple_language_families",
             ),
             pre_scan_role_rationale=(
-                "Public Git source mirror spanning C, shell, Perl, Python, Tcl, "
-                "documentation, and test trees."
+                "Public Go toolchain source spanning Go, assembly, C, Python, Perl, "
+                "shell, documentation, and test trees."
             ),
         ),
         GitleaksRealworldAcquisitionManifestEntry(
@@ -320,22 +331,22 @@ def _verify_selection_git_boundary(repository_root: Path) -> None:
     resolved = _git(
         repository_root,
         "rev-parse",
-        f"{GITLEAKS_F5B2_TAG}^{{commit}}",
+        f"{GITLEAKS_F5B2R1_TAG}^{{commit}}",
     ).stdout.strip()
     ancestry = _git(
         repository_root,
         "merge-base",
         "--is-ancestor",
-        GITLEAKS_F5B2_COMMIT,
+        GITLEAKS_F5B2R1_COMMIT,
         "HEAD",
         check=False,
     )
     if (
         branch != "source/v0.3-semgrep"
-        or resolved != GITLEAKS_F5B2_COMMIT
+        or resolved != GITLEAKS_F5B2R1_COMMIT
         or ancestry.returncode != 0
-        or GITLEAKS_F5B2_SELECTED_MANIFEST_SHA256
-        != "2af9aa332be75b069e948c5d01db95c2a7b5138d654e12ed5ce8e748cd632679"
+        or GITLEAKS_F5B2R1_SELECTED_MANIFEST_SHA256
+        != "cde25ca550f76ec35ea1b09e7c4d113beb8b205865c8ebf278e9c16159e2d510"
     ):
         raise GitleaksRealworldSelectionError
 
