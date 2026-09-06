@@ -88,6 +88,22 @@ Status: COMPLETE
 
 `PACKAGE_INVENTORY = SCANNABLE`
 
+### Source OSV Dependency Intelligence
+
+| Version | Capability | Status |
+|---|---|---|
+| S2 | OSV advisory matching and dependency vulnerability findings | IMPLEMENTED - PENDING APPROVAL |
+
+`DEPENDENCY_ADVISORY_MATCHING = SCANNABLE`
+
+Source v0.5 dependency intelligence is complete for its defined current-snapshot scope.
+The S2 boundary consumes frozen Syft package evidence, queries exact versioned PURLs via
+the bounded OSV v1 service client, validates full records against the frozen OSV 1.9.0
+schema, groups alias-equivalent records per package, and emits deterministic findings.
+Its controlled public-service snapshot replays offline. Online operation discloses
+package coordinates to `api.osv.dev`, but never repository file contents; no OS-level
+egress sandbox is claimed. See `docs/source-v0.5-dependency-intelligence.md`.
+
 ## Source Intelligence Foundation Freeze
 
 Source v0.2.6 is the frozen repository-intelligence foundation.
@@ -960,4 +976,4 @@ S1 claims only what pinned Syft observed in the current immutable directory
 snapshot. It does not claim direct/transitive/runtime/development dependency
 semantics, installation, import, reachability, vulnerability, CVE applicability,
 or exhaustive ecosystem discovery. `PACKAGE_INVENTORY` is `SCANNABLE`, not
-`BENCHMARKED`; OSV advisory matching remains future S2 scope.
+`BENCHMARKED`; at the S1 freeze, OSV advisory matching remained future S2 scope.

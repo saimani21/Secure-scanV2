@@ -12,7 +12,9 @@ license = { text = "MIT" }
 authors = [{ name = "SecureScan Project" }]
 dependencies = [
   "alembic>=1.14,<2",
+  "cvss==3.6",
   "fastapi>=0.115,<1",
+  "httpx==0.28.1",
   "jsonschema>=4.23,<5",
   "packageurl-python==0.17.6",
   "pydantic>=2.10,<3",
@@ -25,7 +27,6 @@ dependencies = [
 [project.optional-dependencies]
 postgres = ["psycopg[binary]>=3.2,<4"]
 dev = [
-  "httpx>=0.28,<1",
   "pytest>=8.3,<10",
   "pytest-cov>=6,<8",
   "ruff>=0.9,<1",
@@ -42,6 +43,7 @@ include = ["securescan*"]
 "securescan.scanners.semgrep" = ["rules/*.yml"]
 "securescan.scanners.gitleaks" = ["config/*.toml", "config/*.ignore"]
 "securescan.scanners.syft" = ["config/*.yaml"]
+"securescan.advisories.osv" = ["schema/*.json"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

@@ -195,7 +195,25 @@ multiple manifests and generated/test/vendor paths, plus a successful
 zero-package fixture and repeatable normalized output. This supports
 `PACKAGE_INVENTORY = SCANNABLE`. It does not establish dependency kind,
 installation, runtime use, reachability, exhaustive discovery, vulnerability,
-or CVE status. OSV matching is deliberately not part of S1.
+or CVE status. OSV matching is deliberately not part of the frozen S1 evidence.
+
+## Source OSV dependency intelligence
+
+Source S2 consumes the frozen Syft package observations and queries OSV only for exact,
+versioned, package-name-consistent PyPI, npm, and Go PURLs. The trusted client is fixed to `api.osv.dev`, bounded
+for batches, pagination, response sizes, timeouts, retries, and advisory counts, and
+fails closed on transport, schema, pagination, or mutable-record inconsistencies. Full
+records are validated against a frozen OSV 1.9.0 schema before alias-aware normalized
+dependency vulnerability findings are produced.
+
+The project-owned controlled snapshot covers affected and same-package fixed-boundary
+queries for three ecosystems: six package versions, six advisory records, four alias
+groups/findings, and three explicit zero-advisory boundary results. Ordinary
+evaluation is deterministic and offline. Online matching sends package coordinates to
+OSV but no repository contents and does not provide an OS-level egress sandbox.
+`DEPENDENCY_ADVISORY_MATCHING = SCANNABLE`; it does not claim reachability,
+exploitability, runtime relevance, universal advisory completeness, NVD, EPSS, or VEX.
+See [the Source v0.5 claim matrix](docs/source-v0.5-dependency-intelligence.md).
 
 ## API and CLI
 
