@@ -92,7 +92,7 @@ Status: COMPLETE
 
 | Version | Capability | Status |
 |---|---|---|
-| S2 | OSV advisory matching and dependency vulnerability findings | IMPLEMENTED - PENDING APPROVAL |
+| S2 | OSV advisory matching and dependency vulnerability findings | COMPLETE |
 
 `DEPENDENCY_ADVISORY_MATCHING = SCANNABLE`
 
@@ -103,6 +103,39 @@ schema, groups alias-equivalent records per package, and emits deterministic fin
 Its controlled public-service snapshot replays offline. Online operation discloses
 package coordinates to `api.osv.dev`, but never repository file contents; no OS-level
 egress sandbox is claimed. See `docs/source-v0.5-dependency-intelligence.md`.
+
+### Source Checkov Configuration Security
+
+| Version | Capability | Status |
+|---|---|---|
+| S3 | Pinned Checkov source-native IaC/configuration security | IMPLEMENTED - PENDING APPROVAL |
+
+`CONFIGURATION_SECURITY = SCANNABLE`
+
+Source v0.6 S3 adds pinned Checkov 3.3.16 source-configuration analysis for
+exactly Terraform, CloudFormation, Kubernetes, Dockerfile, and GitHub Actions.
+The scanner receives only the frozen Source projection, an absolute
+SecureScan-owned configuration, an empty child environment, and explicit
+local/offline CLI controls. Repository `.checkov.yml`, `.checkov.yaml`, and
+`.checkov.baseline` files are excluded from the scanner projection and cannot
+alter the trusted command.
+
+The frozen runtime identity is CPython 3.12.3 plus 97 exact hash-locked Python
+distributions. Launcher hashes are local path-specific integrity guards, not the
+portable scanner identity. Variable evaluation is disabled. Fifteen narrowly
+identified direct secret-material policies are denied to preserve Gitleaks authority;
+secret-management configuration controls remain enabled.
+
+The defensive parser retains normalized active findings, inline suppression
+evidence, framework completion aggregates, and explicit parsing gaps. It does
+not retain raw JSON, code blocks, evaluated variables, connected-node data, or
+absolute host paths. The controlled project-owned corpus confirms one selected
+fail/pass policy relation for each framework, one suppression, and one
+malformed-input gap; it is not a broad accuracy benchmark. Checkov secrets,
+SCA, images, Terraform plans, Helm, Kustomize, external modules, custom policies,
+and Prisma Cloud operation remain outside S3. SecureScan configures local
+operation but does not claim an OS-level egress sandbox. See
+`docs/source-v0.6-configuration-security.md`.
 
 ## Source Intelligence Foundation Freeze
 

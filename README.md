@@ -215,6 +215,37 @@ OSV but no repository contents and does not provide an OS-level egress sandbox.
 exploitability, runtime relevance, universal advisory completeness, NVD, EPSS, or VEX.
 See [the Source v0.5 claim matrix](docs/source-v0.5-dependency-intelligence.md).
 
+## Source Checkov configuration security
+
+Source v0.6 S3 adds a pinned, isolated Checkov 3.3.16 CLI integration for
+exactly Terraform, CloudFormation, Kubernetes, Dockerfile, and GitHub Actions
+files from the frozen Source projection. A SecureScan-owned configuration and
+explicit CLI overrides prevent repository Checkov configuration, external
+policies, external Terraform modules, secrets, SCA, images, and platform mode
+from changing the S3 authority boundary.
+
+The binding freezes CPython 3.12.3 and all 97 Checkov distributions through a
+wheel-hash lock; the generated launcher hash is a local file-integrity guard, not a
+portable scanner identity. Its venv-local shebang and normalized launcher template
+are verified separately. A narrow denylist excludes direct secret-material
+policies while retaining secret-management configuration controls. Variable
+evaluation is disabled because projection-confined filesystem access could not be
+proven.
+
+Strict parsing emits normalized active configuration findings, separate inline
+suppression observations, framework completion aggregates, and explicit parse
+gaps. Raw Checkov JSON, source code blocks, evaluated variables, connected-node
+data, and host paths are not persisted. Missing filename-deterministic framework
+reports fail closed. Generic YAML/JSON remain conservative discovery candidates;
+unrelated files are accepted as not applicable only for Checkov's exact all-zero
+summary shape. The controlled 13-file corpus provides
+one selected fail/pass relation per framework plus suppression and malformed
+input coverage. It is controlled integration evidence, not a broad accuracy
+benchmark. `CONFIGURATION_SECURITY = SCANNABLE`; deployed state, runtime
+posture, exploitability, reachability, external-module contents, Terraform
+plans, Helm, and Kustomize remain outside the claim. See the
+[Source v0.6 claim matrix](docs/source-v0.6-configuration-security.md).
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI

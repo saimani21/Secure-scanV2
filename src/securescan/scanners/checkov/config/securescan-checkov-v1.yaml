@@ -1,0 +1,53 @@
+framework:
+  - terraform
+  - cloudformation
+  - kubernetes
+  - dockerfile
+  - github_actions
+output:
+  - json
+compact: true
+quiet: false
+soft-fail: true
+skip-download: true
+skip-results-upload: true
+download-external-modules: false
+evaluate-variables: false
+external-checks-dir: []
+external-checks-git: []
+bc-api-key: ""
+prisma-api-url: ""
+repo-id: ""
+check: []
+skip-check:
+  - CKV_AWS_41
+  - CKV_AWS_45
+  - CKV_AWS_46
+  - CKV_AWS_295
+  - CKV_AWS_384
+  - CKV_AZURE_45
+  - CKV_AZURE_239
+  - CKV_BCW_1
+  - CKV_LIN_1
+  - CKV_NCP_17
+  - CKV_OCI_1
+  - CKV_OPENSTACK_1
+  - CKV_OPENSTACK_4
+  - CKV_PAN_1
+  - CKV_TC_13
+skip-framework: []
+skip-path: []
+soft-fail-on: []
+hard-fail-on: []
+baseline: ""
+var-file: []
+mask: []
+output-file-path: ""
+create-baseline: false
+output-baseline-as-skipped: false
+run-all-external-checks: false
+use-enforcement-rules: false
+deep-analysis: false
+no-fail-on-crash: false
+no-cert-verify: false
+support: false

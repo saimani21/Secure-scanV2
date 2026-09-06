@@ -30,6 +30,7 @@ _EXECUTABLE_LANGUAGE_STATES = frozenset(
     }
 )
 _REPOSITORY_LEVEL_CAPABILITIES = (
+    AnalysisCapability.CONFIGURATION_SECURITY,
     AnalysisCapability.PYTHON_SAST,
     AnalysisCapability.SECRET_DETECTION,
 )

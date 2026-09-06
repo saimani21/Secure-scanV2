@@ -67,3 +67,4 @@ class AnalysisCapability(StrEnum):
     TERRAFORM_SOURCE_POLICY = "terraform_source_policy"
     DOCKERFILE_POLICY = "dockerfile_policy"
     PACKAGE_INVENTORY = "package_inventory"
+    CONFIGURATION_SECURITY = "configuration_security"

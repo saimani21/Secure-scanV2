@@ -608,6 +608,13 @@ def _eligible_capabilities(
             AnalysisCapability.DOCKERFILE_POLICY
         )
 
+    if content_kind is FileContentKind.TEXT and role in {
+        SourceFileRole.CONFIGURATION,
+        SourceFileRole.DOCKERFILE,
+        SourceFileRole.TERRAFORM,
+    }:
+        capabilities.add(AnalysisCapability.CONFIGURATION_SECURITY)
+
     return tuple(
         sorted(
             capabilities,

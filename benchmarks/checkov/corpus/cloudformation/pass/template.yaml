@@ -1,0 +1,9 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  ControlledPass:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: securescan-controlled-cfn-pass
+      LoggingConfiguration:
+        DestinationBucketName: securescan-controlled-cfn-logs
+        LogFilePrefix: access/

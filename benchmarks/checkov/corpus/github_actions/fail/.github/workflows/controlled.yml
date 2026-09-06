@@ -1,0 +1,13 @@
+name: controlled-fail
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: controlled input
+        required: true
+        type: string
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo controlled
