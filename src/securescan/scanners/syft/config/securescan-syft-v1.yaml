@@ -1,0 +1,50 @@
+check-for-app-update: false
+default-catalogers: []
+select-catalogers: []
+parallelism: 4
+enrich: []
+exclude: []
+cpp:
+  vcpkg-allow-git-clone: false
+package:
+  search-unindexed-archives: false
+  search-indexed-archives: false
+license:
+  content: none
+file:
+  metadata:
+    selection: none
+  content:
+    globs: []
+  executable:
+    globs: []
+golang:
+  search-local-mod-cache-licenses: false
+  local-mod-cache-dir: ""
+  search-local-vendor-licenses: false
+  local-vendor-dir: ""
+  search-remote-licenses: false
+  proxy: ""
+  no-proxy: "*"
+  use-packages-lib: false
+java:
+  use-network: false
+  use-maven-local-repository: false
+  maven-local-repository-dir: ""
+  maven-url: ""
+  resolve-transitive-dependencies: false
+javascript:
+  search-remote-licenses: false
+  npm-base-url: ""
+python:
+  search-remote-licenses: false
+  pypi-base-url: ""
+  guess-unpinned-requirements: false
+registry:
+  insecure-skip-tls-verify: false
+  insecure-use-http: false
+  auth: []
+  ca-cert: ""
+cache:
+  dir: ""
+  ttl: 0s

@@ -172,6 +172,31 @@ limitations, and F5 has no complete ground truth and observed only three rule
 IDs. The final maturity is therefore `SECRET_DETECTION = SCANNABLE`, and the
 Gitleaks Target-1 integration is complete without promotion to `BENCHMARKED`.
 
+## Source Syft package inventory
+
+Source S1 adds pinned Syft 1.51.0 directory-mode inventory for the immutable
+Source projection. The trusted binding verifies the official Linux amd64
+executable and frozen configuration, disables update checks, enrichment, remote
+license searches, and host-cache lookups, and invokes only explicit `dir` source
+behavior with bounded execution. It never installs dependencies, builds or
+runs repository code, invokes Git, or uses an image/registry/container daemon.
+No network-dependent operation is requested; S1 does not claim an OS-level
+egress sandbox.
+
+Defensive `syft-json` parsing retains only normalized package coordinates,
+standards-valid PURLs, cataloger names, and authorized repository-relative
+locations. Arbitrary package metadata and raw scanner streams remain transient.
+`package_key` groups package coordinates for later advisory work, while
+`package_observation_id` also includes the cataloger and location set so
+structurally distinct evidence is preserved.
+
+The controlled S1 evidence covers Python, npm, and Go fixtures, including
+multiple manifests and generated/test/vendor paths, plus a successful
+zero-package fixture and repeatable normalized output. This supports
+`PACKAGE_INVENTORY = SCANNABLE`. It does not establish dependency kind,
+installation, runtime use, reachability, exhaustive discovery, vulnerability,
+or CVE status. OSV matching is deliberately not part of S1.
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI

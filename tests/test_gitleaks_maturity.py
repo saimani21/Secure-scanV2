@@ -335,7 +335,7 @@ def test_current_documentation_closes_target_and_historicalizes_prior_absence() 
     normalized = " ".join(combined.split())
     assert (
         "v0.4F6 | Gitleaks final evidence and maturity reconciliation | "
-        "IMPLEMENTED - PENDING FREEZE"
+        "COMPLETE"
     ) in status
     assert "GITLEAKS TARGET-1 INTEGRATION: COMPLETE" in status
     assert "SECRET_DETECTION = SCANNABLE" in combined

@@ -6,6 +6,7 @@ __pycache__/
 htmlcov/
 .venv/
 .venv-semgrep-1.171/
+.venv-syft-1.51/
 .cache/securescan-benchmarks/
 .cache/securescan-realworld-python/
 .env

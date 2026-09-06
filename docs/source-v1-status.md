@@ -80,6 +80,14 @@ Status: COMPLETE
 
 `SECRET_DETECTION = SCANNABLE`
 
+### Source Syft Package Inventory
+
+| Version | Capability | Status |
+|---|---|---|
+| S1 | Pinned Syft current-snapshot package/component inventory | COMPLETE |
+
+`PACKAGE_INVENTORY = SCANNABLE`
+
 ## Source Intelligence Foundation Freeze
 
 Source v0.2.6 is the frozen repository-intelligence foundation.
@@ -922,3 +930,34 @@ repeatable scoring. It would not mean exhaustive detection, live credential
 validity, ecosystem-wide accuracy, or zero false negatives.
 
 `GITLEAKS TARGET-1 INTEGRATION: COMPLETE`
+
+## Syft S1 Package Inventory Boundary
+
+S1 pins the official Syft 1.51.0 Linux amd64 executable and its project-owned
+configuration. Production accepts only an absolute digest-verified executable,
+constructs an explicit `directory` scan of the immutable Source projection,
+uses `syft-json` schema 16.1.10, supplies an empty child environment, requests
+no network-dependent enrichment, disables remote license searches, update
+checks, and local package caches, and bounds time and output. Registry and image
+sources are not permitted. S1 does not claim an OS-level egress sandbox.
+
+The parser accepts only the frozen Syft descriptor, schema, directory source,
+authorized projection-relative locations, bounded core artifact structure, and
+standards-valid Package URLs. Package-specific `metadata`, raw stdout, raw
+stderr, Syft artifact IDs, host paths, and temporary paths are never durable.
+One `package_key` groups normalized package coordinates; a separate
+`package_observation_id` binds the key to its cataloger and sorted evidence
+locations, so equal coordinates at different manifests are not collapsed.
+
+The controlled project-owned corpus produced ten observations: seven Python,
+two npm, and one Go module. A separate zero-package fixture completed with zero
+packages. Two real pinned-binary runs produced identical normalized structural
+evidence. The corpus also proves that a target-owned `.syft.yaml`, near-miss
+filenames, generated, test, and vendor paths do not alter SecureScan's explicit
+configuration or repository-wide selection boundary.
+
+S1 claims only what pinned Syft observed in the current immutable directory
+snapshot. It does not claim direct/transitive/runtime/development dependency
+semantics, installation, import, reachability, vulnerability, CVE applicability,
+or exhaustive ecosystem discovery. `PACKAGE_INVENTORY` is `SCANNABLE`, not
+`BENCHMARKED`; OSV advisory matching remains future S2 scope.

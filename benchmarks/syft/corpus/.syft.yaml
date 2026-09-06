@@ -1,0 +1,5 @@
+check-for-app-update: true
+exclude:
+  - "**"
+from:
+  - registry
