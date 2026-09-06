@@ -36,10 +36,10 @@ local evidence and never imply provider validation, credential usability, or a
 live secret. Raw credential material and raw scanner streams must never be
 published.
 
-No repository acquisition or real-world Gitleaks scan has occurred in F5A, and
-`realworld-result-v1.json` does not exist. F3B remains controlled accuracy
-evidence, F4C remains limitation and claim evidence, and `SECRET_DETECTION`
-remains `SCANNABLE`.
+At the F5A checkpoint, no repository acquisition or real-world Gitleaks scan
+had occurred, and `realworld-result-v1.json` did not exist. F3B remained
+controlled accuracy evidence, F4C remained limitation and claim evidence, and
+`SECRET_DETECTION` remained `SCANNABLE`.
 
 ## F5B1 acquisition policy and manifest schema
 
@@ -71,8 +71,8 @@ The schema binds the F5A contract, acquisition policy, scanner, binding,
 configuration, and ignore identities and freezes the ten permitted role
 evidence types. Future extraction may materialize only regular files and
 directories. The template contains no repository identity, acquisition,
-scanner-result, finding, or secret data. No populated acquisition manifest or
-F5 result exists.
+scanner-result, finding, or secret data. At the F5B1 checkpoint, no populated
+acquisition manifest or F5 result existed.
 
 ## F5B2R1 repository-selection correction
 
@@ -145,9 +145,9 @@ ingested as inert data through `RepositoryWorkspaceManager`:
 The manifest transitioned atomically to `ACQUIRED` only after all six
 completed. Its canonical SHA-256 is
 `3a7f55e43210427974985c4e4009a1027fc4db12f3d94e119b490df8f0fc3b52`.
-No host or temporary path is present in the artifact. No repository code or
-Gitleaks process executed, no real-world result exists, and maturity remains
-`SCANNABLE`.
+No host or temporary path is present in the artifact. At the F5B3 checkpoint,
+no repository code or Gitleaks process had executed. At the F5B3 checkpoint,
+no real-world result existed. Maturity remained `SCANNABLE`.
 
 ## F5C fail-closed execution attempt
 
@@ -185,3 +185,20 @@ repeatability artifact SHA-256 is
 `8fde25f35da87d1e9abff97e087bf8bdb77116f622095b08e040278c21332303`.
 No accuracy or credential-validity metrics are inferred, and maturity remains
 `SCANNABLE`.
+
+## F6 final reconciliation
+
+F6 consumes the frozen F3B, F4, F5B3, F5C, and F5D artifacts without rerunning
+Gitleaks or changing repository snapshots. The final matrix is
+[`../final-capability-v1.json`](../final-capability-v1.json). F5C's 138
+sanitized content observations span six immutable snapshots; F5D reproduced
+every per-repository and aggregate structural set with zero missing and zero new
+identities. The two earlier fail-closed F5C attempts established compatibility
+requirements for multiline `Match` layout and line-relative multiline columns;
+neither incomplete attempt was represented as clean evidence.
+
+These real-world runs have no complete frozen ground truth and observed only
+three Gitleaks rule IDs. They support operational compatibility and structural
+repeatability, not credential validity, exploitability, precision, recall, or
+general accuracy. `SECRET_DETECTION = SCANNABLE`; the Gitleaks Target-1
+integration is complete.

@@ -101,11 +101,11 @@ to an exact commit and a commit-addressed HTTPS archive resource:
 | Multi-language | `golang/go` | `c5941983810b68ba93c30f0ef22c91ad63fb3e5c` |
 | Binary/config assets | `SSLMate/go-pkcs12` | `c0472edb16891765fbc86573ea468365b7fd2197` |
 
-Selection used only public upstream metadata and pre-scan role evidence from
-the frozen F5B1 vocabulary. No archive was downloaded or extracted, no
-repository code or Gitleaks process ran, and all archive/snapshot measurement
-fields remain unresolved. No real-world result exists and `SECRET_DETECTION`
-remains `SCANNABLE`.
+At the F5B2R2 selection checkpoint, selection used only public upstream
+metadata and pre-scan role evidence from the frozen F5B1 vocabulary. No archive
+had been downloaded or extracted, no repository code or Gitleaks process had
+run, all archive/snapshot measurement fields remained unresolved, and no
+real-world result existed. `SECRET_DETECTION` remained `SCANNABLE`.
 
 F5B2R1 corrects only the small-application selection after the frozen Miniflux
 archive failed the F5B1 acquisition policy because it contained a symlink.
@@ -127,8 +127,8 @@ the bounded hostile-archive path and froze their archive receipts and
 `RepositoryWorkspaceManager` snapshot identities. The acquisition manifest is
 now `ACQUIRED` with SHA-256
 `3a7f55e43210427974985c4e4009a1027fc4db12f3d94e119b490df8f0fc3b52`.
-No repository code or Gitleaks process ran, no real-world result exists, and
-`SECRET_DETECTION` remains `SCANNABLE`.
+At the F5B3 checkpoint, no repository code or Gitleaks process had run and no
+real-world result existed. `SECRET_DETECTION` remained `SCANNABLE`.
 
 The first F5C production-path execution attempt then failed closed at RW04:
 the frozen parser rejected completed scanner output as
@@ -148,6 +148,29 @@ with 138 unique identities and zero duplicate observations. Immediate F5D
 run #2 reproduced every per-repository canonical set with zero missing or new
 identities. These operational observations are not accuracy metrics;
 `SECRET_DETECTION` remains `SCANNABLE`.
+
+## Source Gitleaks Target-1 closure
+
+Source v0.4F6 reconciles the frozen Gitleaks evidence into the canonical
+[`final-capability-v1.json`](benchmarks/gitleaks/final-capability-v1.json)
+claim matrix. SecureScan provides pinned Gitleaks 8.30.1 current-snapshot
+execution, repository-wide applicability planning, bounded lifecycle behavior,
+fail-closed confidential parsing, sanitized content and validated path-only
+findings, stable structural identity, and canonical evidence. The controlled
+F3B corpus recorded 22 TP, 23 TN, 0 FP, and 3 FN across seven representative
+detectors. F4 reproduced 13/13 adversarial characterization outcomes. F5C
+recorded 138 sanitized content observations across six immutable repository
+snapshots, and F5D reproduced every structural set with zero missing or new
+identities.
+
+Real repositories established compatibility with multiline `Match` values and
+line-relative multiline coordinates; unsupported output still fails closed.
+The evidence does not establish Git-history coverage, live credential validity,
+exploitability, universal detector accuracy, inspection of every selected byte,
+or zero false negatives. F3B is bounded, F4 documents material upstream
+limitations, and F5 has no complete ground truth and observed only three rule
+IDs. The final maturity is therefore `SECRET_DETECTION = SCANNABLE`, and the
+Gitleaks Target-1 integration is complete without promotion to `BENCHMARKED`.
 
 ## API and CLI
 

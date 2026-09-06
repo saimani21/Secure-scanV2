@@ -250,3 +250,47 @@ or hostile-test IDs. The artifact contains no scanner streams, credential
 values, credential hashes, host paths, mutable HEAD identity, or accuracy
 metrics. F4C executes no scanner, adds no corpus, and does not promote maturity.
 `SECRET_DETECTION` remains `SCANNABLE`.
+
+## v0.4F6 final capability and maturity reconciliation
+
+`final-capability-v1.json` is the canonical Target-1 claim matrix. It binds the
+frozen Gitleaks 8.30.1 executable, configuration, ignore, binding, F3B, F4,
+F5B3, F5C, and F5D identities and classifies each claim as `SUPPORTED`,
+`LIMITED`, or `NOT_SUPPORTED`. It contains no mutable execution HEAD, host path,
+scanner stream, raw secret, Match value, Gitleaks Fingerprint, or secret-derived
+public identity.
+
+SecureScan Source v1 provides deterministic, current-snapshot secret detection
+through a pinned and verified Gitleaks 8.30.1 integration. Findings are parsed
+through a fail-closed confidentiality-preserving boundary and receive stable
+structural identities. Controlled benchmark, adversarial, acquisition, and
+real-world repeatability evidence are frozen and reproducible.
+
+F3B recorded 22 TP, 23 TN, 0 FP, and 3 FN across 48 relations for seven
+representative detectors. F4 reproduced all 13 expected characterization
+outcomes, including generic-rule suppression, empty-file enumeration, path-only
+detection, inherited path allowlists, fail-closed behavior, and confidentiality.
+F5C recorded 138 sanitized content findings across six frozen snapshots; F5D
+reproduced the same canonical structural set per repository and in aggregate
+with zero missing and zero new identities. The F5 runs provide operational and
+repeatability evidence, not accuracy evidence. They also established frozen
+parser compatibility with multiline `Match` layout and per-line multiline
+columns without weakening other schema checks.
+
+This capability does not claim exhaustive secret detection, Git-history
+coverage, credential validity, exploitability, universal detector accuracy, or
+inspection of every selected byte. Upstream Gitleaks rules, allowlists,
+enumeration behavior, and supported output schema remain material limitations.
+Remote acquisition as scanner behavior, provider validation, credential
+reachability, cross-tool correlation, lifecycle deduplication, rotation
+tracking, and runtime validation are unsupported.
+
+F3B represents only seven detectors and has three documented false negatives;
+F5 has no complete frozen ground truth and observed only three rule IDs.
+Repeatability establishes structural determinism, not correctness. A future
+`BENCHMARKED` state would require a broader frozen representative detector-family
+corpus with explicit limitation-aware ground truth and repeatable scoring; it
+would still not mean exhaustive detection, live credential validity,
+ecosystem-wide accuracy, or zero false negatives.
+
+`SECRET_DETECTION = SCANNABLE`. Gitleaks Target-1 integration is complete.

@@ -74,6 +74,11 @@ Status: COMPLETE
 | v0.4F5B3 | Gitleaks real-world bounded acquisition and snapshot freeze | COMPLETE |
 | v0.4F5C | Gitleaks real-world first execution | COMPLETE |
 | v0.4F5D | Gitleaks real-world repeatability characterization | COMPLETE |
+| v0.4F6 | Gitleaks final evidence and maturity reconciliation | COMPLETE |
+
+`GITLEAKS TARGET-1 INTEGRATION: COMPLETE`
+
+`SECRET_DETECTION = SCANNABLE`
 
 ## Source Intelligence Foundation Freeze
 
@@ -701,8 +706,8 @@ All six slots completed before the manifest atomically transitioned from
 `SELECTED` to `ACQUIRED`. Archive and snapshot identities are present and
 unique, and the canonical acquired-manifest SHA-256 is
 `3a7f55e43210427974985c4e4009a1027fc4db12f3d94e119b490df8f0fc3b52`.
-No real-world result artifact exists and `SECRET_DETECTION` remains
-`SCANNABLE`.
+At the F5B3 checkpoint, no real-world result artifact existed and
+`SECRET_DETECTION` remained `SCANNABLE`.
 
 ## Gitleaks v0.4F5C Fail-Closed Execution Attempt
 
@@ -812,9 +817,10 @@ successful full-suite run.
 
 F5A freezes six operational repository roles and the future acquisition,
 current-snapshot execution, repeatability, review, confidentiality, and
-fail-closed contracts before repository selection. Repository names, URLs,
-commits, archives, and snapshots remain unresolved; no acquisition, network
-access, or real-world Gitleaks scan occurred, and no F5 result exists.
+fail-closed contracts before repository selection. At that checkpoint,
+repository names, URLs, commits, archives, and snapshots remained unresolved;
+no acquisition, network access, or real-world Gitleaks scan had occurred, and
+no F5 result existed.
 
 Future snapshots use the existing SecureScan `RepositoryManifest` identity
 (`content_digest`, `file_count`, and `total_bytes`). F5B must freeze bounded,
@@ -835,8 +841,9 @@ production Gitleaks, or dependency code. This recurring test-harness condition
 is recorded as a non-F5A regression waiver rather than represented as a
 successful full-suite run.
 
-No repository acquisition, network operation, or Gitleaks execution occurred.
-No real-world result artifact exists and SECRET_DETECTION remains SCANNABLE.
+At the F5A checkpoint, no repository acquisition, network operation, or
+Gitleaks execution had occurred. No real-world result artifact existed and
+SECRET_DETECTION remained SCANNABLE.
 
 ## Gitleaks v0.4F5B1 Acquisition Policy and Manifest Schema
 
@@ -852,10 +859,11 @@ exact commits, licenses, acquisition methods, and role evidence before archive
 or snapshot outputs exist. Only regular files and directories may later be
 materialized from an archive.
 
-No repository was selected, no network access or archive acquisition occurred,
-no archive was extracted, and neither repository code nor Gitleaks executed.
-The F5A contract remains frozen, no populated acquisition manifest or F5 result
-exists, and `SECRET_DETECTION` remains `SCANNABLE`.
+At the F5B1 checkpoint, no repository had been selected, no network access or
+archive acquisition had occurred, no archive had been extracted, and neither
+repository code nor Gitleaks had executed. The F5A contract remained frozen,
+no populated acquisition manifest or F5 result existed, and
+`SECRET_DETECTION` remained `SCANNABLE`.
 
 ## Gitleaks v0.4F5B2 Repository Selection
 
@@ -873,3 +881,44 @@ file count, and byte count remain null until an explicit later acquisition
 checkpoint. F5B2 downloaded or extracted no archive, cloned no repository,
 executed neither repository code nor Gitleaks, and created no evaluation result.
 `SECRET_DETECTION` remains `SCANNABLE`.
+
+## Gitleaks v0.4F6 Final Evidence and Maturity Reconciliation
+
+F6 reconciles the frozen trusted binding, F3B controlled benchmark, F4
+adversarial characterization, F5B3 acquisition manifest, F5C real-world run,
+and F5D repeatability result in
+`benchmarks/gitleaks/final-capability-v1.json`. The canonical matrix records 12
+`SUPPORTED`, 9 `LIMITED`, and 13 `NOT_SUPPORTED` claims without changing or
+reinterpreting the frozen evidence.
+
+SecureScan Source v1 provides deterministic, current-snapshot secret detection
+through a pinned and verified Gitleaks 8.30.1 integration. Findings are parsed
+through a fail-closed confidentiality-preserving boundary and receive stable
+structural identities. Controlled benchmark, adversarial, acquisition, and
+real-world repeatability evidence are frozen and reproducible.
+
+The evidence comprises F3B's 22 TP, 23 TN, 0 FP, and 3 FN across seven
+representative detectors; F4's 13/13 expected characterization outcomes; F5C's
+138 sanitized content observations across six frozen repositories; and F5D's
+equal structural sets with zero missing and zero new identities. Real-world
+execution also established compatibility with multiline `Match` layout and
+line-relative multiline columns while preserving fail-closed schema behavior.
+
+This capability does not claim exhaustive secret detection, Git-history
+coverage, credential validity, exploitability, universal detector accuracy, or
+inspection of every selected byte. Upstream Gitleaks rules, allowlists,
+enumeration behavior, and supported output schema remain material limitations.
+Git history, provider validation, credential reachability, cross-tool
+correlation, lifecycle deduplication, rotation tracking, and runtime validation
+remain unsupported.
+
+`SECRET_DETECTION` remains `SCANNABLE`, not `BENCHMARKED`: F3B covers seven
+representative detectors and records three false negatives; F4 demonstrates
+material upstream limitations; F5 has no complete frozen ground truth and
+observed only three rule IDs; and repeatability proves determinism rather than
+accuracy. A future `BENCHMARKED` state requires a broader frozen representative
+detector-family corpus with explicit limitation-aware ground truth and
+repeatable scoring. It would not mean exhaustive detection, live credential
+validity, ecosystem-wide accuracy, or zero false negatives.
+
+`GITLEAKS TARGET-1 INTEGRATION: COMPLETE`
