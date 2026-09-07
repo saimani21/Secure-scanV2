@@ -14,7 +14,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "f4a8c2d17b65"
+HEAD_REVISION = "3a6f1c8e2d90"
 
 APPLICATION_TABLES = {
     "projects",
@@ -22,6 +22,10 @@ APPLICATION_TABLES = {
     "analysis_runs",
     "jobs",
     "tool_executions",
+    "source_orchestrations",
+    "source_orchestration_authorities",
+    "source_orchestration_nodes",
+    "source_orchestration_dependencies",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -36,6 +40,12 @@ EXPECTED_JOB_INDEXES = {
     "ix_jobs_claim",
     "ix_jobs_cancel_reap",
     "ix_jobs_run_id",
+}
+EXPECTED_ORCHESTRATION_TABLES = {
+    "source_orchestrations",
+    "source_orchestration_authorities",
+    "source_orchestration_nodes",
+    "source_orchestration_dependencies",
 }
 
 
@@ -117,6 +127,60 @@ def _assert_tool_execution_attempt_identity(database_inspector) -> None:
     assert indexes >= {"ix_tool_executions_job_id", "ix_tool_executions_run_id"}
 
 
+def _assert_source_orchestration_schema(database_inspector) -> None:
+    assert set(database_inspector.get_table_names()) >= EXPECTED_ORCHESTRATION_TABLES
+    parent_columns = {
+        column["name"] for column in database_inspector.get_columns("source_orchestrations")
+    }
+    assert parent_columns == {
+        "run_id",
+        "idempotency_key",
+        "creation_request_digest",
+        "repository_digest",
+        "profile_digest",
+        "plan_digest",
+        "roster_digest",
+        "planning_snapshot_sha256",
+        "snapshot_size_bytes",
+        "snapshot_media_type",
+        "snapshot_schema_version",
+        "snapshot_storage_path",
+        "lifecycle_state",
+        "terminal_outcome",
+        "cancel_requested",
+        "cancel_requested_at",
+        "state_version",
+        "deadline_at",
+        "created_at",
+        "updated_at",
+    }
+    assert {column["name"] for column in database_inspector.get_columns("jobs")} == {
+        "id",
+        "run_id",
+        "adapter_id",
+        "status",
+        "priority",
+        "attempt_count",
+        "max_attempts",
+        "available_at",
+        "leased_by",
+        "lease_token",
+        "lease_expires_at",
+        "heartbeat_at",
+        "cancel_requested",
+        "cancel_requested_at",
+        "created_at",
+        "updated_at",
+        "started_at",
+        "finished_at",
+        "idempotency_key",
+        "payload_json",
+        "last_error",
+    }
+    assert "source_orchestration_attempts" not in database_inspector.get_table_names()
+    assert "source_authority_results" not in database_inspector.get_table_names()
+
+
 @pytest.fixture
 def migration_environment(
     tmp_path: Path,
@@ -152,6 +216,7 @@ def test_initial_migration_upgrade_creates_expected_schema(
         _assert_lease_token_column(inspector)
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
+        _assert_source_orchestration_schema(inspector)
 
         job_check_constraints = {
             constraint["name"] for constraint in inspector.get_check_constraints("jobs")
@@ -191,6 +256,7 @@ def test_initial_migration_downgrade_and_reupgrade_round_trip(
         _assert_lease_token_column(inspector)
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
+        _assert_source_orchestration_schema(inspector)
         command.check(config)
 
         command.downgrade(config, "base")
@@ -204,6 +270,7 @@ def test_initial_migration_downgrade_and_reupgrade_round_trip(
         _assert_lease_token_column(inspector)
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
+        _assert_source_orchestration_schema(inspector)
         command.check(config)
 
         with engine.connect() as connection:

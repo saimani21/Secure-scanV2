@@ -274,6 +274,19 @@ controlled replay is bound to the frozen F1/F5D/S1/S2/S3 evidence digests and
 does not run scanners or access the network. See the
 [Source v0.7 unified-evidence contract](docs/source-v0.7-unified-evidence.md).
 
+## Source orchestration foundation
+
+Source v0.8 S6A adds the durable control-plane foundation for one Source
+orchestration per AnalysisRun. It preserves the complete canonical planning truth
+in content-addressed storage, pins the five trusted Source authorities, derives
+deterministic runnable nodes, stores the Syft-to-OSV dependency edge, and uses a
+monotonic parent version to linearize cancellation and reject stale coordinators.
+
+S6A executes no scanner, calls no network service, creates no scanner Job or
+ToolExecution, accepts no native result, and does not assemble or publish the S4
+report. Process containment and cleanup belong to S6B. See the
+[S6A durable orchestration contract](docs/source-v0.8-s6a-orchestration.md).
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI

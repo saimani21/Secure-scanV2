@@ -68,6 +68,7 @@ class ObservationType(StrEnum):
 
 class ArtifactKind(StrEnum):
     SOURCE_EXECUTION_CONTEXT = "source_execution_context"
+    ORCHESTRATION_PLANNING_SNAPSHOT = "orchestration_planning_snapshot"
     SANITIZED_NATIVE_REPORT = "sanitized_native_report"
     STDOUT = "stdout"
     STDERR = "stderr"

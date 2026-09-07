@@ -141,7 +141,7 @@ operation but does not claim an OS-level egress sandbox. See
 
 | Version | Capability | Status |
 |---|---|---|
-| S4 | Unified Source evidence representation | IMPLEMENTED - PENDING APPROVAL |
+| S4 | Unified Source evidence representation | COMPLETE |
 
 Source v0.7 S4 adds a deterministic, typed projection over the already
 validated Semgrep, Gitleaks, Syft, OSV, and Checkov native models. It keeps
@@ -158,6 +158,19 @@ Semgrep sanitized-artifact provenance is retained as safe metadata only.
 S4 does not replace legacy `ScanReport` or any scanner-native result. It does
 not add cross-engine merging, correlation, lifecycle, risk scoring, confidence,
 API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md`.
+
+### Source Multi-Engine Orchestration
+
+| Version | Capability | Status |
+|---|---|---|
+| S6A | Durable multi-engine orchestration foundation | COMPLETE |
+
+S6A adds one durable Source orchestration per AnalysisRun, an exact server-owned
+five-authority roster, a canonical CAS planning snapshot, deterministic runnable
+nodes, the Syft-to-OSV dependency edge, parent/node state vocabularies, monotonic
+cancellation versioning, deadline representation, and restart reconstruction.
+It creates no scanner jobs or executions and publishes no report. See
+`docs/source-v0.8-s6a-orchestration.md`.
 
 ## Source Intelligence Foundation Freeze
 

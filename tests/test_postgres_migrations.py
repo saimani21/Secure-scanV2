@@ -19,7 +19,7 @@ pytestmark = pytest.mark.postgres
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "f4a8c2d17b65"
+HEAD_REVISION = "3a6f1c8e2d90"
 
 APPLICATION_TABLES = {
     "projects",
@@ -27,6 +27,10 @@ APPLICATION_TABLES = {
     "analysis_runs",
     "jobs",
     "tool_executions",
+    "source_orchestrations",
+    "source_orchestration_authorities",
+    "source_orchestration_nodes",
+    "source_orchestration_dependencies",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {

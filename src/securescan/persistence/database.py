@@ -9,6 +9,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     String,
@@ -411,6 +412,193 @@ class ToolExecutionRow(Base):
     run: Mapped[AnalysisRunRow] = relationship(
         back_populates="executions",
     )
+
+
+class SourceOrchestrationRow(Base):
+    __tablename__ = "source_orchestrations"
+
+    __table_args__ = (
+        CheckConstraint("state_version >= 1", name="ck_source_orchestrations_version"),
+        CheckConstraint("snapshot_size_bytes >= 1", name="ck_source_orchestrations_snapshot_size"),
+        CheckConstraint(
+            "lifecycle_state IN ('PREPARED', 'ACTIVE', 'CANCELLATION_REQUESTED', "
+            "'ASSEMBLY_READY', 'ASSEMBLING', 'COMMITTING', 'TERMINAL')",
+            name="ck_source_orchestrations_lifecycle",
+        ),
+        CheckConstraint(
+            "terminal_outcome IS NULL OR terminal_outcome IN "
+            "('COMPLETED', 'PARTIAL', 'FAILED', 'CANCELLED')",
+            name="ck_source_orchestrations_terminal_outcome",
+        ),
+        CheckConstraint(
+            "(lifecycle_state = 'TERMINAL') = (terminal_outcome IS NOT NULL)",
+            name="ck_source_orchestrations_terminal_pair",
+        ),
+        CheckConstraint(
+            "cancel_requested_at IS NULL OR cancel_requested = true",
+            name="ck_source_orchestrations_cancel_timestamp",
+        ),
+        UniqueConstraint("idempotency_key", name="uq_source_orchestrations_idempotency"),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    creation_request_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    repository_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    profile_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    plan_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    roster_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    planning_snapshot_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    snapshot_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    snapshot_media_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    snapshot_schema_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    snapshot_storage_path: Mapped[str] = mapped_column(Text, nullable=False)
+    lifecycle_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    terminal_outcome: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    cancel_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    state_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    deadline_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+
+class SourceOrchestrationAuthorityRow(Base):
+    __tablename__ = "source_orchestration_authorities"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "authority",
+            "capability",
+            name="uq_source_orchestration_authority_contract",
+        ),
+        UniqueConstraint(
+            "run_id",
+            "capability",
+            name="uq_source_orchestration_authority_capability",
+        ),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_orchestrations.run_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    authority: Mapped[str] = mapped_column(String(64), primary_key=True)
+    capability: Mapped[str] = mapped_column(String(64), nullable=False)
+    analyzer_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    contract_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    contract_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    implementation_version: Mapped[str] = mapped_column(String(64), nullable=False)
+
+
+class SourceOrchestrationNodeRow(Base):
+    __tablename__ = "source_orchestration_nodes"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["run_id", "authority", "capability"],
+            [
+                "source_orchestration_authorities.run_id",
+                "source_orchestration_authorities.authority",
+                "source_orchestration_authorities.capability",
+            ],
+            name="fk_source_node_authority_contract",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("node_id", "run_id", name="uq_source_node_id_run"),
+        UniqueConstraint(
+            "run_id",
+            "authority",
+            "capability",
+            "component_key",
+            name="uq_source_node_logical_identity",
+        ),
+        CheckConstraint(
+            "component_key = COALESCE(component_id, '')", name="ck_source_node_component_key"
+        ),
+        CheckConstraint("state_version >= 1", name="ck_source_node_version"),
+        CheckConstraint(
+            "lifecycle_state IN ('PLANNED', 'WAITING_DEPENDENCY', 'READY', "
+            "'NOT_APPLICABLE', 'QUEUED', 'RUNNING', 'RETRY_PENDING', "
+            "'RECONCILIATION_REQUIRED', 'TERMINAL')",
+            name="ck_source_node_lifecycle",
+        ),
+        CheckConstraint(
+            "terminal_disposition IS NULL OR terminal_disposition IN "
+            "('COMPLETE', 'PARTIAL', 'NOT_APPLICABLE', 'FAILED', "
+            "'BLOCKED_BY_DEPENDENCY', 'CANCELLED')",
+            name="ck_source_node_disposition",
+        ),
+        CheckConstraint(
+            "(lifecycle_state = 'TERMINAL') = (terminal_disposition IS NOT NULL)",
+            name="ck_source_node_terminal_pair",
+        ),
+        CheckConstraint(
+            "containment_state IN ('NOT_STARTED', 'ACTIVE', 'RECONCILIATION_REQUIRED', 'CLEAN')",
+            name="ck_source_node_containment",
+        ),
+    )
+
+    node_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_orchestrations.run_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    authority: Mapped[str] = mapped_column(String(64), nullable=False)
+    capability: Mapped[str] = mapped_column(String(64), nullable=False)
+    component_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    component_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    analyzer_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    contract_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    plan_entry_keys_json: Mapped[list] = mapped_column(JSON, nullable=False)
+    selected_paths_json: Mapped[list] = mapped_column(JSON, nullable=False)
+    scope_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    lifecycle_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    terminal_disposition: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    containment_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    state_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class SourceOrchestrationDependencyRow(Base):
+    __tablename__ = "source_orchestration_dependencies"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["node_id", "run_id"],
+            ["source_orchestration_nodes.node_id", "source_orchestration_nodes.run_id"],
+            name="fk_source_dependency_node",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["prerequisite_node_id", "run_id"],
+            ["source_orchestration_nodes.node_id", "source_orchestration_nodes.run_id"],
+            name="fk_source_dependency_prerequisite",
+            ondelete="CASCADE",
+        ),
+        CheckConstraint("node_id <> prerequisite_node_id", name="ck_source_dependency_not_self"),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_orchestrations.run_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    node_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    prerequisite_node_id: Mapped[str] = mapped_column(String(64), primary_key=True)
 
 
 def create_session_factory(settings: Settings):
