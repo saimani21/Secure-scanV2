@@ -246,6 +246,34 @@ posture, exploitability, reachability, external-module contents, Terraform
 plans, Helm, and Kustomize remain outside the claim. See the
 [Source v0.6 claim matrix](docs/source-v0.6-configuration-security.md).
 
+## Source unified evidence
+
+Source v0.7 S4 adds a typed, deterministic unified representation generated
+from validated Semgrep, Gitleaks, Syft, OSV, and Checkov native models. The
+report keeps findings, evidence, logical repository/package components,
+suppressions, gaps, and coverage outcomes separate. Finding and evidence IDs
+are authority-qualified and run-independent; a concrete occurrence is addressed
+by its Source run ID plus finding ID.
+
+Gitleaks duplicate structural observations retain explicit native multiplicity
+without changing stable finding identity. OSV supporting Syft evidence is
+validated as an exact package/projection/snapshot/binding producer-consumer
+chain, coverage identities are component/scope sensitive, and Semgrep retains
+safe sanitized-artifact metadata without artifact bytes or storage paths.
+
+The four finding categories are code security, secret exposure, dependency
+vulnerability, and configuration security. Package inventory remains package
+component/evidence data. Severity is optional and authority-qualified, OSV CVSS
+remains typed advisory evidence, and no confidence or global risk score is
+invented.
+
+S4 does not replace `ScanReport`, native scanner results, historical assessment,
+or API formats. It adds no scanner parsing or execution, cross-engine merging or
+correlation, lifecycle, persistence migration, or maturity change. Its offline
+controlled replay is bound to the frozen F1/F5D/S1/S2/S3 evidence digests and
+does not run scanners or access the network. See the
+[Source v0.7 unified-evidence contract](docs/source-v0.7-unified-evidence.md).
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI

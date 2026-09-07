@@ -108,7 +108,7 @@ egress sandbox is claimed. See `docs/source-v0.5-dependency-intelligence.md`.
 
 | Version | Capability | Status |
 |---|---|---|
-| S3 | Pinned Checkov source-native IaC/configuration security | IMPLEMENTED - PENDING APPROVAL |
+| S3 | Pinned Checkov source-native IaC/configuration security | COMPLETE |
 
 `CONFIGURATION_SECURITY = SCANNABLE`
 
@@ -136,6 +136,28 @@ SCA, images, Terraform plans, Helm, Kustomize, external modules, custom policies
 and Prisma Cloud operation remain outside S3. SecureScan configures local
 operation but does not claim an OS-level egress sandbox. See
 `docs/source-v0.6-configuration-security.md`.
+
+### Source Unified Evidence
+
+| Version | Capability | Status |
+|---|---|---|
+| S4 | Unified Source evidence representation | IMPLEMENTED - PENDING APPROVAL |
+
+Source v0.7 S4 adds a deterministic, typed projection over the already
+validated Semgrep, Gitleaks, Syft, OSV, and Checkov native models. It keeps
+findings, evidence, logical components, suppressions, gaps, and coverage
+outcomes distinct. Scanner-native identities remain authoritative and S4 IDs
+are authority-qualified and run-independent. Package inventory remains
+component/evidence data rather than a finding category.
+
+Gitleaks native duplicate multiplicity is preserved explicitly without changing
+stable finding identity. OSV-to-Syft support is package/projection/snapshot/
+binding validated, coverage identity includes component and selected scope, and
+Semgrep sanitized-artifact provenance is retained as safe metadata only.
+
+S4 does not replace legacy `ScanReport` or any scanner-native result. It does
+not add cross-engine merging, correlation, lifecycle, risk scoring, confidence,
+API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md`.
 
 ## Source Intelligence Foundation Freeze
 
