@@ -547,6 +547,10 @@ class SourceOrchestrationNodeRow(Base):
             name="ck_source_node_terminal_pair",
         ),
         CheckConstraint(
+            "lifecycle_state = 'TERMINAL' OR terminal_reason_code IS NULL",
+            name="ck_source_node_terminal_reason",
+        ),
+        CheckConstraint(
             "containment_state IN ('NOT_STARTED', 'ACTIVE', 'RECONCILIATION_REQUIRED', 'CLEAN')",
             name="ck_source_node_containment",
         ),
@@ -570,8 +574,72 @@ class SourceOrchestrationNodeRow(Base):
     scope_digest: Mapped[str] = mapped_column(String(64), nullable=False)
     lifecycle_state: Mapped[str] = mapped_column(String(32), nullable=False)
     terminal_disposition: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    terminal_reason_code: Mapped[str | None] = mapped_column(String(128), nullable=True)
     containment_state: Mapped[str] = mapped_column(String(32), nullable=False)
     state_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class SourceOrchestrationDependencyEvaluationRow(Base):
+    __tablename__ = "source_orchestration_dependency_evaluations"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["osv_node_id", "run_id"],
+            ["source_orchestration_nodes.node_id", "source_orchestration_nodes.run_id"],
+            name="fk_source_dependency_evaluation_osv_node",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["syft_node_id", "run_id"],
+            ["source_orchestration_nodes.node_id", "source_orchestration_nodes.run_id"],
+            name="fk_source_dependency_evaluation_syft_node",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["syft_job_id", "run_id", "syft_node_id"],
+            [
+                "source_orchestration_scanner_jobs.job_id",
+                "source_orchestration_scanner_jobs.run_id",
+                "source_orchestration_scanner_jobs.node_id",
+            ],
+            name="fk_source_dependency_evaluation_syft_job",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["syft_job_id", "syft_selected_attempt_number"],
+            [
+                "source_orchestration_attempts.job_id",
+                "source_orchestration_attempts.attempt_number",
+            ],
+            name="fk_source_dependency_evaluation_syft_attempt",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint(
+            "syft_selected_attempt_number >= 1",
+            name="ck_source_dependency_evaluation_attempt",
+        ),
+        CheckConstraint(
+            "evaluation_artifact_size_bytes >= 1",
+            name="ck_source_dependency_evaluation_size",
+        ),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_orchestrations.run_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    osv_node_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    syft_node_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    syft_job_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    syft_selected_attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    syft_native_result_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    scope_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    evaluation_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    evaluation_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    evaluation_artifact_media_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    evaluation_schema_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class SourceOrchestrationDependencyRow(Base):
@@ -623,6 +691,12 @@ class SourceOrchestrationScannerJobRow(Base):
             ondelete="CASCADE",
         ),
         UniqueConstraint("node_id", name="uq_source_scanner_job_node"),
+        UniqueConstraint(
+            "job_id",
+            "run_id",
+            "node_id",
+            name="uq_source_scanner_job_dependency_identity",
+        ),
         CheckConstraint(
             "selected_attempt_number IS NULL OR selected_attempt_number >= 1",
             name="ck_source_scanner_job_selected_attempt",

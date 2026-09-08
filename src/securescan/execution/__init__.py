@@ -1,3 +1,6 @@
+from importlib import import_module
+from typing import TYPE_CHECKING, Any
+
 from securescan.execution.cancellable_process import (
     CancellableProcessExecutor,
     CancellableProcessExecutorError,
@@ -27,11 +30,24 @@ from securescan.execution.docker_sandbox import (
     DockerUnavailableError,
     InvalidDockerSandboxRequestError,
 )
-from securescan.execution.supervisor import (
-    AttemptBoundProcessExecutor,
-    SupervisorAttemptIdentity,
-    TrustedLocalProcessSupervisor,
-)
+
+if TYPE_CHECKING:
+    from securescan.execution.supervisor import (
+        AttemptBoundProcessExecutor,
+        SupervisorAttemptIdentity,
+        TrustedLocalProcessSupervisor,
+    )
+
+
+def __getattr__(name: str) -> Any:
+    if name in {
+        "AttemptBoundProcessExecutor",
+        "SupervisorAttemptIdentity",
+        "TrustedLocalProcessSupervisor",
+    }:
+        supervisor = import_module("securescan.execution.supervisor")
+        return getattr(supervisor, name)
+    raise AttributeError(name)
 
 __all__ = [
     "CancellableProcessExecutor",

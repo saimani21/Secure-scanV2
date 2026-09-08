@@ -14,7 +14,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "7c91e2a4b6d8"
+HEAD_REVISION = "a8d4e6f2c1b7"
 
 APPLICATION_TABLES = {
     "projects",
@@ -28,6 +28,7 @@ APPLICATION_TABLES = {
     "source_orchestration_dependencies",
     "source_orchestration_scanner_jobs",
     "source_orchestration_attempts",
+    "source_orchestration_dependency_evaluations",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -50,13 +51,12 @@ EXPECTED_ORCHESTRATION_TABLES = {
     "source_orchestration_dependencies",
     "source_orchestration_scanner_jobs",
     "source_orchestration_attempts",
+    "source_orchestration_dependency_evaluations",
 }
 
 
 def _assert_lease_token_column(database_inspector) -> None:
-    columns = {
-        column["name"]: column for column in database_inspector.get_columns("jobs")
-    }
+    columns = {column["name"]: column for column in database_inspector.get_columns("jobs")}
     lease_token = columns["lease_token"]
     assert isinstance(lease_token["type"], String)
     assert lease_token["type"].length == 36
@@ -64,9 +64,7 @@ def _assert_lease_token_column(database_inspector) -> None:
 
 
 def _assert_cancellation_timestamp_column(database_inspector) -> None:
-    columns = {
-        column["name"]: column for column in database_inspector.get_columns("jobs")
-    }
+    columns = {column["name"]: column for column in database_inspector.get_columns("jobs")}
     cancel_requested_at = columns["cancel_requested_at"]
     assert isinstance(cancel_requested_at["type"], DateTime)
     assert cancel_requested_at["nullable"] is True
@@ -74,8 +72,7 @@ def _assert_cancellation_timestamp_column(database_inspector) -> None:
 
 def _assert_tool_execution_attempt_identity(database_inspector) -> None:
     columns = {
-        column["name"]: column
-        for column in database_inspector.get_columns("tool_executions")
+        column["name"]: column for column in database_inspector.get_columns("tool_executions")
     }
     assert {
         "id",
@@ -125,9 +122,7 @@ def _assert_tool_execution_attempt_identity(database_inspector) -> None:
         for constraint in database_inspector.get_unique_constraints("tool_executions")
     }
     assert "uq_tool_executions_job_attempt" in unique_constraints
-    indexes = {
-        index["name"] for index in database_inspector.get_indexes("tool_executions")
-    }
+    indexes = {index["name"] for index in database_inspector.get_indexes("tool_executions")}
     assert indexes >= {"ix_tool_executions_job_id", "ix_tool_executions_run_id"}
 
 
@@ -183,9 +178,7 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
     }
     scanner_job_columns = {
         column["name"]
-        for column in database_inspector.get_columns(
-            "source_orchestration_scanner_jobs"
-        )
+        for column in database_inspector.get_columns("source_orchestration_scanner_jobs")
     }
     assert {
         "job_id",
@@ -201,8 +194,7 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
         "selected_attempt_number",
     } <= scanner_job_columns
     attempt_columns = {
-        column["name"]
-        for column in database_inspector.get_columns("source_orchestration_attempts")
+        column["name"] for column in database_inspector.get_columns("source_orchestration_attempts")
     }
     assert {
         "job_id",
@@ -215,6 +207,57 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
         "native_result_sha256",
         "projection_revalidated",
     } <= attempt_columns
+    node_columns = {
+        column["name"]: column
+        for column in database_inspector.get_columns("source_orchestration_nodes")
+    }
+    assert "terminal_reason_code" in node_columns
+    assert isinstance(node_columns["terminal_reason_code"]["type"], String)
+    assert node_columns["terminal_reason_code"]["type"].length == 128
+    assert node_columns["terminal_reason_code"]["nullable"] is True
+    node_checks = {
+        item["name"]
+        for item in database_inspector.get_check_constraints("source_orchestration_nodes")
+    }
+    assert "ck_source_node_terminal_reason" in node_checks
+    evaluation_columns = {
+        column["name"]
+        for column in database_inspector.get_columns("source_orchestration_dependency_evaluations")
+    }
+    assert evaluation_columns == {
+        "run_id",
+        "osv_node_id",
+        "syft_node_id",
+        "syft_job_id",
+        "syft_selected_attempt_number",
+        "syft_native_result_sha256",
+        "scope_digest",
+        "evaluation_artifact_sha256",
+        "evaluation_artifact_size_bytes",
+        "evaluation_artifact_media_type",
+        "evaluation_schema_version",
+        "created_at",
+    }
+    assert database_inspector.get_pk_constraint("source_orchestration_dependency_evaluations")[
+        "constrained_columns"
+    ] == ["run_id", "osv_node_id"]
+    evaluation_foreign_keys = {
+        item["name"]
+        for item in database_inspector.get_foreign_keys(
+            "source_orchestration_dependency_evaluations"
+        )
+    }
+    assert evaluation_foreign_keys >= {
+        "fk_source_dependency_evaluation_osv_node",
+        "fk_source_dependency_evaluation_syft_node",
+        "fk_source_dependency_evaluation_syft_job",
+        "fk_source_dependency_evaluation_syft_attempt",
+    }
+    scanner_job_uniques = {
+        item["name"]
+        for item in database_inspector.get_unique_constraints("source_orchestration_scanner_jobs")
+    }
+    assert "uq_source_scanner_job_dependency_identity" in scanner_job_uniques
     assert "source_authority_results" not in database_inspector.get_table_names()
 
 

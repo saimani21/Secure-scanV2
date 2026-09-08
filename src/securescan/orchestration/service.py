@@ -282,6 +282,7 @@ class SourceOrchestrationService:
                             scope_digest=node.scope_digest,
                             lifecycle_state=node.initial_state.value,
                             terminal_disposition=None,
+                            terminal_reason_code=None,
                             containment_state=OrchestrationContainmentState.NOT_STARTED.value,
                             state_version=1,
                         )

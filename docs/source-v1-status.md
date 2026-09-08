@@ -165,6 +165,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 |---|---|---|
 | S6A | Durable multi-engine orchestration foundation | COMPLETE |
 | S6B | Scanner execution and safe native results | COMPLETE |
+| S6C-A | Syft-to-OSV dependency evaluation foundation | COMPLETE |
 
 S6A adds one durable Source orchestration per AnalysisRun, an exact server-owned
 five-authority roster, a canonical CAS planning snapshot, deterministic runnable
@@ -182,6 +183,14 @@ execution paths; injected envelopes alone are not presented as end-to-end eviden
 OSV dependency execution, global retry and cancellation policy, S4 assembly, and
 report publication remain outside S6B. See
 `docs/source-v0.8-s6b-scanner-execution.md`.
+
+S6C-A validates the exact accepted Syft attempt, reconstructs advisory scope only
+from the canonical S6A snapshot, classifies whole package observations without
+rewriting identity, and reuses the frozen S2 candidate builder. Its canonical
+dependency-evaluation artifact durably distinguishes runnable, not-applicable,
+and partial outcomes. It creates no OSV Job, performs no OSV request, and does
+not assemble or publish S4 evidence. See
+`docs/source-v0.8-s6ca-dependency-evaluation.md`.
 
 ## Source Intelligence Foundation Freeze
 

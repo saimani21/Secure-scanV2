@@ -296,6 +296,15 @@ cleanup/reconciliation proof. S6B excludes OSV scheduling and never assembles or
 writes the final Source report. See the
 [S6B scanner-execution contract](docs/source-v0.8-s6b-scanner-execution.md).
 
+S6C-A adds the dependency release decision between accepted Syft evidence and
+future OSV execution. It derives scope only from the frozen S6A snapshot,
+classifies complete package observations as in-scope, outside-scope, or mixed,
+and passes only unchanged in-scope observations to the frozen S2 candidate
+builder. It persists one canonical evaluation and may only release the OSV node
+to `READY` or terminalize it as not applicable/partial. S6C-A creates no OSV Job,
+does not access the network, and does not publish a report. See the
+[S6C-A dependency-evaluation contract](docs/source-v0.8-s6ca-dependency-evaluation.md).
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI
