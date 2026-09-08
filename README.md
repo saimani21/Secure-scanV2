@@ -287,6 +287,15 @@ ToolExecution, accepts no native result, and does not assemble or publish the S4
 report. Process containment and cleanup belong to S6B. See the
 [S6A durable orchestration contract](docs/source-v0.8-s6a-orchestration.md).
 
+The S6B implementation connects runnable local S6A nodes to durable scanner `Job`
+identities, retains attempt history, supervises local scanner process trees
+independently of worker liveness, and accepts only canonical safe native results
+after cleanup and projection revalidation. Frozen local bridges use an attempt-bound
+process supervisor; Semgrep uses an attempt-bound Docker identity and Docker-specific
+cleanup/reconciliation proof. S6B excludes OSV scheduling and never assembles or
+writes the final Source report. See the
+[S6B scanner-execution contract](docs/source-v0.8-s6b-scanner-execution.md).
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI

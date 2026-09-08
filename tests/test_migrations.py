@@ -14,7 +14,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "3a6f1c8e2d90"
+HEAD_REVISION = "7c91e2a4b6d8"
 
 APPLICATION_TABLES = {
     "projects",
@@ -26,6 +26,8 @@ APPLICATION_TABLES = {
     "source_orchestration_authorities",
     "source_orchestration_nodes",
     "source_orchestration_dependencies",
+    "source_orchestration_scanner_jobs",
+    "source_orchestration_attempts",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -46,6 +48,8 @@ EXPECTED_ORCHESTRATION_TABLES = {
     "source_orchestration_authorities",
     "source_orchestration_nodes",
     "source_orchestration_dependencies",
+    "source_orchestration_scanner_jobs",
+    "source_orchestration_attempts",
 }
 
 
@@ -177,7 +181,40 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
         "payload_json",
         "last_error",
     }
-    assert "source_orchestration_attempts" not in database_inspector.get_table_names()
+    scanner_job_columns = {
+        column["name"]
+        for column in database_inspector.get_columns(
+            "source_orchestration_scanner_jobs"
+        )
+    }
+    assert {
+        "job_id",
+        "run_id",
+        "node_id",
+        "authority",
+        "capability",
+        "analyzer_id",
+        "contract_digest",
+        "context_digest",
+        "projection_id",
+        "projection_digest",
+        "selected_attempt_number",
+    } <= scanner_job_columns
+    attempt_columns = {
+        column["name"]
+        for column in database_inspector.get_columns("source_orchestration_attempts")
+    }
+    assert {
+        "job_id",
+        "attempt_number",
+        "attempt_token",
+        "containment_state",
+        "acceptance_state",
+        "cleanup_receipt_sha256",
+        "tool_execution_id",
+        "native_result_sha256",
+        "projection_revalidated",
+    } <= attempt_columns
     assert "source_authority_results" not in database_inspector.get_table_names()
 
 

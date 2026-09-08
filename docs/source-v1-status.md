@@ -164,6 +164,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | Version | Capability | Status |
 |---|---|---|
 | S6A | Durable multi-engine orchestration foundation | COMPLETE |
+| S6B | Scanner execution and safe native results | COMPLETE |
 
 S6A adds one durable Source orchestration per AnalysisRun, an exact server-owned
 five-authority roster, a canonical CAS planning snapshot, deterministic runnable
@@ -171,6 +172,16 @@ nodes, the Syft-to-OSV dependency edge, parent/node state vocabularies, monotoni
 cancellation versioning, deadline representation, and restart reconstruction.
 It creates no scanner jobs or executions and publishes no report. See
 `docs/source-v0.8-s6a-orchestration.md`.
+
+S6B adds one durable Job per runnable local node, attempt-bound worker/lease and
+containment evidence, worker-independent local process supervision, deterministic
+Semgrep Docker cleanup/reconciliation proof, guarded safe-native-result acceptance,
+and reconciliation that prevents generic lease recovery from retrying unproven
+execution state. Controlled production-bridge tests cover the local and Docker
+execution paths; injected envelopes alone are not presented as end-to-end evidence.
+OSV dependency execution, global retry and cancellation policy, S4 assembly, and
+report publication remain outside S6B. See
+`docs/source-v0.8-s6b-scanner-execution.md`.
 
 ## Source Intelligence Foundation Freeze
 

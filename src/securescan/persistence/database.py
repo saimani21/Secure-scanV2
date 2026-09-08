@@ -17,6 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
     create_engine,
     event,
+    text,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
@@ -599,6 +600,146 @@ class SourceOrchestrationDependencyRow(Base):
     )
     node_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     prerequisite_node_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+
+
+class SourceOrchestrationScannerJobRow(Base):
+    __tablename__ = "source_orchestration_scanner_jobs"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["node_id", "run_id"],
+            ["source_orchestration_nodes.node_id", "source_orchestration_nodes.run_id"],
+            name="fk_source_scanner_job_node_run",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["run_id", "authority", "capability"],
+            [
+                "source_orchestration_authorities.run_id",
+                "source_orchestration_authorities.authority",
+                "source_orchestration_authorities.capability",
+            ],
+            name="fk_source_scanner_job_authority",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint("node_id", name="uq_source_scanner_job_node"),
+        CheckConstraint(
+            "selected_attempt_number IS NULL OR selected_attempt_number >= 1",
+            name="ck_source_scanner_job_selected_attempt",
+        ),
+    )
+
+    job_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("jobs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    node_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority: Mapped[str] = mapped_column(String(64), nullable=False)
+    capability: Mapped[str] = mapped_column(String(64), nullable=False)
+    analyzer_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    contract_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    context_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    context_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    context_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    context_artifact_storage_path: Mapped[str] = mapped_column(Text, nullable=False)
+    projection_id: Mapped[str] = mapped_column(String(96), nullable=False)
+    projection_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    selected_attempt_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourceOrchestrationAttemptRow(Base):
+    __tablename__ = "source_orchestration_attempts"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["node_id", "run_id"],
+            ["source_orchestration_nodes.node_id", "source_orchestration_nodes.run_id"],
+            name="fk_source_attempt_node_run",
+            ondelete="CASCADE",
+        ),
+        CheckConstraint("attempt_number >= 1", name="ck_source_attempt_number"),
+        CheckConstraint(
+            "containment_state IN ('ACTIVE', 'RECONCILIATION_REQUIRED', 'CLEAN')",
+            name="ck_source_attempt_containment",
+        ),
+        CheckConstraint(
+            "acceptance_state IN ('PENDING', 'ACCEPTED', 'REJECTED')",
+            name="ck_source_attempt_acceptance",
+        ),
+        CheckConstraint(
+            "(acceptance_state = 'ACCEPTED') = (native_result_sha256 IS NOT NULL)",
+            name="ck_source_attempt_accepted_result",
+        ),
+        CheckConstraint(
+            "(native_result_sha256 IS NULL AND native_result_size_bytes IS NULL "
+            "AND native_result_media_type IS NULL AND native_result_schema_version IS NULL "
+            "AND native_result_storage_path IS NULL AND accepted_at IS NULL) OR "
+            "(native_result_sha256 IS NOT NULL AND native_result_size_bytes IS NOT NULL "
+            "AND native_result_media_type IS NOT NULL "
+            "AND native_result_schema_version IS NOT NULL "
+            "AND native_result_storage_path IS NOT NULL AND accepted_at IS NOT NULL)",
+            name="ck_source_attempt_result_reference",
+        ),
+        CheckConstraint(
+            "acceptance_state <> 'ACCEPTED' OR "
+            "(containment_state = 'CLEAN' AND projection_revalidated = true "
+            "AND tool_execution_id IS NOT NULL)",
+            name="ck_source_attempt_acceptance_proof",
+        ),
+        CheckConstraint(
+            "cleanup_receipt_sha256 IS NULL OR cleanup_receipt_json IS NOT NULL",
+            name="ck_source_attempt_receipt_pair",
+        ),
+        UniqueConstraint("attempt_token", name="uq_source_attempt_token"),
+        UniqueConstraint("tool_execution_id", name="uq_source_attempt_tool_execution"),
+        Index(
+            "uq_source_attempt_selected_node",
+            "node_id",
+            unique=True,
+            sqlite_where=text("acceptance_state = 'ACCEPTED'"),
+            postgresql_where=text("acceptance_state = 'ACCEPTED'"),
+        ),
+    )
+
+    job_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_orchestration_scanner_jobs.job_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    node_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    attempt_token: Mapped[str] = mapped_column(String(36), nullable=False)
+    worker_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    lease_token: Mapped[str] = mapped_column(String(36), nullable=False)
+    containment_state: Mapped[str] = mapped_column(String(32), nullable=False)
+    acceptance_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    supervisor_identity: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    supervisor_pid: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    supervisor_start_ticks: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    scanner_pid: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    scanner_pgid: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    scanner_start_ticks: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cleanup_receipt_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    cleanup_receipt_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    tool_execution_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tool_executions.id", ondelete="RESTRICT"), nullable=True
+    )
+    native_result_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    native_result_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    native_result_media_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    native_result_schema_version: Mapped[str | None] = mapped_column(
+        String(128), nullable=True
+    )
+    native_result_storage_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    projection_revalidated: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    failure_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 def create_session_factory(settings: Settings):

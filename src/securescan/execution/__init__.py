@@ -27,6 +27,11 @@ from securescan.execution.docker_sandbox import (
     DockerUnavailableError,
     InvalidDockerSandboxRequestError,
 )
+from securescan.execution.supervisor import (
+    AttemptBoundProcessExecutor,
+    SupervisorAttemptIdentity,
+    TrustedLocalProcessSupervisor,
+)
 
 __all__ = [
     "CancellableProcessExecutor",
@@ -54,4 +59,7 @@ __all__ = [
     "DockerSandboxTimeoutError",
     "DockerUnavailableError",
     "InvalidDockerSandboxRequestError",
+    "AttemptBoundProcessExecutor",
+    "SupervisorAttemptIdentity",
+    "TrustedLocalProcessSupervisor",
 ]

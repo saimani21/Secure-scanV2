@@ -19,7 +19,11 @@ from securescan.jobs.leasing import UnsupportedQueueDatabaseError
 from securescan.jobs.mappers import job_record_from_row
 from securescan.jobs.models import JobRecord
 from securescan.jobs.result_commit import AnalysisRunNotFoundError
-from securescan.persistence.database import JobRow, utc_now
+from securescan.persistence.database import (
+    JobRow,
+    SourceOrchestrationScannerJobRow,
+    utc_now,
+)
 from securescan.runs.aggregation import recompute_analysis_run_status
 
 _LEASE_EXPIRY_ERRORS = {
@@ -104,6 +108,11 @@ class JobLeaseRecoveryService:
                             JobRow.lease_expires_at.is_not(None),
                             JobRow.lease_expires_at <= operation_timestamp,
                             JobRow.cancel_requested.is_(False),
+                            ~select(SourceOrchestrationScannerJobRow.job_id)
+                            .where(
+                                SourceOrchestrationScannerJobRow.job_id == JobRow.id
+                            )
+                            .exists(),
                         )
                         .order_by(
                             JobRow.lease_expires_at.asc(),
