@@ -119,3 +119,40 @@ The priority vocabulary includes `CRITICAL` for cross-authority consistency.
 Frozen S4 Semgrep normalization currently emits only `HIGH`, `MEDIUM`, `LOW`,
 or `INFORMATIONAL`, so the Semgrep-to-`CRITICAL` branch is reserved and is not
 reachable from the current frozen Semgrep contract.
+
+## PC3A: durable submission intent and trusted asynchronous intake
+
+PC3A reserves Product Core lineage order when a scan is submitted, rather than
+when it happens to publish. Each durable submission binds one AnalysisRun to an
+explicit PC1 lineage, an allocated sequence, its exact predecessor, and an
+opaque managed-workspace reference. Allocation locks the lineage and considers
+both pending submissions and already-finalized PC1 memberships. Completion
+timestamps and publication order never select lifecycle order.
+
+The intake reference is the existing opaque
+`securescan-workspace-<random-hex>` identity. It is not the caller's repository
+path and cannot select an alternate workspace root. The manager resolves it
+only as a direct child of its configured server-owned root and verifies the
+ownership marker and directory shape. The Product Core resolver reconstructs
+the expected manifest from the frozen orchestration planning snapshot and
+verifies the immutable files before returning the workspace to asynchronous
+coordination. Managed workspaces persist until explicit, ownership-checked
+cleanup, so process exit does not invalidate this handoff.
+
+Finalization is restart-safe and ordered: it requires authoritative S6D
+publication and a finalized predecessor, invokes PC1 attachment with the
+reserved predecessor, requires the resulting PC1 sequence to equal the
+reserved submission sequence, indexes the S4 findings, runs PC2 lifecycle
+evaluation, and only then records `finalized_at`. Each lower layer is already
+idempotent, so a retry after interruption converges. If a later submission
+publishes first, it remains not ready until its reserved predecessor has
+completed Product Core finalization; it cannot become lineage sequence one.
+
+PC3A adds no public API or CLI and changes no scanner, orchestration, S4,
+lifecycle, or priority semantics. Those product interfaces remain PC3 scope.
+
+Source v1 does not automatically skip a submission whose predecessor never
+publishes. A permanently cancelled or otherwise unpublishable predecessor
+therefore blocks later submissions in that lineage; continuing requires an
+explicit new lineage. PC3 must expose this blocked state rather than presenting
+later submissions as clean or silently rewriting their reserved order.

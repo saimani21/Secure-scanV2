@@ -14,7 +14,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "d5e9f2a3b014"
+HEAD_REVISION = "e6a1c4f9b207"
 
 APPLICATION_TABLES = {
     "projects",
@@ -35,6 +35,7 @@ APPLICATION_TABLES = {
     "source_finding_occurrences",
     "source_finding_lifecycles",
     "source_finding_lifecycle_events",
+    "source_scan_submissions",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -67,7 +68,42 @@ def _assert_source_product_core_schema(database_inspector) -> None:
         "source_target_lineages",
         "source_lineage_runs",
         "source_finding_occurrences",
+        "source_scan_submissions",
     } <= set(database_inspector.get_table_names())
+    assert {
+        column["name"]
+        for column in database_inspector.get_columns("source_scan_submissions")
+    } == {
+        "run_id",
+        "lineage_id",
+        "submission_sequence_number",
+        "predecessor_run_id",
+        "predecessor_sequence_number",
+        "intake_kind",
+        "intake_ref",
+        "created_at",
+        "finalized_at",
+    }
+    assert database_inspector.get_pk_constraint("source_scan_submissions")[
+        "constrained_columns"
+    ] == ["run_id"]
+    assert {
+        item["name"]
+        for item in database_inspector.get_unique_constraints(
+            "source_scan_submissions"
+        )
+    } == {"uq_source_scan_submissions_sequence"}
+    assert {
+        item["name"]
+        for item in database_inspector.get_check_constraints(
+            "source_scan_submissions"
+        )
+    } == {
+        "ck_source_scan_submissions_intake_kind",
+        "ck_source_scan_submissions_intake_ref",
+        "ck_source_scan_submissions_predecessor_pair",
+        "ck_source_scan_submissions_sequence_positive",
+    }
     assert {
         column["name"]
         for column in database_inspector.get_columns("source_target_lineages")

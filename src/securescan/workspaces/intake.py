@@ -646,6 +646,36 @@ class RepositoryWorkspaceManager:
                     raise cleanup_error from exc
             raise RepositoryWorkspaceCreationError from exc
 
+    def resolve_workspace(
+        self,
+        workspace_id: str,
+        manifest: RepositoryManifest,
+    ) -> PreparedRepositoryWorkspace:
+        """Resolve an opaque owned workspace without accepting a caller path."""
+
+        try:
+            base_metadata = self._base_directory.stat(follow_symlinks=False)
+            if (
+                self._base_directory.is_symlink()
+                or not stat.S_ISDIR(base_metadata.st_mode)
+                or (base_metadata.st_dev, base_metadata.st_ino) != self._base_identity
+            ):
+                raise ForeignWorkspaceError
+            workspace = PreparedRepositoryWorkspace(
+                workspace_id=workspace_id,
+                root_directory=self._base_directory / workspace_id,
+                source_directory=self._base_directory / workspace_id / "source",
+                output_directory=self._base_directory / workspace_id / "output",
+                manifest=manifest,
+            )
+            if self._validate_cleanup_ownership(workspace) is None:
+                raise ForeignWorkspaceError
+            return workspace
+        except RepositoryWorkspaceError:
+            raise
+        except (OSError, TypeError, ValueError):
+            raise ForeignWorkspaceError from None
+
     def _validate_cleanup_ownership(
         self,
         workspace: object,

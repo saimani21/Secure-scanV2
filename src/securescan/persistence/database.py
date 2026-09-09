@@ -522,6 +522,69 @@ class SourceTargetLineageRow(Base):
     )
 
 
+class SourceScanSubmissionRow(Base):
+    __tablename__ = "source_scan_submissions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "submission_sequence_number >= 1",
+            name="ck_source_scan_submissions_sequence_positive",
+        ),
+        CheckConstraint(
+            "(submission_sequence_number = 1 AND predecessor_run_id IS NULL "
+            "AND predecessor_sequence_number IS NULL) OR "
+            "(submission_sequence_number > 1 AND predecessor_run_id IS NOT NULL "
+            "AND predecessor_sequence_number IS NOT NULL "
+            "AND predecessor_sequence_number = submission_sequence_number - 1)",
+            name="ck_source_scan_submissions_predecessor_pair",
+        ),
+        CheckConstraint(
+            "intake_kind = 'MANAGED_WORKSPACE_V1'",
+            name="ck_source_scan_submissions_intake_kind",
+        ),
+        CheckConstraint(
+            "intake_ref LIKE 'securescan-workspace-%'",
+            name="ck_source_scan_submissions_intake_ref",
+        ),
+        UniqueConstraint(
+            "lineage_id",
+            "submission_sequence_number",
+            name="uq_source_scan_submissions_sequence",
+        ),
+        Index(
+            "ix_source_scan_submissions_lineage",
+            "lineage_id",
+            "submission_sequence_number",
+        ),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_target_lineages.lineage_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    submission_sequence_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    predecessor_run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("analysis_runs.id", ondelete="RESTRICT"), nullable=True
+    )
+    predecessor_sequence_number: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
+    intake_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    intake_ref: Mapped[str] = mapped_column(String(69), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    finalized_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
 class SourceLineageRunRow(Base):
     __tablename__ = "source_lineage_runs"
 
