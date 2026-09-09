@@ -170,6 +170,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | S6C-C | Durable dependency and lifecycle coordination | COMPLETE |
 | S6D | Deterministic S4 assembly and exactly-once publication | COMPLETE |
 | PC1 | Logical Source lineage and atomic S4 finding occurrence index | COMPLETE |
+| PC2 | Comparable-scope finding lifecycle and deterministic priority | COMPLETE |
 
 S6A adds one durable Source orchestration per AnalysisRun, an exact server-owned
 five-authority roster, a canonical CAS planning snapshot, deterministic runnable
@@ -206,9 +207,10 @@ and does not begin prioritization or finding lifecycle work. See
 `docs/source-v0.9-engine-closure.md`.
 
 PC1 adds an explicit server-owned logical Source lineage and a compact,
-transactional occurrence index over published S4 findings. S4 remains the
-authority; lifecycle, prioritization, API, and CLI are not part of PC1. See
-`docs/source-v0.10-product-core.md`.
+transactional occurrence index over published S4 findings. PC2 adds exact-ID
+lifecycle only when authority-specific comparable-scope proof succeeds, plus
+explicit deterministic triage bands. S4 remains authoritative; API and CLI are
+not part of PC1 or PC2. See `docs/source-v0.10-product-core.md`.
 
 ## Source Intelligence Foundation Freeze
 

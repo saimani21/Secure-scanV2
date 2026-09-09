@@ -559,6 +559,24 @@ class SourceLineageRunRow(Base):
             "report_schema_version = 'securescan-unified-evidence-s4-v1'",
             name="ck_source_lineage_runs_report_schema",
         ),
+        CheckConstraint(
+            "(lifecycle_evaluated_at IS NULL AND lifecycle_evaluation_sha256 IS NULL "
+            "AND lifecycle_event_count IS NULL) OR "
+            "(lifecycle_evaluated_at IS NOT NULL "
+            "AND lifecycle_evaluation_sha256 IS NOT NULL "
+            "AND lifecycle_event_count IS NOT NULL)",
+            name="ck_source_lineage_runs_lifecycle_marker",
+        ),
+        CheckConstraint(
+            "lifecycle_event_count IS NULL OR lifecycle_event_count >= 0",
+            name="ck_source_lineage_runs_lifecycle_event_count",
+        ),
+        CheckConstraint(
+            "lifecycle_evaluation_sha256 IS NULL OR "
+            "(length(lifecycle_evaluation_sha256) = 64 "
+            "AND lifecycle_evaluation_sha256 = lower(lifecycle_evaluation_sha256))",
+            name="ck_source_lineage_runs_lifecycle_sha",
+        ),
         UniqueConstraint(
             "lineage_id",
             "sequence_number",
@@ -615,6 +633,13 @@ class SourceLineageRunRow(Base):
     indexed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    lifecycle_evaluated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    lifecycle_evaluation_sha256: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+    lifecycle_event_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
     )
@@ -652,6 +677,13 @@ class SourceFindingOccurrenceRow(Base):
             "('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'UNKNOWN')))",
             name="ck_source_finding_occurrences_s4_kind",
         ),
+        CheckConstraint(
+            "(priority_band IS NULL AND priority_reason_codes_json IS NULL) OR "
+            "(priority_band IN "
+            "('CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO', 'UNRANKED') "
+            "AND priority_reason_codes_json IS NOT NULL)",
+            name="ck_source_finding_occurrences_priority_pair",
+        ),
         ForeignKeyConstraint(
             ["lineage_id", "run_id", "report_artifact_sha256"],
             [
@@ -688,6 +720,133 @@ class SourceFindingOccurrenceRow(Base):
     report_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     finding_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
     indexed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    priority_band: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    priority_reason_codes_json: Mapped[list | None] = mapped_column(JSON, nullable=True)
+
+
+class SourceFindingLifecycleRow(Base):
+    __tablename__ = "source_finding_lifecycles"
+
+    __table_args__ = (
+        CheckConstraint(
+            "current_state IN ('NEW', 'EXISTING', 'RESOLVED', 'REOPENED')",
+            name="ck_source_finding_lifecycles_state",
+        ),
+        CheckConstraint(
+            "transition_version >= 1",
+            name="ck_source_finding_lifecycles_version",
+        ),
+        CheckConstraint(
+            "(current_state = 'RESOLVED') = "
+            "(resolved_run_id IS NOT NULL AND resolved_at IS NOT NULL)",
+            name="ck_source_finding_lifecycles_resolved_pair",
+        ),
+        CheckConstraint(
+            "first_seen_at <= last_seen_at",
+            name="ck_source_finding_lifecycles_seen_order",
+        ),
+        CheckConstraint(
+            "resolved_at IS NULL OR last_seen_at <= resolved_at",
+            name="ck_source_finding_lifecycles_resolved_order",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "first_seen_run_id"],
+            ["source_lineage_runs.lineage_id", "source_lineage_runs.run_id"],
+            name="fk_source_finding_lifecycles_first_run",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "last_seen_run_id"],
+            ["source_lineage_runs.lineage_id", "source_lineage_runs.run_id"],
+            name="fk_source_finding_lifecycles_last_run",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "resolved_run_id"],
+            ["source_lineage_runs.lineage_id", "source_lineage_runs.run_id"],
+            name="fk_source_finding_lifecycles_resolved_run",
+            ondelete="RESTRICT",
+        ),
+        Index(
+            "ix_source_finding_lifecycles_lineage_state",
+            "lineage_id",
+            "current_state",
+        ),
+    )
+
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_target_lineages.lineage_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    finding_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    category: Mapped[str] = mapped_column(String(64), nullable=False)
+    native_identity_schema: Mapped[str] = mapped_column(String(512), nullable=False)
+    current_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    first_seen_run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    last_seen_run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    resolved_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    transition_version: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class SourceFindingLifecycleEventRow(Base):
+    __tablename__ = "source_finding_lifecycle_events"
+
+    __table_args__ = (
+        CheckConstraint(
+            "event_kind IN ('TRANSITION', 'RESOLUTION_WITHHELD')",
+            name="ck_source_finding_lifecycle_events_kind",
+        ),
+        CheckConstraint(
+            "previous_state IS NULL OR previous_state IN "
+            "('NEW', 'EXISTING', 'RESOLVED', 'REOPENED')",
+            name="ck_source_finding_lifecycle_events_previous_state",
+        ),
+        CheckConstraint(
+            "resulting_state IN ('NEW', 'EXISTING', 'RESOLVED', 'REOPENED')",
+            name="ck_source_finding_lifecycle_events_resulting_state",
+        ),
+        CheckConstraint(
+            "transition_version >= 1",
+            name="ck_source_finding_lifecycle_events_version",
+        ),
+        CheckConstraint(
+            "event_kind = 'TRANSITION' OR "
+            "(previous_state IS NOT NULL AND previous_state = resulting_state)",
+            name="ck_source_finding_lifecycle_events_withheld_state",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "run_id"],
+            ["source_lineage_runs.lineage_id", "source_lineage_runs.run_id"],
+            name="fk_source_finding_lifecycle_events_run",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "finding_id"],
+            ["source_finding_lifecycles.lineage_id", "source_finding_lifecycles.finding_id"],
+            name="fk_source_finding_lifecycle_events_finding",
+            ondelete="CASCADE",
+        ),
+        Index(
+            "ix_source_finding_lifecycle_events_lineage_run",
+            "lineage_id",
+            "run_id",
+        ),
+    )
+
+    run_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    finding_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    lineage_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    event_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    previous_state: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    resulting_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    reason_codes_json: Mapped[list] = mapped_column(JSON, nullable=False)
+    transition_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class SourceOrchestrationAuthorityRow(Base):

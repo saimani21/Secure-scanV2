@@ -76,6 +76,9 @@ class SourceLineageRun:
     report_schema_version: str
     indexing_state: str
     indexed_at: datetime | None
+    lifecycle_evaluated_at: datetime | None
+    lifecycle_evaluation_sha256: str | None
+    lifecycle_event_count: int | None
     created_at: datetime
     created: bool
 
@@ -95,6 +98,8 @@ class SourceFindingOccurrence:
     report_artifact_sha256: str
     finding_ordinal: int
     indexed_at: datetime
+    priority_band: str | None
+    priority_reason_codes: tuple[str, ...] | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -561,6 +566,13 @@ class SourceFindingIndexService:
                 if row.indexed_at is None
                 else SourceFindingIndexService._as_utc(row.indexed_at)
             ),
+            lifecycle_evaluated_at=(
+                None
+                if row.lifecycle_evaluated_at is None
+                else SourceFindingIndexService._as_utc(row.lifecycle_evaluated_at)
+            ),
+            lifecycle_evaluation_sha256=row.lifecycle_evaluation_sha256,
+            lifecycle_event_count=row.lifecycle_event_count,
             created_at=SourceFindingIndexService._as_utc(row.created_at),
             created=created,
         )
@@ -585,6 +597,12 @@ class SourceFindingIndexService:
             report_artifact_sha256=row.report_artifact_sha256,
             finding_ordinal=row.finding_ordinal,
             indexed_at=SourceFindingIndexService._as_utc(row.indexed_at),
+            priority_band=row.priority_band,
+            priority_reason_codes=(
+                None
+                if row.priority_reason_codes_json is None
+                else tuple(row.priority_reason_codes_json)
+            ),
         )
 
     @staticmethod

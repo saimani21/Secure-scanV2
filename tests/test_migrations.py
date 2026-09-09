@@ -14,7 +14,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "c4d8e1f2a903"
+HEAD_REVISION = "d5e9f2a3b014"
 
 APPLICATION_TABLES = {
     "projects",
@@ -33,6 +33,8 @@ APPLICATION_TABLES = {
     "source_target_lineages",
     "source_lineage_runs",
     "source_finding_occurrences",
+    "source_finding_lifecycles",
+    "source_finding_lifecycle_events",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -60,7 +62,7 @@ EXPECTED_ORCHESTRATION_TABLES = {
 }
 
 
-def _assert_source_product_core_pc1_schema(database_inspector) -> None:
+def _assert_source_product_core_schema(database_inspector) -> None:
     assert {
         "source_target_lineages",
         "source_lineage_runs",
@@ -84,6 +86,9 @@ def _assert_source_product_core_pc1_schema(database_inspector) -> None:
         "report_schema_version",
         "indexing_state",
         "indexed_at",
+        "lifecycle_evaluated_at",
+        "lifecycle_evaluation_sha256",
+        "lifecycle_event_count",
         "created_at",
     }
     assert {
@@ -103,6 +108,8 @@ def _assert_source_product_core_pc1_schema(database_inspector) -> None:
         "report_artifact_sha256",
         "finding_ordinal",
         "indexed_at",
+        "priority_band",
+        "priority_reason_codes_json",
     }
     assert database_inspector.get_pk_constraint("source_finding_occurrences")[
         "constrained_columns"
@@ -122,6 +129,40 @@ def _assert_source_product_core_pc1_schema(database_inspector) -> None:
         for item in database_inspector.get_foreign_keys("source_finding_occurrences")
     }
     assert "fk_source_finding_occurrences_report_membership" in occurrence_foreign_keys
+    assert {
+        column["name"]
+        for column in database_inspector.get_columns("source_finding_lifecycles")
+    } == {
+        "lineage_id",
+        "finding_id",
+        "authority",
+        "category",
+        "native_identity_schema",
+        "current_state",
+        "first_seen_run_id",
+        "last_seen_run_id",
+        "resolved_run_id",
+        "first_seen_at",
+        "last_seen_at",
+        "resolved_at",
+        "transition_version",
+    }
+    assert {
+        column["name"]
+        for column in database_inspector.get_columns(
+            "source_finding_lifecycle_events"
+        )
+    } == {
+        "run_id",
+        "finding_id",
+        "lineage_id",
+        "event_kind",
+        "previous_state",
+        "resulting_state",
+        "reason_codes_json",
+        "transition_version",
+        "created_at",
+    }
 
 
 def _assert_lease_token_column(database_inspector) -> None:
@@ -380,7 +421,7 @@ def test_initial_migration_upgrade_creates_expected_schema(
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
         _assert_source_orchestration_schema(inspector)
-        _assert_source_product_core_pc1_schema(inspector)
+        _assert_source_product_core_schema(inspector)
 
         job_check_constraints = {
             constraint["name"] for constraint in inspector.get_check_constraints("jobs")
@@ -421,7 +462,7 @@ def test_initial_migration_downgrade_and_reupgrade_round_trip(
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
         _assert_source_orchestration_schema(inspector)
-        _assert_source_product_core_pc1_schema(inspector)
+        _assert_source_product_core_schema(inspector)
         command.check(config)
 
         command.downgrade(config, "base")
@@ -436,7 +477,7 @@ def test_initial_migration_downgrade_and_reupgrade_round_trip(
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
         _assert_source_orchestration_schema(inspector)
-        _assert_source_product_core_pc1_schema(inspector)
+        _assert_source_product_core_schema(inspector)
         command.check(config)
 
         with engine.connect() as connection:

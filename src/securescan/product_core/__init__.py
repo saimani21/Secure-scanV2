@@ -7,6 +7,18 @@ from .finding_index import (
     SourceLineage,
     SourceLineageRun,
 )
+from .lifecycle import (
+    FindingLifecycle,
+    FindingLifecycleEvent,
+    FindingLifecycleState,
+    FindingPriority,
+    LifecycleEvaluationResult,
+    LifecycleEventKind,
+    PriorityBand,
+    PriorityReasonCode,
+    ProductCoreLifecycleError,
+    SourceFindingLifecycleService,
+)
 
 __all__ = [
     "ProductCoreIndexError",
@@ -14,4 +26,14 @@ __all__ = [
     "SourceFindingOccurrence",
     "SourceLineage",
     "SourceLineageRun",
+    "FindingLifecycle",
+    "FindingLifecycleEvent",
+    "FindingLifecycleState",
+    "FindingPriority",
+    "LifecycleEvaluationResult",
+    "LifecycleEventKind",
+    "PriorityBand",
+    "PriorityReasonCode",
+    "ProductCoreLifecycleError",
+    "SourceFindingLifecycleService",
 ]
