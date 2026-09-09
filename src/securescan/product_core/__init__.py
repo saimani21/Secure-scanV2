@@ -1,5 +1,14 @@
 """Thin Product Core indexes over authoritative SecureScan evidence."""
 
+from .finalization import (
+    DEFAULT_FINALIZATION_LIMIT,
+    MAX_FINALIZATION_LIMIT,
+    ProductFinalizationBatchResult,
+    ProductFinalizationOutcome,
+    ProductFinalizationRunnerError,
+    ProductFinalizationRunResult,
+    SourceProductFinalizationRunner,
+)
 from .finding_index import (
     ProductCoreIndexError,
     SourceFindingIndexService,
@@ -19,6 +28,28 @@ from .lifecycle import (
     ProductCoreLifecycleError,
     SourceFindingLifecycleService,
 )
+from .query import (
+    DEFAULT_QUERY_LIMIT,
+    MAX_QUERY_LIMIT,
+    InvalidScanFilterError,
+    InvalidScanPaginationError,
+    ProductCoreNotReadyError,
+    ScanNotFoundError,
+    ScanNotPublishedError,
+    SourceComponentSummary,
+    SourceCoverageSummary,
+    SourceDependencySummary,
+    SourceFindingSummary,
+    SourceGapSummary,
+    SourceProductStatus,
+    SourcePublishedReport,
+    SourceScanPage,
+    SourceScanQueryError,
+    SourceScanQueryErrorCode,
+    SourceScanQueryPersistenceError,
+    SourceScanQueryService,
+    SourceScanSummary,
+)
 from .submission import (
     ProductCoreFinalizationNotReadyError,
     ProductCoreSubmissionError,
@@ -29,6 +60,13 @@ from .submission import (
 )
 
 __all__ = [
+    "DEFAULT_FINALIZATION_LIMIT",
+    "MAX_FINALIZATION_LIMIT",
+    "ProductFinalizationBatchResult",
+    "ProductFinalizationOutcome",
+    "ProductFinalizationRunResult",
+    "ProductFinalizationRunnerError",
+    "SourceProductFinalizationRunner",
     "ProductCoreIndexError",
     "SourceFindingIndexService",
     "SourceFindingOccurrence",
@@ -50,4 +88,24 @@ __all__ = [
     "SourcePreparedScanRequest",
     "SourceScanSubmission",
     "SourceScanSubmissionService",
+    "DEFAULT_QUERY_LIMIT",
+    "MAX_QUERY_LIMIT",
+    "InvalidScanFilterError",
+    "InvalidScanPaginationError",
+    "ProductCoreNotReadyError",
+    "ScanNotFoundError",
+    "ScanNotPublishedError",
+    "SourceComponentSummary",
+    "SourceCoverageSummary",
+    "SourceDependencySummary",
+    "SourceFindingSummary",
+    "SourceGapSummary",
+    "SourceProductStatus",
+    "SourcePublishedReport",
+    "SourceScanPage",
+    "SourceScanQueryError",
+    "SourceScanQueryErrorCode",
+    "SourceScanQueryPersistenceError",
+    "SourceScanQueryService",
+    "SourceScanSummary",
 ]

@@ -172,6 +172,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | PC1 | Logical Source lineage and atomic S4 finding occurrence index | COMPLETE |
 | PC2 | Comparable-scope finding lifecycle and deterministic priority | COMPLETE |
 | PC3A | Durable Source submission intent and trusted intake | COMPLETE |
+| PC3B | Product finalization runner and Source read model | COMPLETE |
 
 S6A adds one durable Source orchestration per AnalysisRun, an exact server-owned
 five-authority roster, a canonical CAS planning snapshot, deterministic runnable

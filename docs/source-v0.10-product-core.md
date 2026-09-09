@@ -156,3 +156,51 @@ publishes. A permanently cancelled or otherwise unpublishable predecessor
 therefore blocks later submissions in that lineage; continuing requires an
 explicit new lineage. PC3 must expose this blocked state rather than presenting
 later submissions as clean or silently rewriting their reserved order.
+
+## PC3B: bounded finalization runner and reusable Source read model
+
+PC3B provides an explicit application-layer finalization runner. Each bounded
+pass selects at most 50 submissions by default (200 maximum) whose authoritative
+S6D publication exists and whose PC3A `finalized_at` is still null. Candidates
+whose exact predecessor has completed Product Core are considered before
+blocked candidates; each readiness tier is then ordered only by `lineage_id`
+and reserved `submission_sequence_number`. This prevents a blocked lineage from
+monopolizing a bounded window without assigning any cross-lineage lifecycle
+meaning. The runner calls `SourceScanSubmissionService.finalize()` as the final
+readiness authority and relies on PC3A's existing idempotent PC1/PC2 guarantees.
+A blocked successor remains `NOT_READY`; the runner never skips or rewrites its
+predecessor. Per-run failure is isolated and does not alter the already-published
+S4 result.
+
+There is no suitable post-publication application hook outside the frozen
+orchestration implementation today. PC3B therefore exposes the runner as an
+explicit service for a later deployment scheduler. It does not add a daemon or
+change S6D. Automatic bounded invocation remains a Product Core deployment
+integration requirement.
+
+`SourceScanQueryService` is the single read-only application boundary intended
+for both the later HTTP API and CLI. GET-style reads never invoke finalization,
+attach lineage membership, index findings, evaluate lifecycle, or mutate Source
+orchestration. Published report-derived views use PC1's strict read-only S4
+boundary: the report is rebuilt through the frozen typed S6D assembly logic,
+then its canonical bytes must exactly equal both the content-addressed artifact
+and canonical `AnalysisRun.report_json`. No second report or component database
+is created. Existing PC1 membership must also agree exactly with the PC3A
+submission lineage, sequence, and predecessor identity before it is trusted.
+
+Product status is based on durable facts. `COMPLETED` requires publication,
+PC3A finalization, an indexed PC1 membership, and completed PC2 lifecycle
+evaluation. A published run lacking those facts is
+`PUBLISHED_PENDING_FINALIZATION`, or `BLOCKED_BY_PREDECESSOR` when its reserved
+predecessor is not ready. Durable terminal cancellation and failure remain
+`CANCELLED` and `FAILED`; a prepared run is `QUEUED`, and other unpublished work
+is `RUNNING`.
+
+Product completion is deliberately separate from analysis coverage. A
+`COMPLETED` Product Core run may still have `PARTIAL`, `FAILED`, or
+`NOT_APPLICABLE` authority coverage and analysis gaps. The read model exposes
+coverage outcomes and gaps independently. Findings are bounded current-run PC1
+occurrences joined to PC2 lifecycle and priority summaries. Components,
+dependencies, coverage, gaps, and the report are safe projections of the
+authoritative S4 document; no raw scanner stream, source snippet, secret value,
+lease identity, attempt token, or filesystem artifact path is exposed.

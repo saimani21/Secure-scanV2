@@ -155,6 +155,26 @@ class SourceFindingIndexService:
         except (SQLAlchemyError, TypeError, ValueError):
             raise ProductCoreIndexError from None
 
+    def load_verified_published_report(
+        self, *, run_id: str
+    ) -> SecureScanEvidenceReport:
+        """Load S4 only after typed, CAS, and published-JSON bytes agree."""
+
+        self._require_uuid(run_id)
+        report = self._rebuild_trusted_report(run_id)
+        try:
+            with self._sessions() as session:
+                run = session.get(AnalysisRunRow, run_id)
+                parent = session.get(SourceOrchestrationRow, run_id)
+                if run is None or parent is None:
+                    raise ProductCoreIndexError
+                self._verify_published_report(run, parent, report)
+            return report
+        except ProductCoreIndexError:
+            raise
+        except (SQLAlchemyError, TypeError, ValueError):
+            raise ProductCoreIndexError from None
+
     def attach_published_run(
         self,
         *,
