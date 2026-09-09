@@ -14,7 +14,11 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from securescan.advisories.osv.models import OsvPackageGap, build_osv_query_candidates
+from securescan.advisories.osv.models import (
+    OsvPackageGap,
+    OsvQueryCandidate,
+    build_osv_query_candidates,
+)
 from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.domain.enums import ArtifactKind, ExecutionOutcome, JobStatus
 from securescan.persistence.database import (
@@ -664,6 +668,39 @@ class SourceDependencyEvaluationService:
         if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
             raise SourceDependencyEvaluationError
         return value.astimezone(UTC)
+
+
+def rebuild_eligible_osv_candidates(
+    evaluation: SourceDependencyEvaluation,
+    syft_result: SafeSourceNativeResult,
+) -> tuple[OsvQueryCandidate, ...]:
+    """Rebuild the exact frozen S2 candidates selected by an S6C-A evaluation."""
+    if (
+        not isinstance(evaluation, SourceDependencyEvaluation)
+        or not isinstance(syft_result, SafeSourceNativeResult)
+        or syft_result.authority != SourceAuthority.SYFT.value
+        or syft_result.node_id != evaluation.syft_prerequisite.node_id
+        or syft_result.job_id != evaluation.syft_prerequisite.job_id
+        or syft_result.attempt_number
+        != evaluation.syft_prerequisite.selected_attempt_number
+        or syft_result.sha256() != evaluation.syft_prerequisite.native_result_sha256
+    ):
+        raise SourceDependencyEvaluationError
+    parsed = _syft_parse_result(syft_result.native_data)
+    eligible = frozenset(evaluation.eligible_package_observation_ids)
+    observations = tuple(
+        item for item in parsed.observations if item.package_observation_id in eligible
+    )
+    if {item.package_observation_id for item in observations} != eligible:
+        raise SourceDependencyEvaluationError
+    try:
+        candidates, gaps = build_osv_query_candidates(observations)
+    except ValueError:
+        raise SourceDependencyEvaluationError from None
+    ordered = tuple(sorted(candidates, key=lambda item: item.candidate_id))
+    if gaps or tuple(item.candidate_id for item in ordered) != evaluation.candidate_ids:
+        raise SourceDependencyEvaluationError
+    return ordered
 
 
 def _scope_from_snapshot(

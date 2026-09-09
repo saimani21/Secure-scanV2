@@ -166,6 +166,9 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | S6A | Durable multi-engine orchestration foundation | COMPLETE |
 | S6B | Scanner execution and safe native results | COMPLETE |
 | S6C-A | Syft-to-OSV dependency evaluation foundation | COMPLETE |
+| S6C-B | Orchestrated OSV execution and request authorization | COMPLETE |
+| S6C-C | Durable dependency and lifecycle coordination | COMPLETE |
+| S6D | Deterministic S4 assembly and exactly-once publication | COMPLETE |
 
 S6A adds one durable Source orchestration per AnalysisRun, an exact server-owned
 five-authority roster, a canonical CAS planning snapshot, deterministic runnable
@@ -191,6 +194,15 @@ dependency-evaluation artifact durably distinguishes runnable, not-applicable,
 and partial outcomes. It creates no OSV Job, performs no OSV request, and does
 not assemble or publish S4 evidence. See
 `docs/source-v0.8-s6ca-dependency-evaluation.md`.
+
+Engine Closure implements the dependency-gated OSV Job, attempt-bound helper,
+one-operation durable request permits, orchestration-aware retry and cancellation/
+deadline boundaries, short-lived restartable coordination, dedicated five-authority
+production worker composition, a durable per-run active-Job ceiling defaulting to
+two, and the final two-stage S4 assembly/publication path. It preserves
+frozen scanner and advisory behavior, does not add semantic cross-engine merging,
+and does not begin prioritization or finding lifecycle work. See
+`docs/source-v0.9-engine-closure.md`.
 
 ## Source Intelligence Foundation Freeze
 

@@ -305,6 +305,25 @@ to `READY` or terminalize it as not applicable/partial. S6C-A creates no OSV Job
 does not access the network, and does not publish a report. See the
 [S6C-A dependency-evaluation contract](docs/source-v0.8-s6ca-dependency-evaluation.md).
 
+Engine Closure adds the remaining dependency execution and lifecycle path:
+one dependency-gated OSV Job runs in an attempt-bound helper, every frozen S2
+transport invocation requires a committed durable request permit, and parent
+cancellation/deadline state prevents later permits, results, or retries. A
+short-lived coordinator creates the four initial local Jobs, advances the
+Syft-to-OSV edge, promotes only safely reconciled retries, resolves dependency
+blocking, and enters `ASSEMBLY_READY` only after every node is durably terminal.
+An immutable per-run lease ceiling defaults to two active Jobs and is enforced
+under the parent database lock. The production Source dispatcher composes the
+frozen Semgrep Docker adapter, local Gitleaks/Syft/Checkov bridges, and OSV helper;
+test-injected handlers are not used as evidence of that production wiring.
+
+S6D then consumes only accepted canonical CAS evidence and terminal node state,
+projects the five authorities through the frozen S4 model, records one canonical
+assembly artifact, and publishes `AnalysisRun.report_json` exactly once. Explicitly
+cancelled runs never publish. Scanner failure, timeout, dependency blocking, and
+limited dependency coverage remain explicit and cannot become a clean result.
+See the [Engine Closure contract](docs/source-v0.9-engine-closure.md).
+
 ## API and CLI
 
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI

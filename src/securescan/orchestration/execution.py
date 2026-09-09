@@ -1383,6 +1383,7 @@ def _valid_durable_clean_receipt(
             SourceAuthority.GITLEAKS.value,
             SourceAuthority.SYFT.value,
             SourceAuthority.CHECKOV.value,
+            SourceAuthority.OSV.value,
         }:
             return False
         receipt = SourceAttemptCleanupReceipt.from_json(payload)

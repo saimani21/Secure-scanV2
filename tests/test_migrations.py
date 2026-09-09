@@ -14,7 +14,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "a8d4e6f2c1b7"
+HEAD_REVISION = "b6c3d9e8f120"
 
 APPLICATION_TABLES = {
     "projects",
@@ -29,6 +29,7 @@ APPLICATION_TABLES = {
     "source_orchestration_scanner_jobs",
     "source_orchestration_attempts",
     "source_orchestration_dependency_evaluations",
+    "source_osv_request_permits",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -52,6 +53,7 @@ EXPECTED_ORCHESTRATION_TABLES = {
     "source_orchestration_scanner_jobs",
     "source_orchestration_attempts",
     "source_orchestration_dependency_evaluations",
+    "source_osv_request_permits",
 }
 
 
@@ -149,7 +151,16 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
         "cancel_requested",
         "cancel_requested_at",
         "state_version",
+        "max_active_jobs",
         "deadline_at",
+        "deadline_exceeded_at",
+        "assembly_artifact_sha256",
+        "assembly_artifact_size_bytes",
+        "assembly_artifact_media_type",
+        "assembly_schema_version",
+        "assembly_artifact_storage_path",
+        "assembled_at",
+        "published_at",
         "created_at",
         "updated_at",
     }
@@ -188,6 +199,7 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
         "capability",
         "analyzer_id",
         "contract_digest",
+        "input_kind",
         "context_digest",
         "projection_id",
         "projection_digest",
@@ -206,6 +218,7 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
         "tool_execution_id",
         "native_result_sha256",
         "projection_revalidated",
+        "dependency_input_revalidated",
     } <= attempt_columns
     node_columns = {
         column["name"]: column
@@ -259,6 +272,9 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
     }
     assert "uq_source_scanner_job_dependency_identity" in scanner_job_uniques
     assert "source_authority_results" not in database_inspector.get_table_names()
+    assert database_inspector.get_pk_constraint("source_osv_request_permits")[
+        "constrained_columns"
+    ] == ["job_id", "attempt_number", "request_sequence"]
 
 
 @pytest.fixture

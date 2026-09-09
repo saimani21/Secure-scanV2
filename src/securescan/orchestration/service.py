@@ -41,6 +41,7 @@ from .models import (
 
 _IDEMPOTENCY_KEY = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
+SOURCE_V1_MAX_ACTIVE_JOBS = 2
 
 
 class SourceOrchestrationError(RuntimeError):
@@ -100,6 +101,7 @@ class SourceOrchestrationRecord:
     lifecycle_state: OrchestrationLifecycleState
     cancel_requested: bool
     state_version: int
+    max_active_jobs: int
     deadline_at: datetime
     snapshot: SourcePlanningSnapshot
     planning_snapshot_sha256: str
@@ -168,14 +170,20 @@ class SourceOrchestrationService:
         *,
         clock: Callable[[], datetime] = utc_now,
         run_id_factory: Callable[[], UUID] = uuid4,
+        max_active_jobs: int = SOURCE_V1_MAX_ACTIVE_JOBS,
     ) -> None:
         if not isinstance(trusted_roster, TrustedSourceAuthorityRoster):
             raise SourceOrchestrationIntegrityError("Trusted roster is invalid")
+        if type(max_active_jobs) is not int or not 1 <= max_active_jobs <= 4:
+            raise SourceOrchestrationIntegrityError(
+                "Source orchestration concurrency configuration is invalid"
+            )
         self._session_factory = session_factory
         self._snapshots = SourcePlanningSnapshotStore(artifact_store)
         self._trusted_roster = trusted_roster
         self._clock = clock
         self._run_id_factory = run_id_factory
+        self._max_active_jobs = max_active_jobs
 
     def create(self, request: SourceOrchestrationCreateRequest) -> SourceOrchestrationRecord:
         if not isinstance(request, SourceOrchestrationCreateRequest):
@@ -247,6 +255,7 @@ class SourceOrchestrationService:
                     cancel_requested=False,
                     cancel_requested_at=None,
                     state_version=1,
+                    max_active_jobs=self._max_active_jobs,
                     deadline_at=deadline,
                     created_at=now,
                     updated_at=now,
@@ -515,7 +524,6 @@ class SourceOrchestrationService:
         target = None if run is None else session.get(TargetRow, run.target_id)
         if (
             run is None
-            or run.report_json is not None
             or target is None
             or target.target_type != TargetType.SOURCE_REPOSITORY.value
             or target.content_digest != row.repository_digest
@@ -525,9 +533,39 @@ class SourceOrchestrationService:
         terminal_outcome = row.terminal_outcome
         if terminal_outcome is not None:
             OrchestrationTerminalOutcome(terminal_outcome)
+        assembly_values = (
+            row.assembly_artifact_sha256,
+            row.assembly_artifact_size_bytes,
+            row.assembly_artifact_media_type,
+            row.assembly_schema_version,
+            row.assembly_artifact_storage_path,
+            row.assembled_at,
+        )
+        has_assembly = all(value is not None for value in assembly_values)
+        published = row.published_at is not None
+        expected_published_status = {
+            OrchestrationTerminalOutcome.COMPLETED.value: RunStatus.COMPLETED.value,
+            OrchestrationTerminalOutcome.PARTIAL.value: RunStatus.PARTIAL.value,
+            OrchestrationTerminalOutcome.FAILED.value: RunStatus.FAILED.value,
+        }
         if (
             row.state_version < 1
+            or type(row.max_active_jobs) is not int
+            or not 1 <= row.max_active_jobs <= 4
             or type(row.cancel_requested) is not bool
+            or (any(value is not None for value in assembly_values) and not has_assembly)
+            or (run.report_json is not None) != published
+            or published
+            and (
+                not has_assembly
+                or lifecycle_state is not OrchestrationLifecycleState.TERMINAL
+                or terminal_outcome not in expected_published_status
+                or run.status != expected_published_status[terminal_outcome]
+            )
+            or (
+                terminal_outcome == OrchestrationTerminalOutcome.CANCELLED.value
+                and (published or has_assembly or run.report_json is not None)
+            )
             or (lifecycle_state is OrchestrationLifecycleState.TERMINAL)
             != (terminal_outcome is not None)
             or (
@@ -582,6 +620,7 @@ class SourceOrchestrationService:
             lifecycle_state=lifecycle_state,
             cancel_requested=row.cancel_requested,
             state_version=row.state_version,
+            max_active_jobs=row.max_active_jobs,
             deadline_at=deadline,
             snapshot=snapshot,
             planning_snapshot_sha256=row.planning_snapshot_sha256,

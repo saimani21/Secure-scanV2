@@ -19,7 +19,7 @@ pytestmark = pytest.mark.postgres
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "a8d4e6f2c1b7"
+HEAD_REVISION = "b6c3d9e8f120"
 
 APPLICATION_TABLES = {
     "projects",
@@ -34,6 +34,7 @@ APPLICATION_TABLES = {
     "source_orchestration_scanner_jobs",
     "source_orchestration_attempts",
     "source_orchestration_dependency_evaluations",
+    "source_osv_request_permits",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -214,6 +215,18 @@ def test_postgres_migration_round_trip_and_schema_contract(
         assert set(inspect(engine).get_table_names()) == EXPECTED_TABLES
 
         inspector = inspect(engine)
+        parent_columns = {
+            column["name"]: column
+            for column in inspector.get_columns("source_orchestrations")
+        }
+        assert isinstance(parent_columns["max_active_jobs"]["type"], Integer)
+        assert parent_columns["max_active_jobs"]["nullable"] is False
+        assert "ck_source_orchestrations_max_active_jobs" in {
+            constraint["name"]
+            for constraint in inspector.get_check_constraints(
+                "source_orchestrations"
+            )
+        }
         _assert_lease_token_column(inspector)
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)

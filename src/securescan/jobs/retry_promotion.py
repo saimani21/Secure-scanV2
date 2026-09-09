@@ -13,7 +13,11 @@ from securescan.jobs.execution import _comparable_timestamp
 from securescan.jobs.leasing import UnsupportedQueueDatabaseError
 from securescan.jobs.mappers import job_record_from_row
 from securescan.jobs.models import JobRecord
-from securescan.persistence.database import JobRow, utc_now
+from securescan.persistence.database import (
+    JobRow,
+    SourceOrchestrationScannerJobRow,
+    utc_now,
+)
 from securescan.runs.aggregation import RunAggregationError, recompute_analysis_run_status
 
 
@@ -72,6 +76,9 @@ class JobRetryPromotionService:
                             JobRow.leased_by.is_(None),
                             JobRow.lease_token.is_(None),
                             JobRow.lease_expires_at.is_(None),
+                            ~select(SourceOrchestrationScannerJobRow.job_id)
+                            .where(SourceOrchestrationScannerJobRow.job_id == JobRow.id)
+                            .exists(),
                         )
                         .order_by(
                             JobRow.available_at.asc(),

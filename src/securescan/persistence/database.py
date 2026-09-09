@@ -420,6 +420,10 @@ class SourceOrchestrationRow(Base):
 
     __table_args__ = (
         CheckConstraint("state_version >= 1", name="ck_source_orchestrations_version"),
+        CheckConstraint(
+            "max_active_jobs BETWEEN 1 AND 4",
+            name="ck_source_orchestrations_max_active_jobs",
+        ),
         CheckConstraint("snapshot_size_bytes >= 1", name="ck_source_orchestrations_snapshot_size"),
         CheckConstraint(
             "lifecycle_state IN ('PREPARED', 'ACTIVE', 'CANCELLATION_REQUESTED', "
@@ -438,6 +442,19 @@ class SourceOrchestrationRow(Base):
         CheckConstraint(
             "cancel_requested_at IS NULL OR cancel_requested = true",
             name="ck_source_orchestrations_cancel_timestamp",
+        ),
+        CheckConstraint(
+            "(assembly_artifact_sha256 IS NULL AND assembly_artifact_size_bytes IS NULL "
+            "AND assembly_artifact_media_type IS NULL AND assembly_schema_version IS NULL "
+            "AND assembly_artifact_storage_path IS NULL AND assembled_at IS NULL) OR "
+            "(assembly_artifact_sha256 IS NOT NULL AND assembly_artifact_size_bytes IS NOT NULL "
+            "AND assembly_artifact_media_type IS NOT NULL AND assembly_schema_version IS NOT NULL "
+            "AND assembly_artifact_storage_path IS NOT NULL AND assembled_at IS NOT NULL)",
+            name="ck_source_orchestrations_assembly_reference",
+        ),
+        CheckConstraint(
+            "published_at IS NULL OR assembled_at IS NOT NULL",
+            name="ck_source_orchestrations_publication_requires_assembly",
         ),
         UniqueConstraint("idempotency_key", name="uq_source_orchestrations_idempotency"),
     )
@@ -465,7 +482,20 @@ class SourceOrchestrationRow(Base):
         DateTime(timezone=True), nullable=True
     )
     state_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    max_active_jobs: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     deadline_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    deadline_exceeded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    assembly_artifact_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    assembly_artifact_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    assembly_artifact_media_type: Mapped[str | None] = mapped_column(
+        String(128), nullable=True
+    )
+    assembly_schema_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    assembly_artifact_storage_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    assembled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
     )
@@ -701,6 +731,27 @@ class SourceOrchestrationScannerJobRow(Base):
             "selected_attempt_number IS NULL OR selected_attempt_number >= 1",
             name="ck_source_scanner_job_selected_attempt",
         ),
+        CheckConstraint(
+            "(input_kind = 'SOURCE_PROJECTION' AND context_digest IS NOT NULL "
+            "AND context_artifact_sha256 IS NOT NULL AND context_artifact_size_bytes IS NOT NULL "
+            "AND context_artifact_storage_path IS NOT NULL AND projection_id IS NOT NULL "
+            "AND projection_digest IS NOT NULL AND dependency_evaluation_sha256 IS NULL "
+            "AND dependency_evaluation_size_bytes IS NULL "
+            "AND dependency_evaluation_schema_version IS NULL "
+            "AND syft_native_result_sha256 IS NULL AND osv_scope_digest IS NULL "
+            "AND execution_input_sha256 IS NULL AND execution_input_size_bytes IS NULL "
+            "AND execution_input_schema_version IS NULL) OR "
+            "(input_kind = 'OSV_DEPENDENCY_INPUT' AND context_digest IS NULL "
+            "AND context_artifact_sha256 IS NULL AND context_artifact_size_bytes IS NULL "
+            "AND context_artifact_storage_path IS NULL AND projection_id IS NULL "
+            "AND projection_digest IS NULL AND dependency_evaluation_sha256 IS NOT NULL "
+            "AND dependency_evaluation_size_bytes IS NOT NULL "
+            "AND dependency_evaluation_schema_version IS NOT NULL "
+            "AND syft_native_result_sha256 IS NOT NULL AND osv_scope_digest IS NOT NULL "
+            "AND execution_input_sha256 IS NOT NULL AND execution_input_size_bytes IS NOT NULL "
+            "AND execution_input_schema_version IS NOT NULL)",
+            name="ck_source_scanner_job_input_kind",
+        ),
     )
 
     job_id: Mapped[str] = mapped_column(
@@ -714,12 +765,27 @@ class SourceOrchestrationScannerJobRow(Base):
     capability: Mapped[str] = mapped_column(String(64), nullable=False)
     analyzer_id: Mapped[str] = mapped_column(String(128), nullable=False)
     contract_digest: Mapped[str] = mapped_column(String(64), nullable=False)
-    context_digest: Mapped[str] = mapped_column(String(64), nullable=False)
-    context_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
-    context_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
-    context_artifact_storage_path: Mapped[str] = mapped_column(Text, nullable=False)
-    projection_id: Mapped[str] = mapped_column(String(96), nullable=False)
-    projection_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    input_kind: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="SOURCE_PROJECTION"
+    )
+    context_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    context_artifact_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    context_artifact_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    context_artifact_storage_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    projection_id: Mapped[str | None] = mapped_column(String(96), nullable=True)
+    projection_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    dependency_evaluation_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    dependency_evaluation_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    dependency_evaluation_schema_version: Mapped[str | None] = mapped_column(
+        String(128), nullable=True
+    )
+    syft_native_result_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    osv_scope_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    execution_input_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    execution_input_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    execution_input_schema_version: Mapped[str | None] = mapped_column(
+        String(128), nullable=True
+    )
     selected_attempt_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -759,7 +825,9 @@ class SourceOrchestrationAttemptRow(Base):
         ),
         CheckConstraint(
             "acceptance_state <> 'ACCEPTED' OR "
-            "(containment_state = 'CLEAN' AND projection_revalidated = true "
+            "(containment_state = 'CLEAN' AND "
+            "((projection_revalidated = true AND dependency_input_revalidated IS NULL) OR "
+            "(projection_revalidated IS NULL AND dependency_input_revalidated = true)) "
             "AND tool_execution_id IS NOT NULL)",
             name="ck_source_attempt_acceptance_proof",
         ),
@@ -810,10 +878,64 @@ class SourceOrchestrationAttemptRow(Base):
     )
     native_result_storage_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     projection_revalidated: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    dependency_input_revalidated: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     failure_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class SourceOsvRequestPermitRow(Base):
+    __tablename__ = "source_osv_request_permits"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["job_id", "run_id", "node_id"],
+            [
+                "source_orchestration_scanner_jobs.job_id",
+                "source_orchestration_scanner_jobs.run_id",
+                "source_orchestration_scanner_jobs.node_id",
+            ],
+            name="fk_source_osv_permit_job",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["job_id", "attempt_number"],
+            [
+                "source_orchestration_attempts.job_id",
+                "source_orchestration_attempts.attempt_number",
+            ],
+            name="fk_source_osv_permit_attempt",
+            ondelete="CASCADE",
+        ),
+        CheckConstraint("request_sequence >= 1", name="ck_source_osv_permit_sequence"),
+        CheckConstraint(
+            "transport_attempt_number >= 1",
+            name="ck_source_osv_permit_transport_attempt",
+        ),
+        CheckConstraint(
+            "operation_kind IN ('QUERY_BATCH', 'ADVISORY_GET')",
+            name="ck_source_osv_permit_operation_kind",
+        ),
+        UniqueConstraint(
+            "job_id",
+            "attempt_number",
+            "logical_request_digest",
+            "transport_attempt_number",
+            name="uq_source_osv_permit_logical_attempt",
+        ),
+    )
+
+    job_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    attempt_number: Mapped[int] = mapped_column(Integer, primary_key=True)
+    request_sequence: Mapped[int] = mapped_column(Integer, primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    node_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    operation_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    logical_request_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    transport_attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    helper_identity: Mapped[str] = mapped_column(String(64), nullable=False)
+    authorized_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 def create_session_factory(settings: Settings):

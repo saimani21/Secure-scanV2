@@ -70,6 +70,8 @@ class ArtifactKind(StrEnum):
     SOURCE_EXECUTION_CONTEXT = "source_execution_context"
     ORCHESTRATION_PLANNING_SNAPSHOT = "orchestration_planning_snapshot"
     SOURCE_DEPENDENCY_EVALUATION = "source_dependency_evaluation"
+    SOURCE_OSV_EXECUTION_INPUT = "source_osv_execution_input"
+    SOURCE_FINAL_RESULT = "source_final_result"
     SANITIZED_NATIVE_REPORT = "sanitized_native_report"
     STDOUT = "stdout"
     STDERR = "stderr"
