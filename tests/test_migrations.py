@@ -14,7 +14,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "b6c3d9e8f120"
+HEAD_REVISION = "c4d8e1f2a903"
 
 APPLICATION_TABLES = {
     "projects",
@@ -30,6 +30,9 @@ APPLICATION_TABLES = {
     "source_orchestration_attempts",
     "source_orchestration_dependency_evaluations",
     "source_osv_request_permits",
+    "source_target_lineages",
+    "source_lineage_runs",
+    "source_finding_occurrences",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -55,6 +58,70 @@ EXPECTED_ORCHESTRATION_TABLES = {
     "source_orchestration_dependency_evaluations",
     "source_osv_request_permits",
 }
+
+
+def _assert_source_product_core_pc1_schema(database_inspector) -> None:
+    assert {
+        "source_target_lineages",
+        "source_lineage_runs",
+        "source_finding_occurrences",
+    } <= set(database_inspector.get_table_names())
+    assert {
+        column["name"]
+        for column in database_inspector.get_columns("source_target_lineages")
+    } == {"lineage_id", "project_id", "created_at"}
+    assert {
+        column["name"]
+        for column in database_inspector.get_columns("source_lineage_runs")
+    } == {
+        "run_id",
+        "lineage_id",
+        "sequence_number",
+        "predecessor_run_id",
+        "predecessor_sequence_number",
+        "report_artifact_sha256",
+        "report_artifact_size_bytes",
+        "report_schema_version",
+        "indexing_state",
+        "indexed_at",
+        "created_at",
+    }
+    assert {
+        column["name"]
+        for column in database_inspector.get_columns("source_finding_occurrences")
+    } == {
+        "run_id",
+        "finding_id",
+        "lineage_id",
+        "authority",
+        "category",
+        "native_identity_schema",
+        "severity",
+        "subject_kind",
+        "subject_summary_json",
+        "primary_location_json",
+        "report_artifact_sha256",
+        "finding_ordinal",
+        "indexed_at",
+    }
+    assert database_inspector.get_pk_constraint("source_finding_occurrences")[
+        "constrained_columns"
+    ] == ["run_id", "finding_id"]
+    lineage_run_uniques = {
+        item["name"]
+        for item in database_inspector.get_unique_constraints("source_lineage_runs")
+    }
+    assert lineage_run_uniques >= {
+        "uq_source_lineage_runs_membership",
+        "uq_source_lineage_runs_ordered_membership",
+        "uq_source_lineage_runs_report_membership",
+        "uq_source_lineage_runs_sequence",
+    }
+    occurrence_foreign_keys = {
+        item["name"]
+        for item in database_inspector.get_foreign_keys("source_finding_occurrences")
+    }
+    assert "fk_source_finding_occurrences_report_membership" in occurrence_foreign_keys
 
 
 def _assert_lease_token_column(database_inspector) -> None:
@@ -313,6 +380,7 @@ def test_initial_migration_upgrade_creates_expected_schema(
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
         _assert_source_orchestration_schema(inspector)
+        _assert_source_product_core_pc1_schema(inspector)
 
         job_check_constraints = {
             constraint["name"] for constraint in inspector.get_check_constraints("jobs")
@@ -353,6 +421,7 @@ def test_initial_migration_downgrade_and_reupgrade_round_trip(
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
         _assert_source_orchestration_schema(inspector)
+        _assert_source_product_core_pc1_schema(inspector)
         command.check(config)
 
         command.downgrade(config, "base")
@@ -367,6 +436,7 @@ def test_initial_migration_downgrade_and_reupgrade_round_trip(
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
         _assert_source_orchestration_schema(inspector)
+        _assert_source_product_core_pc1_schema(inspector)
         command.check(config)
 
         with engine.connect() as connection:

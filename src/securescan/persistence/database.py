@@ -504,6 +504,192 @@ class SourceOrchestrationRow(Base):
     )
 
 
+class SourceTargetLineageRow(Base):
+    __tablename__ = "source_target_lineages"
+
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid4()),
+    )
+    project_id: Mapped[str] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+
+
+class SourceLineageRunRow(Base):
+    __tablename__ = "source_lineage_runs"
+
+    __table_args__ = (
+        CheckConstraint(
+            "sequence_number >= 1",
+            name="ck_source_lineage_runs_sequence_positive",
+        ),
+        CheckConstraint(
+            "(sequence_number = 1 AND predecessor_run_id IS NULL "
+            "AND predecessor_sequence_number IS NULL) OR "
+            "(sequence_number > 1 AND predecessor_run_id IS NOT NULL "
+            "AND predecessor_sequence_number IS NOT NULL "
+            "AND predecessor_sequence_number < sequence_number)",
+            name="ck_source_lineage_runs_predecessor_pair",
+        ),
+        CheckConstraint(
+            "indexing_state IN ('ATTACHED', 'INDEXED')",
+            name="ck_source_lineage_runs_indexing_state",
+        ),
+        CheckConstraint(
+            "(indexing_state = 'INDEXED') = (indexed_at IS NOT NULL)",
+            name="ck_source_lineage_runs_indexed_pair",
+        ),
+        CheckConstraint(
+            "length(report_artifact_sha256) = 64 "
+            "AND report_artifact_sha256 = lower(report_artifact_sha256)",
+            name="ck_source_lineage_runs_report_sha",
+        ),
+        CheckConstraint(
+            "report_artifact_size_bytes >= 1",
+            name="ck_source_lineage_runs_report_size",
+        ),
+        CheckConstraint(
+            "report_schema_version = 'securescan-unified-evidence-s4-v1'",
+            name="ck_source_lineage_runs_report_schema",
+        ),
+        UniqueConstraint(
+            "lineage_id",
+            "sequence_number",
+            name="uq_source_lineage_runs_sequence",
+        ),
+        UniqueConstraint(
+            "lineage_id",
+            "run_id",
+            name="uq_source_lineage_runs_membership",
+        ),
+        UniqueConstraint(
+            "lineage_id",
+            "run_id",
+            "sequence_number",
+            name="uq_source_lineage_runs_ordered_membership",
+        ),
+        UniqueConstraint(
+            "lineage_id",
+            "run_id",
+            "report_artifact_sha256",
+            name="uq_source_lineage_runs_report_membership",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "predecessor_run_id", "predecessor_sequence_number"],
+            [
+                "source_lineage_runs.lineage_id",
+                "source_lineage_runs.run_id",
+                "source_lineage_runs.sequence_number",
+            ],
+            name="fk_source_lineage_runs_predecessor",
+            ondelete="RESTRICT",
+        ),
+    )
+
+    run_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("analysis_runs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_target_lineages.lineage_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sequence_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    predecessor_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    predecessor_sequence_number: Mapped[int | None] = mapped_column(
+        Integer, nullable=True
+    )
+    report_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    report_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    report_schema_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    indexing_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    indexed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+
+
+class SourceFindingOccurrenceRow(Base):
+    __tablename__ = "source_finding_occurrences"
+
+    __table_args__ = (
+        CheckConstraint(
+            "finding_ordinal >= 0",
+            name="ck_source_finding_occurrences_ordinal",
+        ),
+        CheckConstraint(
+            "length(finding_id) = 64 AND finding_id = lower(finding_id)",
+            name="ck_source_finding_occurrences_finding_id",
+        ),
+        CheckConstraint(
+            "length(report_artifact_sha256) = 64 "
+            "AND report_artifact_sha256 = lower(report_artifact_sha256)",
+            name="ck_source_finding_occurrences_report_sha",
+        ),
+        CheckConstraint(
+            "(authority = 'semgrep-ce' AND category = 'CODE_SECURITY' "
+            "AND subject_kind = 'SOURCE_CODE' "
+            "AND (severity IS NULL OR severity IN "
+            "('HIGH', 'MEDIUM', 'LOW', 'INFORMATIONAL'))) OR "
+            "(authority = 'gitleaks' AND category = 'SECRET_EXPOSURE' "
+            "AND subject_kind = 'SECRET_EXPOSURE' AND severity IS NULL) OR "
+            "(authority = 'osv.dev' AND category = 'DEPENDENCY_VULNERABILITY' "
+            "AND subject_kind = 'PACKAGE' AND severity IS NULL) OR "
+            "(authority = 'checkov' AND category = 'CONFIGURATION_SECURITY' "
+            "AND subject_kind = 'CONFIGURATION_RESOURCE' "
+            "AND (severity IS NULL OR severity IN "
+            "('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'UNKNOWN')))",
+            name="ck_source_finding_occurrences_s4_kind",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "run_id", "report_artifact_sha256"],
+            [
+                "source_lineage_runs.lineage_id",
+                "source_lineage_runs.run_id",
+                "source_lineage_runs.report_artifact_sha256",
+            ],
+            name="fk_source_finding_occurrences_report_membership",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "run_id",
+            "finding_ordinal",
+            name="uq_source_finding_occurrences_ordinal",
+        ),
+        Index(
+            "ix_source_finding_occurrences_lineage_authority",
+            "lineage_id",
+            "authority",
+            "category",
+        ),
+    )
+
+    run_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    finding_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    lineage_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    authority: Mapped[str] = mapped_column(String(32), nullable=False)
+    category: Mapped[str] = mapped_column(String(64), nullable=False)
+    native_identity_schema: Mapped[str] = mapped_column(String(512), nullable=False)
+    severity: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    subject_kind: Mapped[str] = mapped_column(String(64), nullable=False)
+    subject_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    primary_location_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    report_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    finding_ordinal: Mapped[int] = mapped_column(Integer, nullable=False)
+    indexed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class SourceOrchestrationAuthorityRow(Base):
     __tablename__ = "source_orchestration_authorities"
 
