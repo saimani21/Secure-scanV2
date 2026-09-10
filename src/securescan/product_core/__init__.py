@@ -16,6 +16,14 @@ from .finding_index import (
     SourceLineage,
     SourceLineageRun,
 )
+from .http_submission import (
+    SourceHttpLineageNotFoundError,
+    SourceHttpSubmissionConflictError,
+    SourceHttpSubmissionError,
+    SourceHttpTargetNotFoundError,
+    SourceTrustedTargetScanRequest,
+    SourceTrustedTargetSubmissionService,
+)
 from .lifecycle import (
     FindingLifecycle,
     FindingLifecycleEvent,
@@ -72,6 +80,12 @@ __all__ = [
     "SourceFindingOccurrence",
     "SourceLineage",
     "SourceLineageRun",
+    "SourceHttpLineageNotFoundError",
+    "SourceHttpSubmissionConflictError",
+    "SourceHttpSubmissionError",
+    "SourceHttpTargetNotFoundError",
+    "SourceTrustedTargetScanRequest",
+    "SourceTrustedTargetSubmissionService",
     "FindingLifecycle",
     "FindingLifecycleEvent",
     "FindingLifecycleState",

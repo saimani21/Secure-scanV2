@@ -11,6 +11,7 @@ from securescan.adapters.fake_scanner import FakeScannerAdapter
 from securescan.api.job_routes import router as job_router
 from securescan.api.operations_routes import router as operations_router
 from securescan.api.run_routes import router as run_router
+from securescan.api.source_scan_routes import router as source_scan_router
 from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.config import get_settings
 from securescan.domain.enums import TargetType
@@ -28,9 +29,19 @@ from securescan.observability.readiness import (
     DatabaseReadinessService,
     _bootstrap_database_schema,
 )
+from securescan.orchestration.coordinator import SourceOrchestrationCoordinatorService
+from securescan.orchestration.models import frozen_source_v1_authority_roster
+from securescan.orchestration.service import SourceOrchestrationService
 from securescan.persistence.database import create_session_factory
+from securescan.product_core import (
+    SourceScanQueryService,
+    SourceScanSubmissionService,
+    SourceTrustedTargetSubmissionService,
+)
 from securescan.runs import RunQueryService
 from securescan.services.scan_service import ScanService
+from securescan.source.projection import SourceProjectionManager
+from securescan.workspaces import RepositoryWorkspaceManager
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 _ALEMBIC_CONFIG_PATH = _REPOSITORY_ROOT / "alembic.ini"
@@ -55,6 +66,29 @@ async def lifespan(application: FastAPI):
             _ALEMBIC_CONFIG_PATH,
         )
         application.state.operational_metrics_service = OperationalMetricsService(session_factory)
+        artifact_store = ContentAddressedArtifactStore(settings.artifact_root)
+        workspace_manager = RepositoryWorkspaceManager(settings.source_workspace_root)
+        roster = frozen_source_v1_authority_roster()
+        source_submissions = SourceScanSubmissionService(
+            session_factory, artifact_store, workspace_manager
+        )
+        source_orchestrations = SourceOrchestrationService(session_factory, artifact_store, roster)
+        application.state.source_trusted_target_submission_service = (
+            SourceTrustedTargetSubmissionService(
+                session_factory, source_submissions, source_orchestrations
+            )
+        )
+        application.state.source_scan_query_service = SourceScanQueryService(
+            session_factory, artifact_store
+        )
+        application.state.source_orchestration_coordinator_service = (
+            SourceOrchestrationCoordinatorService(
+                session_factory,
+                artifact_store,
+                roster,
+                SourceProjectionManager(settings.source_projection_root),
+            )
+        )
         application.state.database_engine = engine
         yield
     finally:
@@ -66,6 +100,7 @@ app.add_middleware(CorrelationIdMiddleware)
 app.include_router(job_router)
 app.include_router(run_router)
 app.include_router(operations_router)
+app.include_router(source_scan_router)
 
 
 class FakeScanRequest(BaseModel):

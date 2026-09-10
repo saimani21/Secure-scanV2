@@ -204,3 +204,31 @@ occurrences joined to PC2 lifecycle and priority summaries. Components,
 dependencies, coverage, gaps, and the report are safe projections of the
 authoritative S4 document; no raw scanner stream, source snippet, secret value,
 lease identity, attempt token, or filesystem artifact path is exposed.
+
+## PC3C: public Source HTTP API
+
+PC3C exposes the Product Core through `/v1/scans`: asynchronous submission,
+status, findings, components, dependencies, coverage, gaps, the verified S4
+report, and durable cancellation. Submission accepts only a project ID, an
+opaque PC3A-managed trusted target ID, an optional explicit lineage ID, a
+deadline, and an idempotency key. The server verifies the target's exact PC3A
+managed-workspace binding and re-resolves its frozen planning snapshot and
+workspace before invoking `SourceScanSubmissionService`; callers cannot supply
+a host path or workspace root.
+
+All GET operations delegate to `SourceScanQueryService` and are read-only. They
+never finalize Product Core, attach lineage membership, index findings,
+evaluate lifecycle, or mutate orchestration. Consequently
+`PUBLISHED_PENDING_FINALIZATION` and `BLOCKED_BY_PREDECESSOR` remain visible
+instead of being silently advanced. Product completion remains distinct from
+coverage: a completed scan may expose partial, failed, or not-applicable
+authority outcomes and explicit gaps.
+
+Cancellation uses the existing durable Source orchestration coordinator. It
+does not update Job, attempt, or lease rows directly. Public errors use the
+existing `{\"detail\": {\"code\", \"message\"}}` API shape and replace internal
+exceptions with fixed messages. Explicit response schemas exclude managed
+workspace paths, artifact paths, native results, scanner streams, cleanup
+receipts, attempt and lease tokens, and secret values. The report endpoint uses
+only `SourceScanQueryService.get_report()`, preserving the typed S4/CAS/database
+byte-equality trust boundary.

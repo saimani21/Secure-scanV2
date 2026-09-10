@@ -16,14 +16,15 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./securescan.db"
     artifact_root: Path = Path("./data/artifacts")
     source_projection_root: Path = Path("./data/source-projections")
+    source_workspace_root: Path = Path("./data/source-workspaces")
     hmac_key: str = Field(default="development-only-key", min_length=8)
     max_output_bytes: int = Field(default=1_048_576, ge=1_024)
     default_timeout_seconds: int = Field(default=15, ge=1, le=3_600)
     allow_sqlite_schema_bootstrap: bool = True
 
-    @field_validator("source_projection_root", mode="after")
+    @field_validator("source_projection_root", "source_workspace_root", mode="after")
     @classmethod
-    def normalize_source_projection_root(cls, value: Path) -> Path:
+    def normalize_source_runtime_root(cls, value: Path) -> Path:
         return value.expanduser().resolve(strict=False)
 
 
