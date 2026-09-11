@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark light">
+    <meta name="description" content="SecureScan Source security analysis console">
+    <title>SecureScan Source</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to analysis</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="SecureScan navigation">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">S</span>
+          <div>
+            <strong>SecureScan</strong>
+            <span>Source console</span>
+          </div>
+        </div>
+
+        <nav class="navigation" aria-label="Analysis views">
+          <button class="nav-item active" type="button" data-view="overview">
+            <span aria-hidden="true">◫</span> Overview
+          </button>
+          <button class="nav-item" type="button" data-view="findings">
+            <span aria-hidden="true">◇</span> Findings
+          </button>
+          <button class="nav-item" type="button" data-view="dependencies">
+            <span aria-hidden="true">⌘</span> Dependencies
+          </button>
+          <button class="nav-item" type="button" data-view="coverage">
+            <span aria-hidden="true">◎</span> Coverage
+          </button>
+        </nav>
+
+        <div class="trust-note">
+          <span class="eyebrow">Trusted-host boundary</span>
+          <p>Repository scans are submitted from the trusted SecureScan host CLI.</p>
+          <code>securescan scan /path --project-id &lt;uuid&gt;</code>
+        </div>
+      </aside>
+
+      <main id="main-content" class="main-content">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">Source security analysis</span>
+            <h1>Open a durable scan</h1>
+          </div>
+          <a class="health-link" href="/health/ready" target="_blank" rel="noreferrer">
+            Readiness
+          </a>
+        </header>
+
+        <form id="open-scan-form" class="open-scan" novalidate>
+          <label for="run-id">Run ID</label>
+          <div class="input-row">
+            <input
+              id="run-id"
+              name="run_id"
+              type="text"
+              inputmode="text"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="00000000-0000-4000-8000-000000000000"
+              aria-describedby="run-id-help"
+            >
+            <button class="primary-button" type="submit">Open scan</button>
+          </div>
+          <p id="run-id-help" class="field-help">
+            Paste the run ID returned by the trusted-host CLI. No repository path is sent.
+          </p>
+        </form>
+
+        <div id="global-message" class="message" role="status" aria-live="polite" hidden></div>
+
+        <section id="empty-state" class="empty-state">
+          <div class="empty-symbol" aria-hidden="true">⌁</div>
+          <h2>Analysis evidence, without the noise</h2>
+          <p>
+            Open a run to inspect its authoritative status, normalized findings,
+            dependency intelligence, and explicit coverage gaps.
+          </p>
+        </section>
+
+        <section id="scan-workspace" hidden>
+          <div class="scan-identity">
+            <div>
+              <span class="eyebrow">Current run</span>
+              <code id="current-run-id">—</code>
+            </div>
+            <span id="product-status" class="badge neutral">Not loaded</span>
+          </div>
+
+          <section id="view-overview" class="view-panel" data-panel="overview">
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Overview</span>
+                <h2>Product status and evidence posture</h2>
+              </div>
+              <button id="refresh-scan" class="secondary-button" type="button">Refresh</button>
+            </div>
+
+            <div id="summary-cards" class="summary-grid"></div>
+
+            <div class="two-column-grid">
+              <article class="panel">
+                <div class="panel-heading">
+                  <h3>Finding distribution</h3>
+                  <span>Product Core</span>
+                </div>
+                <h4 class="metric-heading">Priorities</h4>
+                <div id="priority-summary" class="metric-list"></div>
+                <h4 class="metric-heading metric-heading-spaced">Categories</h4>
+                <div id="category-summary" class="metric-list"></div>
+              </article>
+              <article class="panel">
+                <div class="panel-heading">
+                  <h3>Run identity</h3>
+                  <span>Durable lineage</span>
+                </div>
+                <dl id="run-metadata" class="definition-list"></dl>
+              </article>
+            </div>
+          </section>
+
+          <section id="view-findings" class="view-panel" data-panel="findings" hidden>
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Findings</span>
+                <h2>Normalized security observations</h2>
+              </div>
+              <span id="finding-total" class="count-label">0 findings</span>
+            </div>
+
+            <form id="finding-filters" class="filter-bar">
+              <label>Authority
+                <select name="authority">
+                  <option value="">All</option>
+                  <option value="semgrep-ce">Semgrep</option>
+                  <option value="gitleaks">Gitleaks</option>
+                  <option value="osv.dev">OSV</option>
+                  <option value="checkov">Checkov</option>
+                </select>
+              </label>
+              <label>Category
+                <select name="category">
+                  <option value="">All</option>
+                  <option value="CODE_SECURITY">Code security</option>
+                  <option value="SECRET_EXPOSURE">Secret exposure</option>
+                  <option value="DEPENDENCY_VULNERABILITY">Dependency vulnerability</option>
+                  <option value="CONFIGURATION_SECURITY">Configuration security</option>
+                </select>
+              </label>
+              <label>Priority
+                <select name="priority">
+                  <option value="">All</option>
+                  <option value="CRITICAL">Critical</option>
+                  <option value="HIGH">High</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="LOW">Low</option>
+                  <option value="INFO">Info</option>
+                  <option value="UNRANKED">Unranked</option>
+                </select>
+              </label>
+              <label>Lifecycle
+                <select name="lifecycle_state">
+                  <option value="">All</option>
+                  <option value="NEW">New</option>
+                  <option value="EXISTING">Existing</option>
+                  <option value="RESOLVED">Resolved</option>
+                  <option value="REOPENED">Reopened</option>
+                </select>
+              </label>
+              <button class="secondary-button" type="submit">Apply filters</button>
+            </form>
+
+            <div class="table-frame">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Priority</th>
+                    <th>Lifecycle</th>
+                    <th>Category</th>
+                    <th>Authority</th>
+                    <th>Subject</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody id="finding-rows"></tbody>
+              </table>
+            </div>
+            <div id="findings-empty" class="inline-empty" hidden>No findings match this view.</div>
+            <div class="pagination">
+              <button id="findings-previous" class="secondary-button" type="button">Previous</button>
+              <span id="findings-page">0–0 of 0</span>
+              <button id="findings-next" class="secondary-button" type="button">Next</button>
+            </div>
+          </section>
+
+          <section id="view-dependencies" class="view-panel" data-panel="dependencies" hidden>
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Dependencies</span>
+                <h2>Observed package inventory</h2>
+              </div>
+              <span id="dependency-total" class="count-label">0 packages</span>
+            </div>
+            <p class="section-note">
+              Vulnerabilities reflect OSV advisory matches. Runtime reachability is not claimed.
+            </p>
+            <div class="table-frame">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Package</th>
+                    <th>Version</th>
+                    <th>Type</th>
+                    <th>Locations</th>
+                    <th>Advisories / priority</th>
+                    <th>Fixed versions</th>
+                  </tr>
+                </thead>
+                <tbody id="dependency-rows"></tbody>
+              </table>
+            </div>
+            <div id="dependencies-empty" class="inline-empty" hidden>
+              No package observations were published for this run.
+            </div>
+            <div class="pagination">
+              <button id="dependencies-previous" class="secondary-button" type="button">Previous</button>
+              <span id="dependencies-page">0–0 of 0</span>
+              <button id="dependencies-next" class="secondary-button" type="button">Next</button>
+            </div>
+          </section>
+
+          <section id="view-coverage" class="view-panel" data-panel="coverage" hidden>
+            <div class="section-heading">
+              <div>
+                <span class="eyebrow">Coverage</span>
+                <h2>Authority completion and explicit gaps</h2>
+              </div>
+              <span id="coverage-status" class="badge neutral">Not published</span>
+            </div>
+            <div id="coverage-counts" class="coverage-counts"></div>
+            <div class="two-column-grid coverage-layout">
+              <article class="panel">
+                <div class="panel-heading">
+                  <h3>Coverage outcomes</h3>
+                  <span>Exact S4 states</span>
+                </div>
+                <div id="coverage-outcomes" class="stack-list"></div>
+              </article>
+              <article class="panel">
+                <div class="panel-heading">
+                  <h3>Analysis gaps</h3>
+                  <span id="gap-total">0 gaps</span>
+                </div>
+                <div id="gap-list" class="stack-list"></div>
+              </article>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <aside id="finding-detail" class="detail-drawer" aria-labelledby="detail-title" hidden>
+      <div class="detail-header">
+        <div>
+          <span class="eyebrow">Finding detail</span>
+          <h2 id="detail-title">Normalized evidence</h2>
+        </div>
+        <button id="close-detail" class="icon-button" type="button" aria-label="Close detail">×</button>
+      </div>
+      <div id="detail-content" class="detail-content"></div>
+    </aside>
+    <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+  </body>
+</html>

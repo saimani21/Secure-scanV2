@@ -112,6 +112,26 @@ the only deployment migration authority. The readiness response reports database
 reachability and whether the schema is at the migration head, without returning
 credentials or the database URL.
 
+## Open the Source analysis console
+
+The FastAPI service serves the D2 same-origin console and its local assets; no
+separate frontend service or Node build is required. Open:
+
+```text
+http://127.0.0.1:<SECURESCAN_API_PORT>/
+```
+
+Submit a repository from the trusted SecureScan host, not from the browser:
+
+```bash
+./.venv/bin/securescan scan /absolute/repository/path --project-id <project-uuid>
+```
+
+Paste the returned run ID into the console to inspect Product Core status,
+findings, published evidence, dependency intelligence, and explicit coverage
+gaps. The console is read-only and does not accept filesystem paths, source
+uploads, or remote Git locations.
+
 Compose publishes PostgreSQL and the API on `127.0.0.1` only. PostgreSQL data is
 stored in the `securescan_pg` named volume. CAS objects, managed workspaces,
 projections, and runtime receipts are stored below the host deployment root and

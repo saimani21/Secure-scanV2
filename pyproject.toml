@@ -45,6 +45,7 @@ include = ["securescan*"]
 "securescan.scanners.syft" = ["config/*.yaml"]
 "securescan.scanners.checkov" = ["config/*.yaml", "toolchain/*.lock"]
 "securescan.advisories.osv" = ["schema/*.json"]
+"securescan.web" = ["*.html", "*.js", "*.css"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

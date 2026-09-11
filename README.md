@@ -333,3 +333,8 @@ is separate and never runs during API startup.
 For the practical single-node Source v1 deployment, run PostgreSQL, Alembic, and
 the API with Docker Compose while keeping `securescan worker` on the trusted
 scanning host. See the [Source v1 deployment guide](docs/source-v1-deployment.md).
+
+The API also serves a dependency-free, same-origin Source analysis console at
+`http://127.0.0.1:<SECURESCAN_API_PORT>/`. Submit repositories with the trusted-host
+`securescan scan` CLI, then open the returned run ID in the console. The browser
+does not accept repository paths or upload source trees.

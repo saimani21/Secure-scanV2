@@ -41,6 +41,7 @@ from securescan.product_core import (
 from securescan.runs import RunQueryService
 from securescan.services.scan_service import ScanService
 from securescan.source.projection import SourceProjectionManager
+from securescan.web.routes import router as frontend_router
 from securescan.workspaces import RepositoryWorkspaceManager
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
@@ -101,6 +102,7 @@ app.include_router(job_router)
 app.include_router(run_router)
 app.include_router(operations_router)
 app.include_router(source_scan_router)
+app.include_router(frontend_router)
 
 
 class FakeScanRequest(BaseModel):
