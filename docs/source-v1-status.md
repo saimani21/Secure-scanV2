@@ -174,6 +174,8 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | PC3A | Durable Source submission intent and trusted intake | COMPLETE |
 | PC3B | Product finalization runner and Source read model | COMPLETE |
 | PC3C | Public Source HTTP API | COMPLETE |
+| PC3D | Local Source CLI | IMPLEMENTED - PENDING PRODUCT CORE APPROVAL |
+| R1A/R1B | Source runtime composition and bounded worker cycle | IMPLEMENTED - PENDING CONTROLLED EXECUTION |
 
 S6A adds one durable Source orchestration per AnalysisRun, an exact server-owned
 five-authority roster, a canonical CAS planning snapshot, deterministic runnable
@@ -252,6 +254,12 @@ was intentionally empty. v0.3B2 adds a trusted `python-semgrep-v1`
 declaration that can populate an immutable availability snapshot only after
 the exact Core adapter binding, ruleset provenance, Docker runtime, and local
 digest-pinned image are verified.
+
+The current Source-v1 Semgrep authority is bound to the verified immutable
+`semgrep/semgrep@sha256:bdf7013b2c3634a487671158da77c554f531742326b543a9464d2adf6c433ac8`
+image. This pre-v1 refreeze replaces the undeployable development placeholder;
+there is no mutable fallback and placeholder-contract local runs are not
+resumable by the corrected runtime. Historical Git checkpoints are unchanged.
 
 Planned scanners are not considered registered or product-supported
 until their adapter acceptance and benchmark gates pass.

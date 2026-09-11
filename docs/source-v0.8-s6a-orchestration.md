@@ -69,6 +69,13 @@ Every orchestration persists exactly these server-owned authorities:
 | `osv.dev` | `dependency_advisory_matching` | `osv-dependency-advisory-v1`, OSV v1 service contract |
 | `checkov` | `configuration_security` | `checkov-source-v1`, Checkov 3.3.16 trusted binding |
 
+Before Source v1 release, the Semgrep roster entry was refrozen to binding
+digest `265fd32e59296d6dc50fd7f8b7558f0e35ead821c4ee689f5ff953bf70393ed2`,
+which binds the verified immutable `semgrep/semgrep@sha256:bdf7013b2c3634a487671158da77c554f531742326b543a9464d2adf6c433ac8`
+image. The earlier undeployable placeholder remains only in immutable historical
+Git checkpoints; current orchestration neither creates nor resumes that
+placeholder contract.
+
 The versioned roster digest covers authority, capability, analyzer, contract kind,
 contract digest, implementation version, and roster schema. It excludes run,
 worker, job, attempt, and timestamp identity. User input cannot choose any roster

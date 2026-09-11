@@ -232,3 +232,125 @@ workspace paths, artifact paths, native results, scanner streams, cleanup
 receipts, attempt and lease tokens, and secret values. The report endpoint uses
 only `SourceScanQueryService.get_report()`, preserving the typed S4/CAS/database
 byte-equality trust boundary.
+
+## PC3D: local Source CLI
+
+PC3D exposes four local commands through the existing `securescan` Typer
+application:
+
+```bash
+securescan scan . --project-id <project-uuid>
+securescan status <run-id>
+securescan findings <run-id>
+securescan report <run-id>
+```
+
+Only `scan` accepts a local filesystem path. It resolves and validates the
+directory, copies it through `RepositoryWorkspaceManager.prepare_repository()`,
+profiles that immutable managed snapshot, builds the frozen five-authority
+Source plan, creates an explicit PC1/PC3A lineage (or uses an explicitly
+supplied `--lineage-id`), and calls
+`SourceScanSubmissionService.submit_prepared()`. The caller's live path is
+never submitted to a worker or stored in the durable Target; the Target retains
+only the opaque managed-workspace identity. The managed workspace deliberately
+survives CLI process exit because orchestration and scanner execution are
+asynchronous. Cleanup remains an explicit ownership-checked lifecycle
+operation.
+
+An existing durable project must be selected with `--project-id`; PC3D does not
+derive project or lineage identity from a path, directory name, content digest,
+or timestamp. Each invocation generates a cryptographically random PC3A
+idempotency key, so repeating the shell command intentionally creates a new
+scan; PC3D does not expose a misleading path-based replay identity. The durable
+parent deadline defaults to the bounded
+`SECURESCAN_SOURCE_SCAN_DEADLINE_SECONDS` setting (1,800 seconds) and may be
+overridden between 300 and 86,400 seconds with `--deadline-seconds`.
+
+Submission returns immediately after durable activation and reports the
+non-analytical acknowledgement `SUBMITTED`; it does not perform a post-commit
+Product Core read that could turn durable success into an apparent CLI failure.
+It never waits for a scanner or invokes Product Core finalization. `status`,
+`findings`, and `report`
+delegate only to `SourceScanQueryService`; they do not attach lineage
+membership, index findings, evaluate lifecycle, finalize, or mutate
+orchestration. Findings retain PC3B filter and pagination validation. Reports
+cross the same typed S4/CAS/published-database byte-equality boundary as the
+HTTP API. Product `COMPLETED` and complete analysis coverage remain visibly
+separate.
+
+Expected CLI failures use fixed codes and nonzero exit classes: input errors
+use 2, missing or not-ready Product Core state uses 3, durable submission
+conflict uses 4, and unavailable infrastructure uses 5. Normal failures do not
+render tracebacks or internal exceptions. CLI output omits managed workspace
+and artifact paths, worker/lease/attempt identities, scanner streams, native
+artifacts, source snippets, and secret values. `--json` emits only explicit
+Product Core response fields.
+
+The project already declares `securescan = "securescan.cli.main:app"`. In a
+source checkout use the editable project environment
+(`./.venv/bin/python -m pip install -e '.[dev]'`) or activate `.venv`; no
+alternate console command or CLI-only persistence stack is introduced. Before
+local submission, configure `SECURESCAN_SOURCE_ENRY_HELPER_SHA256` with the
+independently trusted lowercase SHA-256 identity for the configured Enry helper;
+PC3D will not manufacture trust by hashing an untrusted local helper and then
+accepting that same digest.
+
+PC3D deliberately requires an existing durable Project UUID and does not add a
+project-creation workflow. Repeating `securescan scan` intentionally creates a
+new scan because each invocation uses a fresh random idempotency key. Deployment
+must separately provide all trusted runtime scanner and toolchain identities;
+PC3D does not weaken or synthesize those identities.
+
+Before Source v1 release, the Semgrep production contract was refrozen from an
+undeployable development placeholder to the verified immutable image
+`semgrep/semgrep@sha256:bdf7013b2c3634a487671158da77c554f531742326b543a9464d2adf6c433ac8`.
+New runs use only that image-bound contract, with no mutable-image fallback or
+free-form image selection. Historical Git checkpoints remain immutable, but
+pre-v1 local durable runs created with the placeholder contract are not
+supported for resume under the corrected runtime and must fail closed.
+
+## Source Runtime R1A/R1B: bounded production composition
+
+Source submission remains asynchronous. The API and `securescan scan` persist a
+trusted managed-workspace submission and return without executing scanners. The
+production runtime is the separate process boundary that advances those durable
+submissions:
+
+```bash
+securescan worker --once
+```
+
+One invocation constructs a single canonical stack from `Settings`: database
+sessions, CAS, managed-workspace and projection managers, the frozen coordinator,
+attempt and leasing services, all five frozen authority runners, the S6D
+assembler/publisher, and the Product Core finalization runner. Construction does
+not execute a scanner or contact OSV. The bounded cycle quarantines expired
+leases, uses one shared budget of at most 25 coordinator advances across its pre-
+and post-worker phases, dispatches at most four mapped jobs, attempts at most ten
+S6D publications, and gives at most 25 published submissions to the existing
+finalizer. Each mutation remains owned by those authoritative services. A bounded
+200-row actionable discovery window prevents queued no-op runs from starving later
+runnable work without allowing an unbounded database walk. Failed managed-workspace
+or coordinator validation aborts the cycle before its worker batch.
+
+Runnable work is discovered from database state, ordered deterministically, and
+restricted to Product Core submissions whose intake kind is
+`MANAGED_WORKSPACE_V1`. Active runs obtain their workspace only through
+`SourceScanSubmissionService.resolve_workspace()`, which reopens the opaque PC3A
+workspace and verifies it against the frozen planning snapshot. An absent or
+invalid workspace prevents that run from advancing; neither the Target's stored
+value nor the original caller path is treated as an arbitrary filesystem path.
+
+The cycle does not loop until the database is empty. Repeated `worker --once`
+invocations may therefore be used by cron, smoke tests, and controlled operations;
+every invocation reconstructs progress from DB/CAS state. Existing job identity,
+lease/attempt containment, cancellation, parent deadline, Syft-to-OSV dependency,
+S6D single-publication, and Product Core predecessor/finalization rules remain the
+authorities for idempotency and recovery. OSV remains a mapped job behind its
+existing permit-controlled helper—there is no direct HTTP path or special pause
+state in the runtime.
+
+The command prints only aggregate cycle counts. It omits run IDs, source and
+managed-workspace paths, artifact paths, scanner streams, findings, secret values,
+tokens, cleanup receipts, worker identities, and attempt identities. This bounded
+worker slice is not yet a continuous daemon or deployment-readiness claim.
