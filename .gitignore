@@ -19,6 +19,7 @@ data/artifacts/
 data/source-workspaces/
 data/source-projections/
 data/source-runtime-receipts/
+.securescan-deploy/
 
 # Additional Python packaging metadata
 *.egg-info/

@@ -329,3 +329,7 @@ See the [Engine Closure contract](docs/source-v0.9-engine-closure.md).
 Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI
 retains database initialization and fake-scanner development commands; the release gate
 is separate and never runs during API startup.
+
+For the practical single-node Source v1 deployment, run PostgreSQL, Alembic, and
+the API with Docker Compose while keeping `securescan worker` on the trusted
+scanning host. See the [Source v1 deployment guide](docs/source-v1-deployment.md).

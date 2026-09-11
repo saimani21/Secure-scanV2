@@ -1,10 +1,20 @@
+x-securescan-application: &securescan-application
+  image: securescan-core:${SECURESCAN_IMAGE_TAG:-d1}
+  build:
+    context: .
+    dockerfile: Dockerfile
+    args:
+      SECURESCAN_RUNTIME_UID: ${SECURESCAN_RUNTIME_UID:-1000}
+      SECURESCAN_RUNTIME_GID: ${SECURESCAN_RUNTIME_GID:-1000}
+
 services:
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ${SECURESCAN_POSTGRES_DB:-securescan}
       POSTGRES_USER: ${SECURESCAN_POSTGRES_USER:-securescan}
-      POSTGRES_PASSWORD: ${SECURESCAN_POSTGRES_PASSWORD:-securescan-dev-only}
+      POSTGRES_PASSWORD: ${SECURESCAN_POSTGRES_PASSWORD:?SECURESCAN_POSTGRES_PASSWORD is required}
     ports:
       - "127.0.0.1:${SECURESCAN_POSTGRES_PORT:-55432}:5432"
     healthcheck:
@@ -15,6 +25,61 @@ services:
       start_period: 5s
     volumes:
       - securescan_pg:/var/lib/postgresql/data
+
+  migrate:
+    <<: *securescan-application
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SECURESCAN_DATABASE_URL: postgresql+psycopg://${SECURESCAN_POSTGRES_USER:-securescan}:${SECURESCAN_POSTGRES_PASSWORD:?SECURESCAN_POSTGRES_PASSWORD is required}@postgres:5432/${SECURESCAN_POSTGRES_DB:-securescan}
+
+  api:
+    <<: *securescan-application
+    init: true
+    restart: unless-stopped
+    command:
+      - uvicorn
+      - securescan.api.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      SECURESCAN_DATABASE_URL: postgresql+psycopg://${SECURESCAN_POSTGRES_USER:-securescan}:${SECURESCAN_POSTGRES_PASSWORD:?SECURESCAN_POSTGRES_PASSWORD is required}@postgres:5432/${SECURESCAN_POSTGRES_DB:-securescan}
+      SECURESCAN_HMAC_KEY: ${SECURESCAN_HMAC_KEY:?SECURESCAN_HMAC_KEY is required}
+      SECURESCAN_ALLOW_SQLITE_SCHEMA_BOOTSTRAP: "false"
+      SECURESCAN_ARTIFACT_ROOT: /var/lib/securescan/artifacts
+      SECURESCAN_SOURCE_WORKSPACE_ROOT: /var/lib/securescan/source-workspaces
+      SECURESCAN_SOURCE_PROJECTION_ROOT: /var/lib/securescan/source-projections
+      SECURESCAN_SOURCE_RUNTIME_RECEIPT_ROOT: /var/lib/securescan/source-runtime-receipts
+      SECURESCAN_MAX_OUTPUT_BYTES: ${SECURESCAN_MAX_OUTPUT_BYTES:-1048576}
+      SECURESCAN_DEFAULT_TIMEOUT_SECONDS: ${SECURESCAN_DEFAULT_TIMEOUT_SECONDS:-15}
+    ports:
+      - "127.0.0.1:${SECURESCAN_API_PORT:-8000}:8000"
+    volumes:
+      - type: bind
+        source: ${SECURESCAN_DEPLOY_DATA_ROOT:-./.securescan-deploy}
+        target: /var/lib/securescan
+        bind:
+          create_host_path: false
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3).read()
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
 volumes:
   securescan_pg:
