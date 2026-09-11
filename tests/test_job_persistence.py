@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, text
 from sqlalchemy.exc import IntegrityError
 
 from securescan.config import Settings
@@ -32,6 +32,50 @@ def database_settings(tmp_path: Path) -> Settings:
         database_url=f"sqlite:///{tmp_path / 'jobs.db'}",
         artifact_root=tmp_path / "artifacts",
     )
+
+
+def test_session_factory_creates_parent_for_file_backed_sqlite(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "missing" / "nested" / "securescan.db"
+    settings = Settings(
+        database_url=f"sqlite:///{database_path}",
+        artifact_root=tmp_path / "artifacts",
+    )
+    assert not database_path.parent.exists()
+
+    engine, _ = create_session_factory(settings)
+    try:
+        with engine.connect() as connection:
+            assert connection.scalar(text("SELECT 1")) == 1
+        assert database_path.parent.is_dir()
+        assert database_path.is_file()
+    finally:
+        engine.dispose()
+
+
+def test_session_factory_preserves_sqlite_memory_without_directory_creation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    mkdir_calls: list[Path] = []
+    original_mkdir = Path.mkdir
+
+    def record_mkdir(path: Path, *args, **kwargs) -> None:
+        mkdir_calls.append(path)
+        original_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", record_mkdir)
+    settings = Settings(
+        database_url="sqlite:///:memory:", artifact_root=tmp_path / "artifacts"
+    )
+
+    engine, _ = create_session_factory(settings)
+    try:
+        with engine.connect() as connection:
+            assert connection.scalar(text("SELECT 1")) == 1
+        assert mkdir_calls == []
+    finally:
+        engine.dispose()
 
 
 def create_run(session) -> AnalysisRunRow:

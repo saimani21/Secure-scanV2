@@ -16,6 +16,9 @@ htmlcov/
 data/artifacts/sha256/
 *.pyc
 data/artifacts/
+data/source-workspaces/
+data/source-projections/
+data/source-runtime-receipts/
 
 # Additional Python packaging metadata
 *.egg-info/

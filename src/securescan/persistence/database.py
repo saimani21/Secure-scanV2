@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -19,6 +20,7 @@ from sqlalchemy import (
     event,
     text,
 )
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
@@ -1347,7 +1349,12 @@ class SourceOsvRequestPermitRow(Base):
 
 
 def create_session_factory(settings: Settings):
-    is_sqlite = settings.database_url.startswith("sqlite")
+    database_url = make_url(settings.database_url)
+    is_sqlite = database_url.get_backend_name() == "sqlite"
+
+    if is_sqlite and database_url.database not in {None, "", ":memory:"}:
+        assert database_url.database is not None
+        Path(database_url.database).parent.mkdir(parents=True, exist_ok=True)
 
     connect_args = (
         {"check_same_thread": False}
