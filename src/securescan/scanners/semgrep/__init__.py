@@ -33,11 +33,14 @@ from securescan.scanners.semgrep.ruleset import (
 )
 from securescan.scanners.semgrep.source_binding import (
     DECLARED_SEMGREP_TOOL_VERSION,
+    PRODUCTION_SEMGREP_BINDING_DIGEST,
+    PRODUCTION_SEMGREP_IMAGE_REFERENCE,
     SEMGREP_ADAPTER_ID,
     InvalidSemgrepSourceBindingError,
     SemgrepSourceBindingError,
     TrustedSemgrepSourceBinding,
     build_semgrep_source_analyzer_snapshot,
+    create_production_semgrep_source_binding,
 )
 from securescan.scanners.semgrep.source_execution import (
     SOURCE_EXECUTION_PAYLOAD_KEY,
@@ -77,6 +80,8 @@ from securescan.scanners.semgrep.source_result import (
 
 __all__ = [
     "DECLARED_SEMGREP_TOOL_VERSION",
+    "PRODUCTION_SEMGREP_BINDING_DIGEST",
+    "PRODUCTION_SEMGREP_IMAGE_REFERENCE",
     "InvalidSemgrepRulesetError",
     "InvalidSemgrepScanPlanError",
     "InvalidSemgrepSourceBindingError",
@@ -133,6 +138,7 @@ __all__ = [
     "build_semgrep_source_analyzer_snapshot",
     "build_semgrep_source_execution_context",
     "create_semgrep_trusted_definition",
+    "create_production_semgrep_source_binding",
     "create_source_aware_semgrep_trusted_definition",
     "load_baseline_ruleset",
     "parse_semgrep_output",

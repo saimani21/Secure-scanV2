@@ -8,6 +8,9 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID
 
+from securescan.scanners.semgrep.source_binding import (
+    PRODUCTION_SEMGREP_BINDING_DIGEST,
+)
 from securescan.source.enums import (
     AnalysisCapability,
     FileContentKind,
@@ -35,7 +38,7 @@ PLANNING_SNAPSHOT_SCHEMA_VERSION = "securescan-source-orchestration-planning-s6a
 AUTHORITY_ROSTER_SCHEMA_VERSION = "securescan-source-authority-roster-s6a-v1"
 PLANNING_SNAPSHOT_MEDIA_TYPE = "application/vnd.securescan.source-orchestration-planning+json"
 SOURCE_V1_AUTHORITY_ROSTER_DIGEST = (
-    "f826555c904dd6190a3f1ee270905da92f547192783d8cd61850051c0ce7c510"
+    "c4400049a3f7e956aa64a02d2d01e14b4ad1235087d72cb18fabb41907480a4a"
 )
 
 _NODE_ID_DOMAIN = b"securescan-source-orchestration-node-s6a-v1\0"
@@ -133,7 +136,7 @@ _TRUSTED_AUTHORITY_IDENTITIES: tuple[dict[str, str], ...] = (
         "analyzer_id": "python-semgrep-v1",
         "authority": SourceAuthority.SEMGREP.value,
         "capability": AnalysisCapability.PYTHON_SAST.value,
-        "contract_digest": "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a",
+        "contract_digest": PRODUCTION_SEMGREP_BINDING_DIGEST,
         "contract_kind": "trusted-binding",
         "implementation_version": "1.171.0",
     },

@@ -38,6 +38,7 @@ from securescan.persistence.database import (
     initialize_database,
 )
 from securescan.scanners.semgrep import (
+    PRODUCTION_SEMGREP_IMAGE_REFERENCE,
     SOURCE_EXECUTION_PAYLOAD_KEY,
     InvalidSourceSemgrepExecutionRequestError,
     SemgrepScannerAdapter,
@@ -50,6 +51,7 @@ from securescan.scanners.semgrep import (
     SourceSemgrepSubmissionService,
     TrustedSemgrepSourceBinding,
     build_semgrep_source_execution_context,
+    create_production_semgrep_source_binding,
     load_baseline_ruleset,
 )
 from securescan.source import (
@@ -82,7 +84,11 @@ GOLDEN_CONTEXT_DIGEST = (
 )
 
 
-def _definition(*, tool_version: str = "1.171.0") -> TrustedAdapterDefinition:
+def _definition(
+    *,
+    tool_version: str = "1.171.0",
+    image_reference: str = IMAGE,
+) -> TrustedAdapterDefinition:
     return TrustedAdapterDefinition(
         adapter_id="semgrep-ce",
         display_name="Semgrep Community Edition",
@@ -91,19 +97,26 @@ def _definition(*, tool_version: str = "1.171.0") -> TrustedAdapterDefinition:
         backend=SandboxExecutionBackend.DOCKER_SANDBOX,
         policy=SandboxExecutionPolicy(allowed_environment_names=("HOME",)),
         factory=lambda: object(),
-        image_reference=IMAGE,
+        image_reference=image_reference,
         command_prefix=("semgrep",),
     )
 
 
-def _binding(*, tool_version: str = "1.171.0") -> TrustedSemgrepSourceBinding:
+def _binding(
+    *,
+    tool_version: str = "1.171.0",
+    image_reference: str = IMAGE,
+) -> TrustedSemgrepSourceBinding:
     return TrustedSemgrepSourceBinding(
-        definition=_definition(tool_version=tool_version),
+        definition=_definition(
+            tool_version=tool_version,
+            image_reference=image_reference,
+        ),
         ruleset=load_baseline_ruleset(),
     )
 
 
-def _trusted_inputs():
+def _trusted_inputs(*, binding: TrustedSemgrepSourceBinding | None = None):
     entries = (
         RepositoryManifestEntry(
             relative_path="app.py",
@@ -182,7 +195,7 @@ def _trusted_inputs():
         for candidate in plan.entries
         if candidate.capability is AnalysisCapability.PYTHON_SAST
     )
-    return profile, plan, entry, _binding()
+    return profile, plan, entry, binding or _binding()
 
 
 def _context() -> SourceExecutionContext:
@@ -428,9 +441,11 @@ def test_context_json_rejects_unknown_fields_and_noncanonical_encoding() -> None
 
 def _submit(
     services: tuple[sessionmaker[Session], ContentAddressedArtifactStore, str],
+    *,
+    binding: TrustedSemgrepSourceBinding | None = None,
 ):
     session_factory, store, target_id = services
-    profile, plan, entry, binding = _trusted_inputs()
+    profile, plan, entry, trusted_binding = _trusted_inputs(binding=binding)
     workspace = _submission_workspace(store)
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
@@ -447,10 +462,10 @@ def _submit(
             profile=profile,
             plan=plan,
             entry=entry,
-            binding=binding,
+            binding=trusted_binding,
         )
     )
-    return result, binding
+    return result, trusted_binding
 
 
 def _submission_request(
@@ -977,6 +992,46 @@ def test_current_binding_mismatch_is_rejected(durable_services) -> None:
         SourceSemgrepExecutionContextResolver(
             store,
             _binding(tool_version="1.172.0"),
+        ).resolve(job)
+
+
+def test_old_placeholder_context_cannot_pair_with_current_production_binding(
+    durable_services,
+) -> None:
+    session_factory, store, _ = durable_services
+    old_placeholder = "registry.example/securescan/semgrep@sha256:" + "4" * 64
+    result, _ = _submit(
+        durable_services,
+        binding=_binding(image_reference=old_placeholder),
+    )
+    job = JobRepository(session_factory).get_job(result.job_id)
+    assert job is not None
+    production_binding = create_production_semgrep_source_binding(
+        definition=_definition(image_reference=PRODUCTION_SEMGREP_IMAGE_REFERENCE),
+        ruleset=load_baseline_ruleset(),
+    )
+
+    with pytest.raises(SourceExecutionBindingMismatchError):
+        SourceSemgrepExecutionContextResolver(store, production_binding).resolve(job)
+
+
+def test_current_production_context_cannot_pair_with_old_placeholder_binding(
+    durable_services,
+) -> None:
+    session_factory, store, _ = durable_services
+    production_binding = create_production_semgrep_source_binding(
+        definition=_definition(image_reference=PRODUCTION_SEMGREP_IMAGE_REFERENCE),
+        ruleset=load_baseline_ruleset(),
+    )
+    result, _ = _submit(durable_services, binding=production_binding)
+    job = JobRepository(session_factory).get_job(result.job_id)
+    assert job is not None
+    old_placeholder = "registry.example/securescan/semgrep@sha256:" + "4" * 64
+
+    with pytest.raises(SourceExecutionBindingMismatchError):
+        SourceSemgrepExecutionContextResolver(
+            store,
+            _binding(image_reference=old_placeholder),
         ).resolve(job)
 
 

@@ -12,6 +12,9 @@ from uuid import UUID
 
 from securescan.scanners.checkov.parser import CheckovParseResult
 from securescan.scanners.gitleaks.parser import GitleaksParseResult
+from securescan.scanners.semgrep.source_binding import (
+    PRODUCTION_SEMGREP_BINDING_DIGEST,
+)
 from securescan.scanners.syft.parser import SyftParseResult
 from securescan.source.execution_context import SourceExecutionContext
 from securescan.source.projection import PreparedSourceProjection
@@ -90,7 +93,7 @@ _TRUSTED_NATIVE_IDENTITIES = {
     "semgrep-ce": (
         "1.171.0",
         "python-semgrep-v1",
-        "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a",
+        PRODUCTION_SEMGREP_BINDING_DIGEST,
         "securescan-semgrep-sanitized-v1",
     ),
     "syft": (

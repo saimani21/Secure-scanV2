@@ -10,6 +10,7 @@ from unified_evidence_fixtures import (
     checkov_native,
     gitleaks_native,
     osv_native,
+    semgrep_binding,
     semgrep_native,
     semgrep_tool_execution,
     syft_native,
@@ -99,6 +100,23 @@ def test_semgrep_adapter_preserves_native_identity_evidence_and_severity() -> No
     assert finding.severity.scheme is SeverityScheme.SEMGREP_NORMALIZED
     assert evidence.payload.cwe_ids == ("CWE-95",)  # type: ignore[union-attr]
     assert evidence.provenance.ruleset_digest == binding.ruleset_sha256  # type: ignore[union-attr]
+
+
+def test_new_semgrep_s4_provenance_uses_current_production_binding() -> None:
+    binding = semgrep_binding(production=True)
+    assessment, context, projection, _ = semgrep_native(binding=binding)
+    fragment = adapt_semgrep_assessment(
+        assessment,
+        context=context,
+        projection=projection,
+        binding=binding,
+        tool_execution=semgrep_tool_execution(assessment),
+        sanitized_artifact_bytes=SEMGREP_ARTIFACT_BYTES,
+    )
+
+    provenance = fragment.evidence[0].provenance
+    assert provenance.binding_digest == binding.binding_digest()  # type: ignore[union-attr]
+    assert provenance.context_digest == context.context_digest()  # type: ignore[union-attr]
 
 
 def test_gitleaks_adapter_uses_safe_structural_identity_only() -> None:

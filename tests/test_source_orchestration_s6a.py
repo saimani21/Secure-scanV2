@@ -58,6 +58,7 @@ from securescan.persistence.database import (
     create_session_factory,
     initialize_database,
 )
+from securescan.scanners.semgrep import PRODUCTION_SEMGREP_BINDING_DIGEST
 from securescan.source.enums import (
     AnalysisCapability,
     FileContentKind,
@@ -288,6 +289,22 @@ def test_frozen_roster_is_exact_and_deterministic() -> None:
     assert first == second
     assert first.roster_digest() == second.roster_digest()
     assert first.roster_digest() == SOURCE_V1_AUTHORITY_ROSTER_DIGEST
+    semgrep = next(
+        item for item in first.authorities if item.authority is SourceAuthority.SEMGREP
+    )
+    assert semgrep.contract_digest == PRODUCTION_SEMGREP_BINDING_DIGEST
+
+
+def test_old_placeholder_semgrep_contract_is_not_a_current_roster_identity() -> None:
+    semgrep = frozen_source_v1_authority_roster().for_capability(
+        AnalysisCapability.PYTHON_SAST
+    )
+    old_binding_digest = (
+        "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a"
+    )
+
+    with pytest.raises(SourceOrchestrationIntegrityError):
+        replace(semgrep, contract_digest=old_binding_digest)
 
 
 @pytest.mark.parametrize("mutation", ["missing", "duplicate", "extra", "reordered"])

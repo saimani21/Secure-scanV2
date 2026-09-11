@@ -114,9 +114,11 @@ from securescan.scanners.gitleaks.source_execution import (
     GitleaksExecutionStatus,
 )
 from securescan.scanners.semgrep import (
+    PRODUCTION_SEMGREP_IMAGE_REFERENCE,
     SourceExecutionEnvelope,
     SourceSemgrepExecutionContextResolver,
     TrustedSemgrepSourceBinding,
+    create_production_semgrep_source_binding,
     create_semgrep_trusted_definition,
     create_source_aware_semgrep_trusted_definition,
     load_baseline_ruleset,
@@ -143,7 +145,7 @@ from securescan.workspaces.models import repository_content_digest
 
 _LEASE_TOKEN = "33333333-3333-4333-8333-333333333333"
 _ATTEMPT_TOKEN = UUID("44444444-4444-4444-8444-444444444444")
-_SEMGREP_IMAGE = "registry.example/securescan/semgrep@sha256:" + "4" * 64
+_SEMGREP_IMAGE = PRODUCTION_SEMGREP_IMAGE_REFERENCE
 _SEMGREP_FIXTURE = (
     Path(__file__).parent / "fixtures" / "semgrep" / "output" / "valid-findings.json"
 )
@@ -510,6 +512,19 @@ def test_node_creates_exactly_one_bound_job(s6b: _Environment) -> None:
         assert mapping.node_id == node.node_id
         assert mapping.run_id == str(_RUN_ID)
         assert mapping.contract_digest == node.contract_digest
+
+
+def test_current_semgrep_native_identity_rejects_old_placeholder_binding(
+    s6b: _Environment,
+) -> None:
+    node, job = s6b.create(SourceAuthority.SEMGREP)
+    native = s6b.native_result(node, job)
+    old_binding_digest = (
+        "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a"
+    )
+
+    with pytest.raises(SourceScannerExecutionIntegrityError):
+        replace(native, binding_digest=old_binding_digest)
 
 
 def test_attempt_requires_every_prior_attempt_to_be_clean(s6b: _Environment) -> None:
@@ -1258,11 +1273,14 @@ class _SandboxRunner:
 
 
 def _semgrep_docker_contract(
-    s6b: _Environment, tmp_path: Path
+    s6b: _Environment,
+    tmp_path: Path,
+    *,
+    image_reference: str = _SEMGREP_IMAGE,
 ) -> tuple[object, TrustedSemgrepSourceBinding]:
     ruleset = load_baseline_ruleset()
     definition = create_semgrep_trusted_definition(
-        image_reference=_SEMGREP_IMAGE,
+        image_reference=image_reference,
         tool_version="1.171.0",
         docker_executor=object(),
         workspace_manager=RepositoryWorkspaceManager(tmp_path / "semgrep-workspaces"),
@@ -1270,9 +1288,12 @@ def _semgrep_docker_contract(
         artifact_store=s6b.store,
         source_resolver=lambda _run_id: tmp_path,
     )
-    return definition, TrustedSemgrepSourceBinding(
-        definition=definition, ruleset=ruleset
+    binding_factory = (
+        create_production_semgrep_source_binding
+        if image_reference == PRODUCTION_SEMGREP_IMAGE_REFERENCE
+        else TrustedSemgrepSourceBinding
     )
+    return definition, binding_factory(definition=definition, ruleset=ruleset)
 
 
 def _semgrep_docker_request(

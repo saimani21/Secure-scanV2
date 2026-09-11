@@ -220,6 +220,7 @@ def _production_dispatcher(
     tmp_path: Path,
     *,
     docker_runner=None,
+    semgrep_image: str | None = None,
 ):
     evaluations = SourceDependencyEvaluationService(
         environment.factory, environment.store
@@ -235,7 +236,10 @@ def _production_dispatcher(
         SourceOsvRequestPermitService(environment.factory),
         tmp_path / "osv-receipts",
     )
-    _definition, semgrep_binding = _semgrep_docker_contract(environment, tmp_path)
+    semgrep_options = {} if semgrep_image is None else {"image_reference": semgrep_image}
+    _definition, semgrep_binding = _semgrep_docker_contract(
+        environment, tmp_path, **semgrep_options
+    )
     return create_source_production_authority_dispatcher(
         SourceProductionDispatcherDependencies(
             session_factory=environment.factory,
@@ -288,6 +292,19 @@ def test_production_composition_binds_all_five_frozen_execution_paths(
     assert dispatcher._runners[SourceAuthority.OSV]._service.execute
     assert dispatcher._runners[SourceAuthority.SEMGREP]._binding.core_adapter_id == "semgrep-ce"
     assert dispatcher._runners[SourceAuthority.SEMGREP]._ruleset == load_baseline_ruleset()
+
+
+def test_production_dispatcher_rejects_old_placeholder_semgrep_binding(
+    worker_environment: _Environment,
+    tmp_path: Path,
+) -> None:
+    old_placeholder = "registry.example/securescan/semgrep@sha256:" + "4" * 64
+    with pytest.raises(SourceScannerExecutionConflictError):
+        _production_dispatcher(
+            worker_environment,
+            tmp_path,
+            semgrep_image=old_placeholder,
+        )
 
 
 @pytest.mark.parametrize(

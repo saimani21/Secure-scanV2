@@ -41,7 +41,9 @@ from securescan.scanners.gitleaks import (
 )
 from securescan.scanners.semgrep import (
     DECLARED_SEMGREP_TOOL_VERSION,
+    PRODUCTION_SEMGREP_IMAGE_REFERENCE,
     TrustedSemgrepSourceBinding,
+    create_production_semgrep_source_binding,
     load_baseline_ruleset,
 )
 from securescan.scanners.semgrep.source_execution import SourceProjectionExecutionReference
@@ -77,7 +79,7 @@ SEMGREP_ARTIFACT_BYTES = b'{"schema_version":"controlled-sanitized-semgrep-v1"}\
 SEMGREP_ARTIFACT_ID = "00000000-0000-4000-8000-00000000a405"
 
 
-def semgrep_binding() -> TrustedSemgrepSourceBinding:
+def semgrep_binding(*, production: bool = False) -> TrustedSemgrepSourceBinding:
     definition = TrustedAdapterDefinition(
         adapter_id="semgrep-ce",
         display_name="Semgrep Community Edition",
@@ -86,13 +88,19 @@ def semgrep_binding() -> TrustedSemgrepSourceBinding:
         backend=SandboxExecutionBackend.DOCKER_SANDBOX,
         policy=SandboxExecutionPolicy(allowed_environment_names=("HOME",)),
         factory=lambda: object(),
-        image_reference="registry.example/securescan/semgrep@sha256:" + "4" * 64,
+        image_reference=(
+            PRODUCTION_SEMGREP_IMAGE_REFERENCE
+            if production
+            else "registry.example/securescan/semgrep@sha256:" + "4" * 64
+        ),
         command_prefix=("semgrep",),
     )
-    return TrustedSemgrepSourceBinding(
-        definition=definition,
-        ruleset=load_baseline_ruleset(),
+    factory = (
+        create_production_semgrep_source_binding
+        if production
+        else TrustedSemgrepSourceBinding
     )
+    return factory(definition=definition, ruleset=load_baseline_ruleset())
 
 
 def source_context(
@@ -150,13 +158,14 @@ def semgrep_native(
     severity: str = "high",
     path: str = "src/app.py",
     component_id: str | None = None,
+    binding: TrustedSemgrepSourceBinding | None = None,
 ) -> tuple[
     SourceCapabilityExecutionAssessment,
     SourceExecutionContext,
     SourceProjectionExecutionReference,
     TrustedSemgrepSourceBinding,
 ]:
-    binding = semgrep_binding()
+    binding = binding or semgrep_binding()
     context = source_context(
         capability=AnalysisCapability.PYTHON_SAST,
         source_analyzer_id=binding.source_analyzer_id,

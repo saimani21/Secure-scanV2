@@ -24,9 +24,12 @@ from securescan.execution.docker_sandbox import (
     DockerSandboxExecutor,
 )
 from securescan.scanners.semgrep import (
+    PRODUCTION_SEMGREP_BINDING_DIGEST,
+    PRODUCTION_SEMGREP_IMAGE_REFERENCE,
     InvalidSemgrepSourceBindingError,
     TrustedSemgrepSourceBinding,
     build_semgrep_source_analyzer_snapshot,
+    create_production_semgrep_source_binding,
     create_semgrep_trusted_definition,
     load_baseline_ruleset,
 )
@@ -53,11 +56,10 @@ from securescan.workspaces.models import (
     repository_content_digest,
 )
 
-IMAGE = "registry.example/securescan/semgrep@sha256:" + "4" * 64
+IMAGE = PRODUCTION_SEMGREP_IMAGE_REFERENCE
+OLD_PLACEHOLDER_IMAGE = "registry.example/securescan/semgrep@sha256:" + "4" * 64
 TOOL_VERSION = "1.171.0"
-BINDING_GOLDEN_DIGEST = (
-    "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a"
-)
+BINDING_GOLDEN_DIGEST = PRODUCTION_SEMGREP_BINDING_DIGEST
 REGISTRY_GOLDEN_DIGEST = (
     "7e795691ac8ae95c54efcb99bf9fe746dd9da33cdf29e641b2a03b71123dd072"
 )
@@ -118,7 +120,7 @@ class _RuntimeRunner:
 def _binding(
     definition: TrustedAdapterDefinition | None = None,
 ) -> TrustedSemgrepSourceBinding:
-    return TrustedSemgrepSourceBinding(
+    return create_production_semgrep_source_binding(
         definition=definition or _definition(),
         ruleset=load_baseline_ruleset(),
     )
@@ -193,7 +195,7 @@ def _python_entry(plan):
 def test_trusted_semgrep_source_binding_retains_exact_provenance() -> None:
     definition = _definition()
     ruleset = load_baseline_ruleset()
-    binding = TrustedSemgrepSourceBinding(
+    binding = create_production_semgrep_source_binding(
         definition=definition,
         ruleset=ruleset,
     )
@@ -213,6 +215,14 @@ def test_trusted_semgrep_source_binding_retains_exact_provenance() -> None:
     assert binding.binding_digest() == _binding().binding_digest()
     with pytest.raises(FrozenInstanceError):
         binding.core_adapter_id = "other"  # type: ignore[misc]
+
+
+def test_production_binding_rejects_old_placeholder_contract() -> None:
+    with pytest.raises(InvalidSemgrepSourceBindingError):
+        create_production_semgrep_source_binding(
+            definition=_definition(image_reference=OLD_PLACEHOLDER_IMAGE),
+            ruleset=load_baseline_ruleset(),
+        )
 
 
 def test_binding_uses_the_same_ruleset_as_core_semgrep_configuration(

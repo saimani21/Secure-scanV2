@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 from dataclasses import dataclass, replace
-from typing import Any
+from typing import Any, Final
 
 from securescan.adapters.sandbox_policy import SandboxExecutionBackend
 from securescan.adapters.trusted_registry import (
@@ -26,6 +26,13 @@ _SCHEMA_VERSION = "0.3B2"
 _SOURCE_ANALYZER_ID = "python-semgrep-v1"
 SEMGREP_ADAPTER_ID = "semgrep-ce"
 DECLARED_SEMGREP_TOOL_VERSION = "1.171.0"
+PRODUCTION_SEMGREP_IMAGE_REFERENCE: Final = (
+    "semgrep/semgrep@sha256:"
+    "bdf7013b2c3634a487671158da77c554f531742326b543a9464d2adf6c433ac8"
+)
+PRODUCTION_SEMGREP_BINDING_DIGEST: Final = (
+    "265fd32e59296d6dc50fd7f8b7558f0e35ead821c4ee689f5ff953bf70393ed2"
+)
 _CORE_ADAPTER_ID = SEMGREP_ADAPTER_ID
 _TOOL_FAMILY = "semgrep"
 _COMMAND_PREFIX = ("semgrep",)
@@ -197,6 +204,23 @@ class TrustedSemgrepSourceBinding:
             == self.sandbox_policy_fingerprint
             and trusted_definition.image_reference == self.image_reference
         )
+
+
+def create_production_semgrep_source_binding(
+    *,
+    definition: TrustedAdapterDefinition,
+    ruleset: TrustedSemgrepRuleset,
+) -> TrustedSemgrepSourceBinding:
+    """Build the one current Source-v1 production Semgrep binding."""
+
+    binding = TrustedSemgrepSourceBinding(definition=definition, ruleset=ruleset)
+    if (
+        binding.image_reference != PRODUCTION_SEMGREP_IMAGE_REFERENCE
+        or binding.declared_tool_version != DECLARED_SEMGREP_TOOL_VERSION
+        or binding.binding_digest() != PRODUCTION_SEMGREP_BINDING_DIGEST
+    ):
+        raise InvalidSemgrepSourceBindingError
+    return binding
 
 
 def build_semgrep_source_analyzer_snapshot(
