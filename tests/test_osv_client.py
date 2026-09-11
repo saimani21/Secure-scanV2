@@ -26,12 +26,12 @@ def _json(value: object) -> bytes:
     return json.dumps(value, separators=(",", ":")).encode()
 
 
-def _advisory(record_id: str, purl: str) -> bytes:
+def _advisory(record_id: str, purl: str, *, modified: str = _MODIFIED) -> bytes:
     return _json(
         {
             "schema_version": "1.9.0",
             "id": record_id,
-            "modified": _MODIFIED,
+            "modified": modified,
             "affected": [
                 {
                     "package": {"ecosystem": "PyPI", "name": "x", "purl": purl},
@@ -106,6 +106,42 @@ def test_duplicate_ids_fetch_once_and_results_bind_to_ordered_candidate() -> Non
     assert [call[0] for call in transport.calls] == ["POST", "GET"]
 
 
+def test_query_accepts_advisory_with_higher_precision_revision() -> None:
+    candidate = _candidate()
+    reference_modified = "2026-09-10T03:50:25.139398Z"
+    observed_modified = "2026-09-10T03:50:25.139398550Z"
+    query = OsvHttpResponse(
+        200,
+        _json(
+            {
+                "results": [
+                    {
+                        "vulns": [
+                            {
+                                "id": "GHSA-9hjg-9r4m-mvj7",
+                                "modified": reference_modified,
+                            }
+                        ]
+                    }
+                ]
+            }
+        ),
+    )
+    advisory = OsvHttpResponse(
+        200,
+        _advisory(
+            "GHSA-9hjg-9r4m-mvj7",
+            "pkg:pypi/pyyaml",
+            modified=observed_modified,
+        ),
+    )
+    (match,) = TrustedOsvClient(
+        _Transport([query, advisory]), sleep=lambda _: None
+    ).query((candidate,))
+    assert match.references[0].modified == reference_modified
+    assert match.advisories[0].modified == observed_modified
+
+
 def test_pagination_is_per_candidate_and_repeated_token_fails() -> None:
     candidate = _candidate()
     first = OsvHttpResponse(
@@ -149,7 +185,7 @@ def test_transient_statuses_retry_bounded_then_succeed(status: int) -> None:
     assert len(transport.calls) == 2
 
 
-def test_cross_candidate_advisory_revision_change_fails_before_fetch() -> None:
+def test_querybatch_cross_candidate_conflicting_revisions_remain_rejected() -> None:
     candidates = build_controlled_candidates()[:2]
     response = OsvHttpResponse(
         200,

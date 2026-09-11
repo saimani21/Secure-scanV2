@@ -118,6 +118,33 @@ def valid_osv_timestamp(value: object) -> bool:
     return True
 
 
+def osv_advisory_revision_matches(reference: object, observed: object) -> bool:
+    """Match an advisory GET timestamp to its querybatch revision reference."""
+
+    if not valid_osv_timestamp(reference) or not valid_osv_timestamp(observed):
+        return False
+    assert isinstance(reference, str)
+    assert isinstance(observed, str)
+    if reference == observed:
+        return True
+
+    reference_body = reference[:-1]
+    observed_body = observed[:-1]
+
+    reference_second, reference_sep, reference_fraction = reference_body.partition(".")
+    observed_second, observed_sep, observed_fraction = observed_body.partition(".")
+
+    if (
+        reference_sep != "."
+        or observed_sep != "."
+        or reference_second != observed_second
+        or len(observed_fraction) <= len(reference_fraction)
+    ):
+        return False
+
+    return observed_fraction.startswith(reference_fraction)
+
+
 def canonical_package_name(purl_type: str, value: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValueError("OSV package name is invalid")

@@ -21,6 +21,7 @@ from securescan.advisories.osv.models import (
     OsvFailureCode,
     OsvIntegrationError,
     OsvQueryCandidate,
+    osv_advisory_revision_matches,
 )
 from securescan.advisories.osv.parser import (
     OSV_MAX_AFFECTED_ENTRIES,
@@ -121,6 +122,17 @@ class OsvCandidateMatch:
         actual = tuple(
             sorted((advisory.osv_record_id, advisory.modified) for advisory in self.advisories)
         )
+        revisions_match = (
+            len(expected) == len(actual)
+            and all(
+                expected_id == actual_id
+                and osv_advisory_revision_matches(expected_modified, actual_modified)
+                for (
+                    (expected_id, expected_modified),
+                    (actual_id, actual_modified),
+                ) in zip(expected, actual, strict=True)
+            )
+        )
         if (
             not isinstance(self.candidate, OsvQueryCandidate)
             or self.references
@@ -130,7 +142,7 @@ class OsvCandidateMatch:
                     key=lambda item: (item.osv_record_id, item.modified),
                 )
             )
-            or expected != actual
+            or not revisions_match
             or any(
                 advisory.applicable_package_key != self.candidate.package_key
                 for advisory in self.advisories

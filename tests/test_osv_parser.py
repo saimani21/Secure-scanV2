@@ -15,6 +15,7 @@ from securescan.advisories.osv import (
     parse_advisory_response,
     parse_query_response,
 )
+from securescan.advisories.osv.models import osv_advisory_revision_matches
 from securescan.benchmarks.osv_s2 import build_controlled_candidates
 from securescan.scanners.syft import PackageObservation
 
@@ -143,6 +144,51 @@ def test_advisory_schema_alias_fix_and_cvss_normalization() -> None:
     assert "PYSEC-2024-999" not in result.aliases
     assert "3" not in result.fixed_versions
     assert "99.0.0" not in result.fixed_versions
+
+
+@pytest.mark.parametrize(
+    ("reference_modified", "observed_modified"),
+    [
+        ("2026-09-10T03:50:25.139398Z", "2026-09-10T03:50:25.139398Z"),
+        ("2026-09-10T03:50:25.139398Z", "2026-09-10T03:50:25.139398550Z"),
+    ],
+)
+def test_advisory_revision_accepts_directional_precision_extension(
+    reference_modified: str, observed_modified: str
+) -> None:
+    document = _document()
+    document["modified"] = observed_modified
+    expected = OsvAdvisoryReference(document["id"], reference_modified)
+    result = parse_advisory_response(
+        _payload(document), expected=expected, candidate=_candidate()
+    )
+    assert result.modified == observed_modified
+
+
+@pytest.mark.parametrize(
+    ("reference_modified", "observed_modified"),
+    [
+        ("2026-09-10T03:50:25.139398Z", "2026-09-10T03:50:25.139399000Z"),
+        ("2026-09-10T03:50:25.139398550Z", "2026-09-10T03:50:25.139398Z"),
+    ],
+)
+def test_advisory_revision_rejects_change_or_precision_loss(
+    reference_modified: str, observed_modified: str
+) -> None:
+    document = _document()
+    document["modified"] = observed_modified
+    expected = OsvAdvisoryReference(document["id"], reference_modified)
+    with pytest.raises(OsvIntegrationError) as caught:
+        parse_advisory_response(
+            _payload(document), expected=expected, candidate=_candidate()
+        )
+    assert caught.value.code is OsvFailureCode.DATA_CHANGED_DURING_QUERY
+
+
+def test_advisory_revision_matcher_rejects_malformed_values() -> None:
+    valid = "2026-09-10T03:50:25.139398Z"
+    assert not osv_advisory_revision_matches("not-a-timestamp", valid)
+    assert not osv_advisory_revision_matches(valid, None)
 
 
 @pytest.mark.parametrize("field", ["id", "modified"])

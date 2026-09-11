@@ -21,6 +21,7 @@ from securescan.advisories.osv.models import (
     OsvIntegrationError,
     OsvQueryCandidate,
     canonical_package_name,
+    osv_advisory_revision_matches,
     purl_package_name,
     valid_osv_timestamp,
 )
@@ -312,7 +313,9 @@ def parse_advisory_response(
             raise ValueError
         record_id = value.get("id")
         modified = _timestamp(value.get("modified"))
-        if record_id != expected.osv_record_id or modified != expected.modified:
+        if record_id != expected.osv_record_id or not osv_advisory_revision_matches(
+            expected.modified, modified
+        ):
             raise OsvIntegrationError(OsvFailureCode.DATA_CHANGED_DURING_QUERY)
         if value.get("withdrawn") is not None:
             _timestamp(value.get("withdrawn"))
