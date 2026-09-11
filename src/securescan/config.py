@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     )
     source_enry_helper_sha256: str | None = None
     source_scan_deadline_seconds: int = Field(default=1_800, ge=300, le=86_400)
+    source_worker_poll_seconds: float = Field(default=1.0, ge=0.1, le=60)
     source_gitleaks_executable_path: Path = Path(
         "~/.local/securescan-tools/gitleaks/8.30.1/gitleaks"
     )

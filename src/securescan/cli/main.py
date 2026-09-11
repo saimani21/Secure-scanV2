@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 from pathlib import Path
 from typing import Annotated
 
@@ -14,8 +15,14 @@ from securescan.domain.enums import TargetType
 from securescan.domain.models import TargetProfile
 from securescan.execution.local_executor import LocalProcessExecutor
 from securescan.persistence.database import initialize_database
+from securescan.runtime import shutdown_signal_handlers
 from securescan.services.scan_service import ScanService
-from securescan.source_runtime import SourceRuntimeError, create_source_runtime
+from securescan.source_runtime import (
+    SourceRuntimeCycleSummary,
+    SourceRuntimeError,
+    SourceRuntimeLoop,
+    create_source_runtime,
+)
 
 from .source import (
     SourceCliError,
@@ -230,22 +237,38 @@ def worker(
         typer.Option("--once", help="Execute one bounded durable runtime cycle"),
     ] = False,
 ) -> None:
-    """Progress durable Source scans through one bounded production cycle."""
+    """Progress durable Source scans continuously or through one bounded cycle."""
 
-    if not once:
-        typer.echo(
-            "Error [RUNTIME_MODE_REQUIRED]: --once is required in this runtime slice",
-            err=True,
-        )
-        raise typer.Exit(2)
-    try:
-        with create_source_runtime() as composition:
-            summary = composition.runtime.run_once()
+    def summary_failed(summary: SourceRuntimeCycleSummary) -> bool:
+        return bool(summary.assembly_failed_count or summary.finalization_failed_count)
+
+    def emit_summary(summary: SourceRuntimeCycleSummary) -> None:
         rendered = canonical_json(summary.canonical_data())
-        if summary.assembly_failed_count or summary.finalization_failed_count:
-            typer.echo(rendered, err=True)
-            raise typer.Exit(5)
-        typer.echo(rendered)
+        typer.echo(rendered, err=summary_failed(summary))
+
+    try:
+        if once:
+            with create_source_runtime() as composition:
+                summary = composition.runtime.run_once()
+            emit_summary(summary)
+            if summary_failed(summary):
+                raise typer.Exit(5)
+            return
+
+        stop_event = threading.Event()
+        settings = get_settings()
+        with (
+            shutdown_signal_handlers(stop_event),
+            create_source_runtime(settings) as composition,
+        ):
+            SourceRuntimeLoop(
+                composition.runtime,
+                stop_event,
+                poll_seconds=settings.source_worker_poll_seconds,
+                on_cycle=emit_summary,
+            ).run()
+    except typer.Exit:
+        raise
     except SourceRuntimeError:
         typer.echo(
             "Error [RUNTIME_UNAVAILABLE]: Source runtime cycle is unavailable",

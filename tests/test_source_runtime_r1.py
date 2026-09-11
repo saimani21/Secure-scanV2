@@ -471,13 +471,6 @@ def test_cli_worker_once_prints_only_canonical_safe_summary(monkeypatch) -> None
     )
 
 
-def test_cli_worker_requires_bounded_once_mode() -> None:
-    result = CliRunner().invoke(app, ["worker"])
-
-    assert result.exit_code == 2
-    assert "RUNTIME_MODE_REQUIRED" in result.stderr
-
-
 def test_cli_worker_returns_nonzero_when_authoritative_stage_failed(monkeypatch) -> None:
     summary = replace(
         SourceRuntimeCycleSummary(*(0 for _ in range(18))),

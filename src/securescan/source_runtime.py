@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+import threading
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -189,6 +190,53 @@ class _Assembly(Protocol):
 
 class _Finalizer(Protocol):
     def finalize_ready(self, *, limit: int) -> ProductFinalizationBatchResult: ...
+
+
+class _RuntimeCycle(Protocol):
+    def run_once(self) -> SourceRuntimeCycleSummary: ...
+
+
+class SourceRuntimeLoop:
+    """Run bounded Source runtime cycles until graceful shutdown is requested."""
+
+    def __init__(
+        self,
+        runtime: _RuntimeCycle,
+        stop_event: threading.Event,
+        *,
+        poll_seconds: float,
+        on_cycle: Callable[[SourceRuntimeCycleSummary], None],
+        waiter: Callable[[float], bool] | None = None,
+    ) -> None:
+        if not hasattr(runtime, "run_once") or not callable(runtime.run_once):
+            raise SourceRuntimeError
+        if not isinstance(stop_event, threading.Event):
+            raise SourceRuntimeError
+        if (
+            isinstance(poll_seconds, bool)
+            or not isinstance(poll_seconds, (int, float))
+            or not 0.1 <= poll_seconds <= 60
+            or not callable(on_cycle)
+            or (waiter is not None and not callable(waiter))
+        ):
+            raise SourceRuntimeError
+        self._runtime = runtime
+        self._stop_event = stop_event
+        self._poll_seconds = float(poll_seconds)
+        self._on_cycle = on_cycle
+        self._waiter = waiter or stop_event.wait
+
+    def run(self) -> int:
+        completed_cycles = 0
+        while not self._stop_event.is_set():
+            summary = self._runtime.run_once()
+            if not isinstance(summary, SourceRuntimeCycleSummary):
+                raise SourceRuntimeError
+            self._on_cycle(summary)
+            completed_cycles += 1
+            if self._stop_event.is_set() or self._waiter(self._poll_seconds):
+                break
+        return completed_cycles
 
 
 class SourceRuntimeWorkDiscovery:
