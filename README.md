@@ -338,3 +338,8 @@ The API also serves a dependency-free, same-origin Source analysis console at
 `http://127.0.0.1:<SECURESCAN_API_PORT>/`. Submit repositories with the trusted-host
 `securescan scan` CLI, then open the returned run ID in the console. The browser
 does not accept repository paths or upload source trees.
+
+The [Source v1 release-acceptance runbook](docs/source-v1-release-acceptance.md)
+defines the final four-run, five-authority acceptance path and its sanitized evidence
+summary. Its committed RA1 fixtures and offline verifier do not themselves constitute a
+completed release-acceptance run.

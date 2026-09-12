@@ -1,0 +1,90 @@
+{
+  "fixture_version": "source-v1-ra1",
+  "five_authority_expectations": {
+    "checkov": {
+      "evidence_role": "finding",
+      "expected_check_id": "CKV_AWS_18",
+      "expected_path": "infra/main.tf"
+    },
+    "gitleaks": {
+      "evidence_role": "finding",
+      "expected_rule_id": "github-pat"
+    },
+    "osv.dev": {
+      "evidence_role": "finding",
+      "expected_purl": "pkg:pypi/pyyaml@5.3.1"
+    },
+    "semgrep-ce": {
+      "evidence_role": "finding",
+      "expected_path": "app/insecure_eval.py",
+      "expected_rule_id": "securescan.python.dangerous-eval"
+    },
+    "syft": {
+      "evidence_role": "package_component",
+      "expected_purl": "pkg:pypi/pyyaml@5.3.1"
+    }
+  },
+  "gitleaks_contract": {
+    "benchmark_case_id": "github-pat-positive-01",
+    "benchmark_baseline_sha256": "62f9c00f79c659d56490a181de231f0aa3cdca6a418f2ca5a9215f7ed1bbbb34",
+    "benchmark_manifest_sha256": "2946d1b4093f2195612268d6ec7447f38ae4a7266c80f8da52f98d896db04c8e",
+    "benchmark_plan_sha256": "0090cd7d140034f715bc9d060465ea69284f63b3a33ab917479b1264fa542a10",
+    "detection_kind": "CONTENT",
+    "expected_line": 3,
+    "expected_rule_id": "github-pat",
+    "production_config_sha256": "ca699281a4752ca677d7f1c1c22d97d2afca9c169eae28054486d4d95bae7fb4",
+    "target_path": "config/release-sentinel.txt"
+  },
+  "shared_files": [
+    {
+      "destination": "app/insecure_eval.py",
+      "sha256": "9289314772d645fff0ce80ac985af3f3dd8557622ee4888f25e4702fc62a669f",
+      "source": "tests/fixtures/semgrep/rules/python/dangerous-eval/vulnerable.py"
+    },
+    {
+      "destination": "Pipfile.lock",
+      "sha256": "b1ea04803828e07ce57d51964863bfb93ce73f0644592ce99dccd11455ee3651",
+      "source": "tests/fixtures/source_v1_acceptance/Pipfile.lock"
+    },
+    {
+      "destination": "infra/main.tf",
+      "sha256": "3e2a3e716ba60692702aa7e50d9f9ae01dd8aca1cc1ffc6947dcd22c573ce65c",
+      "source": "benchmarks/checkov/corpus/terraform/fail/main.tf"
+    }
+  ],
+  "states": [
+    {
+      "directory": "state-a-vulnerable-initial",
+      "expected_lifecycle": "NEW",
+      "gitleaks_fixture_sha256": "1c6feea09e2698569d24c88ce6996843fb7e85c5ed7e66809b437ace319ac39e",
+      "gitleaks_fixture_source": "benchmarks/gitleaks/corpus/github-pat/positive-01.txt",
+      "selected_target_present": true,
+      "state_id": "A_VULNERABLE_INITIAL"
+    },
+    {
+      "directory": "state-b-vulnerable-unchanged",
+      "expected_lifecycle": "EXISTING",
+      "gitleaks_fixture_sha256": "1c6feea09e2698569d24c88ce6996843fb7e85c5ed7e66809b437ace319ac39e",
+      "gitleaks_fixture_source": "benchmarks/gitleaks/corpus/github-pat/positive-01.txt",
+      "selected_target_present": true,
+      "state_id": "B_VULNERABLE_UNCHANGED"
+    },
+    {
+      "directory": "state-c-remediated",
+      "expected_lifecycle": "RESOLVED",
+      "gitleaks_fixture_sha256": "abae1bc7af842f6436ba2722c39e84b888146bb1c2607a9eb9b43a265ef5781f",
+      "gitleaks_fixture_source": "benchmarks/gitleaks/corpus/github-pat/negative-03.txt",
+      "selected_target_present": false,
+      "state_id": "C_REMEDIATED"
+    },
+    {
+      "directory": "state-d-vulnerable-reintroduced",
+      "expected_lifecycle": "REOPENED",
+      "gitleaks_fixture_sha256": "1c6feea09e2698569d24c88ce6996843fb7e85c5ed7e66809b437ace319ac39e",
+      "gitleaks_fixture_source": "benchmarks/gitleaks/corpus/github-pat/positive-01.txt",
+      "selected_target_present": true,
+      "state_id": "D_VULNERABLE_REINTRODUCED"
+    }
+  ],
+  "schema_version": "securescan-source-v1-release-acceptance-fixtures-v1"
+}
