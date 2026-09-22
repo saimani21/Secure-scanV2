@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -14,7 +15,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "e6a1c4f9b207"
+HEAD_REVISION = "f7c2d4e8a901"
 
 APPLICATION_TABLES = {
     "projects",
@@ -295,6 +296,9 @@ def _assert_source_orchestration_schema(database_inspector) -> None:
         "cancel_requested",
         "cancel_requested_at",
         "state_version",
+        "assembly_attempt_count",
+        "assembly_failure_code",
+        "assembly_failure_at",
         "max_active_jobs",
         "deadline_at",
         "deadline_exceeded_at",
@@ -445,8 +449,12 @@ def test_initial_migration_upgrade_creates_expected_schema(
     migration_environment: tuple[Config, str],
 ) -> None:
     config, database_url = migration_environment
+    source_runtime_logger = logging.getLogger("securescan.source_runtime")
+    source_runtime_logger.disabled = False
 
     command.upgrade(config, "head")
+
+    assert source_runtime_logger.disabled is False
 
     engine = create_engine(database_url)
     try:

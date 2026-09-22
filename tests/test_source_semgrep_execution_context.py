@@ -450,7 +450,9 @@ def _submit(
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager(store.root.parent / "source-projections"),
+        SourceProjectionManager.initialize_base_directory(
+            store.root.parent / "source-projections"
+        ),
         run_id_factory=lambda: UUID(RUN_ID),
         job_id_factory=lambda: UUID(JOB_ID),
     )
@@ -532,7 +534,9 @@ def test_identical_retry_returns_existing_job_and_stable_context(
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager(store.root.parent / "source-projections"),
+        SourceProjectionManager.initialize_base_directory(
+            store.root.parent / "source-projections"
+        ),
     )
 
     first = service.submit(request)
@@ -583,7 +587,9 @@ def test_identical_retry_with_fresh_services_uses_durable_identity(
     first_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager(store.root.parent / "source-projections"),
+        SourceProjectionManager.initialize_base_directory(
+            store.root.parent / "source-projections"
+        ),
     )
     first = first_service.submit(first_request)
     artifact_root = store.root
@@ -594,7 +600,9 @@ def test_identical_retry_with_fresh_services_uses_durable_identity(
     second_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         fresh_store,
-        SourceProjectionManager(fresh_store.root.parent / "source-projections"),
+        SourceProjectionManager.initialize_base_directory(
+            fresh_store.root.parent / "source-projections"
+        ),
     )
     second = second_service.submit(second_request)
     durable_job = JobRepository(session_factory).get_job(second.job_id)
@@ -627,7 +635,9 @@ def test_same_key_with_different_source_semantics_remains_a_conflict(
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager(store.root.parent / "source-projections"),
+        SourceProjectionManager.initialize_base_directory(
+            store.root.parent / "source-projections"
+        ),
     )
     first = service.submit(request)
 
@@ -665,7 +675,9 @@ def test_server_owned_integrity_error_recovery_returns_existing_submission(
     first_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager(store.root.parent / "source-projections"),
+        SourceProjectionManager.initialize_base_directory(
+            store.root.parent / "source-projections"
+        ),
     )
     first = first_service.submit(request)
     original_find = job_submission_module._find_submission
@@ -682,7 +694,9 @@ def test_server_owned_integrity_error_recovery_returns_existing_submission(
     recovery_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         ContentAddressedArtifactStore(store.root),
-        SourceProjectionManager(store.root.parent / "source-projections"),
+        SourceProjectionManager.initialize_base_directory(
+            store.root.parent / "source-projections"
+        ),
     )
     recovered = recovery_service.submit(_submission_request(target_id, store)[0])
 
@@ -702,7 +716,7 @@ def test_projection_publication_race_reopens_the_valid_competing_projection(
     session_factory, store, target_id = durable_services
     request, _ = _submission_request(target_id, store)
     projection_root = store.root.parent / "source-projections"
-    manager = SourceProjectionManager(projection_root)
+    manager = SourceProjectionManager.initialize_base_directory(projection_root)
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,

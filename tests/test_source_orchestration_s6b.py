@@ -209,7 +209,9 @@ class _Environment:
         (source / "requirements.lock").write_bytes(b"requests==2.31.0\n")
         self.workspace_manager = RepositoryWorkspaceManager(tmp_path / "workspaces")
         self.workspace = self.workspace_manager.prepare_repository(source)
-        self.projections = SourceProjectionManager(tmp_path / "projections")
+        self.projections = SourceProjectionManager.initialize_base_directory(
+            tmp_path / "projections"
+        )
         with self.factory.begin() as session:
             project = ProjectRow(name="S6B fixture")
             target = TargetRow(
@@ -1836,7 +1838,10 @@ def test_supervisor_normal_completion_and_receipt(tmp_path: Path) -> None:
     assert receipt is not None
     assert receipt.cleanup_outcome is AttemptContainmentOutcome.CLEAN
     assert receipt.process_tree_empty is True
+    supervisor_pid = handle.handshake.supervisor_pid
     handle.close()
+    with pytest.raises(ProcessLookupError):
+        os.kill(supervisor_pid, 0)
 
 
 def test_attempt_bound_executor_supervises_probes_and_binds_only_exact_scan(

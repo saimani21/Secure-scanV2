@@ -31,6 +31,9 @@ from securescan.product_core import (
     ScanNotPublishedError,
     SourceFindingSummary,
     SourcePreparedScanRequest,
+    SourceProject,
+    SourceProjectError,
+    SourceProjectService,
     SourcePublishedReport,
     SourceScanPage,
     SourceScanQueryError,
@@ -152,6 +155,7 @@ class SourceCliServices:
     default_deadline_seconds: int
     clock: Callable[[], datetime] = utc_now
     idempotency_key_factory: Callable[[], str] = lambda: secrets.token_hex(32)
+    projects: SourceProjectService | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,6 +340,7 @@ def create_source_cli_services() -> Iterator[SourceCliServices]:
                 lambda: _analyzer_registry(settings, artifacts, workspaces),
             ),
             default_deadline_seconds=settings.source_scan_deadline_seconds,
+            projects=SourceProjectService(session_factory),
         )
     finally:
         engine.dispose()
@@ -459,6 +464,26 @@ def submit_local_scan(
         if workspace is not None and not submission_started:
             with suppress(RepositoryWorkspaceError):
                 services.workspace_manager.cleanup_workspace(workspace)
+
+
+def create_project(services: SourceCliServices, *, name: str) -> SourceProject:
+    if services.projects is None:
+        raise SourceCliError("PROJECT_UNAVAILABLE", "Source project service is unavailable", 5)
+    try:
+        return services.projects.create(name=name)
+    except SourceProjectError:
+        raise SourceCliError(
+            "INVALID_PROJECT", "Project name is invalid or unavailable", 2
+        ) from None
+
+
+def list_projects(services: SourceCliServices, *, limit: int) -> tuple[SourceProject, ...]:
+    if services.projects is None:
+        raise SourceCliError("PROJECT_UNAVAILABLE", "Source project service is unavailable", 5)
+    try:
+        return services.projects.list(limit=limit)
+    except SourceProjectError:
+        raise SourceCliError("INVALID_PROJECT", "Project list request is invalid", 2) from None
 
 
 def translate_query_error(exc: SourceScanQueryError) -> SourceCliError:

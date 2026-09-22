@@ -66,6 +66,7 @@ class _CancellationApiContext:
 def cancellation_api_context(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    initialized_api_runtime_storage: None,
 ) -> Iterator[_CancellationApiContext]:
     database_url = f"sqlite:///{tmp_path / 'job-cancellation-api.db'}"
     monkeypatch.setenv("SECURESCAN_DATABASE_URL", database_url)

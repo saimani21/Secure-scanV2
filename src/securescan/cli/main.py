@@ -16,6 +16,10 @@ from securescan.domain.models import TargetProfile
 from securescan.execution.local_executor import LocalProcessExecutor
 from securescan.persistence.database import initialize_database
 from securescan.runtime import shutdown_signal_handlers
+from securescan.runtime_storage import (
+    RuntimeStorageInitializationError,
+    initialize_source_runtime_storage,
+)
 from securescan.services.scan_service import ScanService
 from securescan.source_runtime import (
     SourceRuntimeCycleSummary,
@@ -27,8 +31,10 @@ from securescan.source_runtime import (
 from .source import (
     SourceCliError,
     canonical_json,
+    create_project,
     create_source_cli_services,
     finding_page_data,
+    list_projects,
     query_findings,
     query_report,
     query_scan,
@@ -39,6 +45,8 @@ from .source import (
 )
 
 app = typer.Typer(no_args_is_help=True, help="SecureScan execution-kernel CLI")
+project_app = typer.Typer(no_args_is_help=True, help="Manage durable Source projects")
+app.add_typer(project_app, name="project")
 
 
 def _fail(error: SourceCliError, *, json_output: bool) -> None:
@@ -105,6 +113,67 @@ def _display_findings(data: dict[str, object], *, json_output: bool) -> None:
                     canonical_json(item["primary_location"]),
                 )
             )
+        )
+
+
+@project_app.command("create")
+def project_create(
+    name: Annotated[str, typer.Argument()],
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Create a durable project identity for Source scans."""
+
+    try:
+        with create_source_cli_services() as services:
+            project = create_project(services, name=name)
+        data = {
+            "created_at": project.created_at.isoformat(),
+            "name": project.name,
+            "project_id": project.project_id,
+        }
+        if json_output:
+            typer.echo(canonical_json(data))
+        else:
+            typer.echo(f"Project ID: {project.project_id}")
+            typer.echo(f"Name: {project.name}")
+    except SourceCliError as exc:
+        _fail(exc, json_output=json_output)
+    except Exception:
+        _fail(
+            SourceCliError("PROJECT_UNAVAILABLE", "Source project service is unavailable", 5),
+            json_output=json_output,
+        )
+
+
+@project_app.command("list")
+def project_list(
+    limit: Annotated[int, typer.Option("--limit", min=1, max=200)] = 100,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """List bounded durable project identities."""
+
+    try:
+        with create_source_cli_services() as services:
+            projects = list_projects(services, limit=limit)
+        items = [
+            {
+                "created_at": project.created_at.isoformat(),
+                "name": project.name,
+                "project_id": project.project_id,
+            }
+            for project in projects
+        ]
+        if json_output:
+            typer.echo(canonical_json({"items": items, "limit": limit, "total": len(items)}))
+        else:
+            for project in projects:
+                typer.echo(f"{project.project_id}  {project.name}")
+    except SourceCliError as exc:
+        _fail(exc, json_output=json_output)
+    except Exception:
+        _fail(
+            SourceCliError("PROJECT_UNAVAILABLE", "Source project service is unavailable", 5),
+            json_output=json_output,
         )
 
 
@@ -236,6 +305,7 @@ def worker(
         bool,
         typer.Option("--once", help="Execute one bounded durable runtime cycle"),
     ] = False,
+    json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Progress durable Source scans continuously or through one bounded cycle."""
 
@@ -269,11 +339,27 @@ def worker(
             ).run()
     except typer.Exit:
         raise
-    except SourceRuntimeError:
-        typer.echo(
-            "Error [RUNTIME_UNAVAILABLE]: Source runtime cycle is unavailable",
-            err=True,
-        )
+    except SourceRuntimeError as exc:
+        if exc.code == "RUNTIME_UNAVAILABLE" and exc.phase == "runtime_cycle":
+            typer.echo(
+                "Error [RUNTIME_UNAVAILABLE]: Source runtime cycle is unavailable",
+                err=True,
+            )
+            raise typer.Exit(5) from None
+        data = {
+            "error": {
+                "code": exc.code,
+                "message": str(exc),
+                "phase": exc.phase,
+                "remediation": exc.remediation,
+            }
+        }
+        if json_output:
+            typer.echo(canonical_json(data), err=True)
+        else:
+            typer.echo(f"Error [{exc.code}]: {exc}", err=True)
+            typer.echo(f"Phase: {exc.phase}", err=True)
+            typer.echo(f"Remediation: {exc.remediation}", err=True)
         raise typer.Exit(5) from None
     except Exception:
         typer.echo(
@@ -281,6 +367,29 @@ def worker(
             err=True,
         )
         raise typer.Exit(5) from None
+
+
+@app.command("init")
+def initialize_runtime(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Initialize and validate private Source runtime storage."""
+
+    try:
+        initialized = initialize_source_runtime_storage(get_settings())
+    except RuntimeStorageInitializationError as exc:
+        error = SourceCliError(exc.code, f"{exc} (phase: {exc.phase})", 5)
+        _fail(error, json_output=json_output)
+    data = initialized.canonical_data()
+    if json_output:
+        typer.echo(canonical_json(data))
+    else:
+        typer.echo("SecureScan runtime storage initialized")
+        typer.echo(f"Deployment root: {data['deployment_root'] or '-'}")
+        typer.echo(f"Artifact root: {data['artifact_root']}")
+        typer.echo(f"Workspace root: {data['workspace_root']}")
+        typer.echo(f"Projection root: {data['projection_root']}")
+        typer.echo(f"Runtime receipt root: {data['receipt_root']}")
 
 
 @app.command("init-db")

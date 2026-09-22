@@ -96,7 +96,9 @@ class DependencySummaryResponse(_StrictModel):
     package_type: str
     purl: str | None
     locations: tuple[dict[str, Any], ...]
-    known_vulnerability_count: int
+    vulnerability_evaluation: str
+    vulnerability_evaluation_reason: str | None
+    known_vulnerability_count: int | None
     advisory_aliases: tuple[str, ...]
     fixed_versions: tuple[str, ...]
     priority_bands: tuple[str, ...]

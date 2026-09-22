@@ -174,8 +174,18 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | PC3A | Durable Source submission intent and trusted intake | COMPLETE |
 | PC3B | Product finalization runner and Source read model | COMPLETE |
 | PC3C | Public Source HTTP API | COMPLETE |
-| PC3D | Local Source CLI | IMPLEMENTED - PENDING PRODUCT CORE APPROVAL |
-| R1A/R1B | Source runtime composition and bounded worker cycle | IMPLEMENTED - PENDING CONTROLLED EXECUTION |
+| PC3D | Local Source CLI | COMPLETE |
+| R1A/R1B | Source runtime composition and bounded worker cycle | COMPLETE |
+| D1 | Single-node deployment and safe storage bootstrap | COMPLETE |
+| D2 | Same-origin Source analysis console | COMPLETE |
+
+Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
+runtime/deployment root, the supported idempotent `securescan init` workflow,
+the non-root Compose API, and one worker started before submission. The final
+nodejs-goof run reached `COMPLETED` in 100.340018 seconds with all four executed
+authorities terminal and clean, 620 raw Syft artifacts normalized to 578 unique
+observations, 212 OSV findings, six Checkov findings, zero gaps, successful
+assembly/publication/finalization, and no stale leases or scanner children.
 
 S6A adds one durable Source orchestration per AnalysisRun, an exact server-owned
 five-authority roster, a canonical CAS planning snapshot, deterministic runnable
@@ -1083,6 +1093,10 @@ stderr, Syft artifact IDs, host paths, and temporary paths are never durable.
 One `package_key` groups normalized package coordinates; a separate
 `package_observation_id` binds the key to its cataloger and sorted evidence
 locations, so equal coordinates at different manifests are not collapsed.
+Exact repeated artifacts are collapsed only after their complete safe
+normalized observations compare equal; a contradictory reuse of an observation
+identity fails closed. `package_count` therefore counts unique normalized
+observations rather than raw Syft artifact entries.
 
 The controlled project-owned corpus produced ten observations: seven Python,
 two npm, and one Go module. A separate zero-package fixture completed with zero

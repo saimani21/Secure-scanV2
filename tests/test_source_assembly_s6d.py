@@ -188,6 +188,69 @@ def test_cancelled_parent_cannot_assemble_or_publish(engine: _Environment) -> No
         assert session.get(AnalysisRunRow, run_id).report_json is None
 
 
+def test_permanent_assembly_failure_terminalizes_without_publication(
+    engine: _Environment,
+) -> None:
+    run_id = _ready(engine)
+    service = SourceResultAssemblyService(
+        engine.factory, engine.store, clock=lambda: _ASSEMBLY_TIME
+    )
+
+    failure = service.record_failure(
+        run_id, SourceResultAssemblyError("ASSEMBLY_VALIDATION_FAILED")
+    )
+
+    assert failure.attempt_count == 1
+    assert failure.terminalized is True
+    with engine.factory() as session:
+        parent = session.get(SourceOrchestrationRow, run_id)
+        run = session.get(AnalysisRunRow, run_id)
+        assert parent is not None and run is not None
+        assert parent.lifecycle_state == "TERMINAL"
+        assert parent.terminal_outcome == "FAILED"
+        assert parent.assembly_failure_code == "ASSEMBLY_VALIDATION_FAILED"
+        assert parent.assembly_failure_at == _ASSEMBLY_TIME.replace(tzinfo=None)
+        assert parent.published_at is None
+        assert run.status == "failed"
+        assert run.report_json is None
+
+
+def test_transient_assembly_failure_is_bounded_to_three_durable_attempts(
+    engine: _Environment,
+) -> None:
+    run_id = _ready(engine)
+    service = SourceResultAssemblyService(
+        engine.factory, engine.store, clock=lambda: _ASSEMBLY_TIME
+    )
+    error = SourceResultAssemblyError(
+        "ASSEMBLY_DATABASE_FAILED", retryable=True
+    )
+
+    first = service.record_failure(run_id, error)
+    second = service.record_failure(run_id, error)
+    third = service.record_failure(run_id, error)
+
+    assert [first.terminalized, second.terminalized, third.terminalized] == [
+        False,
+        False,
+        True,
+    ]
+    assert third.attempt_count == 3
+    with engine.factory() as session:
+        parent = session.get(SourceOrchestrationRow, run_id)
+        assert parent is not None
+        assert parent.lifecycle_state == "TERMINAL"
+        assert parent.terminal_outcome == "FAILED"
+        assert parent.assembly_attempt_count == 3
+
+
+def test_assembly_failure_metadata_is_strictly_allowlisted() -> None:
+    with pytest.raises(ValueError, match="failure metadata is invalid"):
+        SourceResultAssemblyError("UNTRUSTED\nsecret")
+    with pytest.raises(ValueError, match="failure metadata is invalid"):
+        SourceResultAssemblyError(phase="UNTRUSTED")
+
+
 def test_failed_authority_projects_explicit_gap_not_clean(engine: _Environment) -> None:
     _accept_local_nodes(engine)
     run_id = str(_RUN_ID)

@@ -4,4 +4,4 @@ import yaml
 
 
 def parse_document(document: str) -> object:
-    return yaml.load(document)
+    return yaml.load(document, Loader=yaml.Loader)

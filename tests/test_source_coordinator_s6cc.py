@@ -21,6 +21,7 @@ from securescan.domain.enums import (
 from securescan.orchestration.coordinator import (
     SourceOrchestrationCoordinatorService,
 )
+from securescan.orchestration.dependency_evaluation import SourceDependencyEvaluationError
 from securescan.orchestration.execution_models import SourceScannerFailureCode
 from securescan.orchestration.models import (
     OrchestrationLifecycleState,
@@ -155,6 +156,43 @@ def test_permanent_syft_failure_blocks_osv_without_creating_osv_job(
             == OrchestrationNodeDisposition.BLOCKED_BY_DEPENDENCY.value
         )
         assert durable.terminal_reason_code == "SYFT_FAILED"
+        assert (
+            session.scalar(
+                select(func.count())
+                .select_from(SourceOrchestrationScannerJobRow)
+                .where(SourceOrchestrationScannerJobRow.node_id == osv.node_id)
+            )
+            == 0
+        )
+
+
+def test_deterministic_dependency_evaluation_failure_terminalizes_osv(
+    environment: _Environment, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    coordinator = _coordinator(environment)
+    coordinator.advance(run_id=str(_RUN_ID), workspace=environment.workspace)
+    syft, osv = _nodes(environment)
+    _node, syft_job, _attempt = environment.start_attempt(SourceAuthority.SYFT)
+    observation = _observation(syft_job, syft, ("requirements.lock",))
+    _finish_existing_syft(environment, syft, syft_job, (observation,))
+
+    def fail_evaluation(*, run_id: str, osv_node_id: str) -> None:
+        assert run_id == str(_RUN_ID)
+        assert osv_node_id == osv.node_id
+        raise SourceDependencyEvaluationError
+
+    monkeypatch.setattr(coordinator._evaluations, "evaluate", fail_evaluation)
+    result = coordinator.advance(run_id=str(_RUN_ID), workspace=environment.workspace)
+
+    assert result.state_changed is True
+    with environment.factory() as session:
+        durable = session.get(SourceOrchestrationNodeRow, osv.node_id)
+        assert durable is not None
+        assert (
+            durable.lifecycle_state,
+            durable.terminal_disposition,
+            durable.terminal_reason_code,
+        ) == ("TERMINAL", "FAILED", "DEPENDENCY_EVALUATION_FAILED")
         assert (
             session.scalar(
                 select(func.count())

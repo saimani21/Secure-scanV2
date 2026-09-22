@@ -40,6 +40,7 @@ from securescan.scanners.syft import (
     SYFT_VERSION,
     PackageObservation,
     SyftParseResult,
+    parse_syft_json,
 )
 from securescan.source.execution_context import SourceExecutionContext
 
@@ -293,6 +294,69 @@ def test_supported_candidate_releases_ready_and_reuses_frozen_s2_identity(
             None,
             None,
         )
+
+
+def test_exact_raw_syft_duplicates_normalize_once_and_release_osv(
+    s6ca: _Environment,
+) -> None:
+    syft, _osv = _nodes(s6ca)
+    _node, job, _attempt = s6ca.start_attempt(SourceAuthority.SYFT)
+    raw_artifact = {
+        "id": "untrusted-upstream-id",
+        "name": "requests",
+        "version": "2.31.0",
+        "type": "python",
+        "foundBy": "python-package-cataloger",
+        "locations": [{"path": "/requirements.lock"}],
+        "language": "python",
+        "purl": "pkg:pypi/requests@2.31.0",
+    }
+    document = {
+        "artifacts": [raw_artifact, dict(raw_artifact)],
+        "artifactRelationships": [],
+        "source": {
+            "name": "/controlled-projection",
+            "type": "directory",
+            "metadata": {"path": "/controlled-projection"},
+        },
+        "descriptor": {
+            "name": "syft",
+            "version": "1.51.0",
+            "configuration": {
+                "catalogers": {
+                    "requested": {"default": ["directory", "file"]},
+                    "used": ["python-package-cataloger"],
+                }
+            },
+        },
+        "schema": {
+            "version": "16.1.10",
+            "url": (
+                "https://raw.githubusercontent.com/anchore/syft/main/schema/json/"
+                "schema-16.1.10.json"
+            ),
+        },
+    }
+    parsed = parse_syft_json(
+        json.dumps(document).encode(),
+        expected_source_root="/controlled-projection",
+        authorized_paths=frozenset({"requirements.lock"}),
+        projection_id=job.projection_id,
+        snapshot_digest=job.projection_digest,
+        binding_digest=syft.contract_digest,
+    )
+    assert parsed.package_count == 1
+    _finish_existing_syft(s6ca, syft, job, parsed.observations)
+
+    _service, osv, record = _evaluate(s6ca)
+
+    assert record.evaluation.decision is DependencyEvaluationDecision.OSV_RUN_REQUIRED
+    assert len(record.evaluation.observations) == 1
+    assert len(record.evaluation.candidate_ids) == 1
+    with s6ca.factory() as session:
+        node = session.get(SourceOrchestrationNodeRow, osv.node_id)
+        assert node is not None
+        assert node.lifecycle_state == "READY"
         assert session.scalar(select(func.count()).select_from(JobRow)) == 1
         assert (
             session.scalar(

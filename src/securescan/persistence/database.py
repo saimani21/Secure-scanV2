@@ -423,6 +423,10 @@ class SourceOrchestrationRow(Base):
     __table_args__ = (
         CheckConstraint("state_version >= 1", name="ck_source_orchestrations_version"),
         CheckConstraint(
+            "assembly_attempt_count >= 0",
+            name="ck_source_orchestrations_assembly_attempt_count",
+        ),
+        CheckConstraint(
             "max_active_jobs BETWEEN 1 AND 4",
             name="ck_source_orchestrations_max_active_jobs",
         ),
@@ -458,6 +462,10 @@ class SourceOrchestrationRow(Base):
             "published_at IS NULL OR assembled_at IS NOT NULL",
             name="ck_source_orchestrations_publication_requires_assembly",
         ),
+        CheckConstraint(
+            "(assembly_failure_code IS NULL) = (assembly_failure_at IS NULL)",
+            name="ck_source_orchestrations_assembly_failure_pair",
+        ),
         UniqueConstraint("idempotency_key", name="uq_source_orchestrations_idempotency"),
     )
 
@@ -484,6 +492,11 @@ class SourceOrchestrationRow(Base):
         DateTime(timezone=True), nullable=True
     )
     state_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    assembly_attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    assembly_failure_code: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    assembly_failure_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     max_active_jobs: Mapped[int] = mapped_column(Integer, nullable=False, default=2)
     deadline_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     deadline_exceeded_at: Mapped[datetime | None] = mapped_column(

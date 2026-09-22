@@ -910,7 +910,9 @@ def _run_with_dependencies(
                 workspace_id_factory=lambda: _WORKSPACE_SUFFIX,
             )
             workspace = workspace_manager.prepare_repository(corpus_root)
-            projection_manager = SourceProjectionManager(temporary_root / "projections")
+            projection_manager = SourceProjectionManager.initialize_base_directory(
+                temporary_root / "projections"
+            )
             projection = None
             try:
                 if not _workspace_matches_manifest(

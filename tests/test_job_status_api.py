@@ -50,6 +50,7 @@ INTERNAL_JOB_FIELDS = {
 def job_status_api_context(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    initialized_api_runtime_storage: None,
 ) -> Iterator[tuple[TestClient, sessionmaker[Session], str]]:
     database_url = f"sqlite:///{tmp_path / 'job-status-api.db'}"
     monkeypatch.setenv("SECURESCAN_DATABASE_URL", database_url)

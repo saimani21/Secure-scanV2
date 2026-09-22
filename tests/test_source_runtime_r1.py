@@ -13,7 +13,10 @@ from typer.testing import CliRunner
 from securescan.cli.main import app
 from securescan.config import Settings
 from securescan.domain.enums import ExecutionOutcome
-from securescan.orchestration.assembly import SourceResultAssemblyService
+from securescan.orchestration.assembly import (
+    SourceAssemblyFailureRecord,
+    SourceResultAssemblyService,
+)
 from securescan.orchestration.coordinator import SourceOrchestrationCoordinatorService
 from securescan.orchestration.execution import (
     SourceScannerAttemptService,
@@ -45,6 +48,7 @@ from securescan.product_core import (
     SourceProductFinalizationRunner,
     SourceScanSubmissionService,
 )
+from securescan.runtime_storage import initialize_source_runtime_storage
 from securescan.source_runtime import (
     SourceRuntimeCandidate,
     SourceRuntimeCandidateState,
@@ -135,12 +139,23 @@ class _Assembly:
     def __init__(self, *, failing: frozenset[str] = frozenset()) -> None:
         self.failing = failing
         self.calls: list[str] = []
+        self.failures: list[tuple[str, str]] = []
 
     def assemble_and_publish(self, run_id: str):
         self.calls.append(run_id)
         if run_id in self.failing:
             raise RuntimeError("private assembly failure")
         return SimpleNamespace(published=True)
+
+    def record_failure(self, run_id, failure):
+        self.failures.append((run_id, failure.reason_code))
+        return SourceAssemblyFailureRecord(
+            run_id=run_id,
+            attempt_count=1,
+            reason_code=failure.reason_code,
+            retryable=failure.retryable,
+            terminalized=True,
+        )
 
 
 class _Finalizer:
@@ -366,15 +381,21 @@ def test_blocked_predecessor_remains_not_ready_for_authoritative_finalizer() -> 
     assert summary.finalization_failed_count == 0
 
 
-def test_assembly_failure_is_isolated_and_visible_only_as_a_count() -> None:
+def test_assembly_failure_is_isolated_recorded_and_safely_logged(caplog) -> None:
     harness = _runtime(assemblies=("run-a", "run-b"))
     harness.assembly.failing = frozenset({"run-a"})
 
-    summary = harness.runtime.run_once()
+    with caplog.at_level("ERROR", logger="securescan.source_runtime"):
+        summary = harness.runtime.run_once()
 
     assert summary.assembly_examined_count == 2
     assert summary.assembly_failed_count == 1
     assert summary.assembly_published_count == 1
+    assert harness.assembly.failures == [("run-a", "ASSEMBLY_UNEXPECTED_FAILURE")]
+    assert "private assembly failure" not in caplog.text
+    assert "run_id=run-a" in caplog.text
+    assert "exception_class=RuntimeError" in caplog.text
+    assert "reason_code=ASSEMBLY_UNEXPECTED_FAILURE" in caplog.text
 
 
 def test_fresh_runtime_instances_resume_bounded_durable_worker_queue() -> None:
@@ -767,6 +788,7 @@ def test_production_factory_constructs_without_scanner_or_network_execution(
         source_workspace_root=tmp_path / "workspaces",
         source_runtime_receipt_root=tmp_path / "receipts",
     )
+    initialize_source_runtime_storage(settings)
 
     def forbidden(*_args, **_kwargs):
         raise AssertionError("runtime construction attempted process or network execution")

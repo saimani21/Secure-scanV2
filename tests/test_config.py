@@ -62,7 +62,9 @@ def test_default_mutable_data_locations_are_user_scoped_and_cwd_independent(
     assert first.database_url == second.database_url
     assert first.artifact_root == second.artifact_root
 
-    manager = SourceProjectionManager(first.source_projection_root)
+    manager = SourceProjectionManager.initialize_base_directory(
+        first.source_projection_root
+    )
     workspace_manager = RepositoryWorkspaceManager(first.source_workspace_root)
     assert manager.base_directory == first.source_projection_root
     assert workspace_manager.base_directory == first.source_workspace_root

@@ -489,7 +489,14 @@ function renderDependencies() {
     row.append(tableCell((dependency.locations || []).map(locationLabel).join(", ") || "Not provided", "monospace"));
 
     const advisoryCell = document.createElement("td");
-    advisoryCell.append(text("strong", dependency.known_vulnerability_count));
+    const vulnerabilityCount = dependency.known_vulnerability_count === null
+      ? "Unknown"
+      : dependency.known_vulnerability_count;
+    advisoryCell.append(text("strong", vulnerabilityCount));
+    advisoryCell.append(text("span", dependency.vulnerability_evaluation, "table-subvalue"));
+    if (dependency.vulnerability_evaluation_reason) {
+      advisoryCell.append(text("code", dependency.vulnerability_evaluation_reason, "table-subvalue"));
+    }
     advisoryCell.append(text("span", joinValues(dependency.advisory_aliases), "table-subvalue"));
     const bands = document.createElement("div");
     bands.className = "badge-row";

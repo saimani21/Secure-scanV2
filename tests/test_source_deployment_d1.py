@@ -104,6 +104,11 @@ def test_environment_example_and_ignores_describe_deployment_boundary() -> None:
     assert "SECURESCAN_POSTGRES_PASSWORD=\n" in environment
     assert "SECURESCAN_API_PORT=8000" in environment
     assert "SECURESCAN_DEPLOY_DATA_ROOT=./.securescan-deploy" in environment
+    assert "SECURESCAN_ARTIFACT_ROOT=./.securescan-deploy/artifacts" in environment
+    assert (
+        "SECURESCAN_SOURCE_PROJECTION_ROOT=./.securescan-deploy/source-projections"
+        in environment
+    )
     assert "@127.0.0.1:55432" in environment
     assert "@postgres:5432" in environment
     assert "@database" not in environment
@@ -122,9 +127,12 @@ def test_deployment_guide_preserves_existing_postgres_state() -> None:
     assert "docker compose down -v" not in guide
 
 
-def test_deployment_guide_does_not_precreate_managed_projection_root() -> None:
+def test_deployment_guide_uses_supported_non_root_storage_initialization() -> None:
     guide = _text("docs/source-v1-deployment.md")
 
-    assert "Do not\npre-create the managed child roots" in guide
-    assert "an existing\nunmarked `source-projections` directory" in guide
+    assert "./.venv/bin/securescan init" in guide
+    assert "creates the projection\nownership descriptor" in guide
+    assert "populated unmarked directory" in guide
+    assert "root API process" in guide
+    assert "chmod 777" not in guide
     assert "install -d -m 0700 \\\n  /absolute/path/to/securescan-data" not in guide

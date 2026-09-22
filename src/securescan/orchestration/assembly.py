@@ -110,6 +110,17 @@ from .osv_execution import (
 SOURCE_FINAL_RESULT_MEDIA_TYPE = "application/vnd.securescan.source-result+json"
 SOURCE_FINAL_RESULT_SCHEMA_VERSION = SECURESCAN_EVIDENCE_SCHEMA_VERSION
 ENGINE_GAP_IDENTITY_SCHEMA = "securescan-source-engine-gap-s6d-v1"
+SOURCE_ASSEMBLY_MAX_ATTEMPTS = 3
+_SOURCE_ASSEMBLY_FAILURE_CODES = frozenset(
+    {
+        "ASSEMBLY_ARTIFACT_IO_FAILED",
+        "ASSEMBLY_DATABASE_FAILED",
+        "ASSEMBLY_FAILURE_RECORD_FAILED",
+        "ASSEMBLY_UNEXPECTED_FAILURE",
+        "ASSEMBLY_VALIDATION_FAILED",
+    }
+)
+_SOURCE_ASSEMBLY_FAILURE_PHASES = frozenset({"ASSEMBLY", "PUBLICATION"})
 
 _SEMGREP_RULESET_ID = "securescan-python-baseline-v2"
 _SEMGREP_RULESET_VERSION = "2"
@@ -121,8 +132,23 @@ _SEMGREP_ARTIFACT_NAMESPACE = UUID("ed9b5c66-e03c-53c8-8b17-611dffaf5743")
 
 
 class SourceResultAssemblyError(RuntimeError):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        reason_code: str = "ASSEMBLY_VALIDATION_FAILED",
+        *,
+        retryable: bool = False,
+        phase: str = "ASSEMBLY",
+    ) -> None:
         super().__init__("Source result assembly failed")
+        if (
+            reason_code not in _SOURCE_ASSEMBLY_FAILURE_CODES
+            or type(retryable) is not bool
+            or phase not in _SOURCE_ASSEMBLY_FAILURE_PHASES
+        ):
+            raise ValueError("Source result assembly failure metadata is invalid")
+        self.reason_code = reason_code
+        self.retryable = retryable
+        self.phase = phase
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,6 +160,15 @@ class SourceAssemblyRecord:
     terminal_outcome: OrchestrationTerminalOutcome | None
     assembled: bool
     published: bool
+
+
+@dataclass(frozen=True, slots=True)
+class SourceAssemblyFailureRecord:
+    run_id: str
+    attempt_count: int
+    reason_code: str
+    retryable: bool
+    terminalized: bool
 
 
 def _canonical_json(value: object) -> bytes:
@@ -655,16 +690,23 @@ class SourceResultAssemblyService:
     def assemble(self, run_id: str) -> SourceAssemblyRecord:
         report = self._build_report(run_id)
         payload = report.canonical_json()
-        artifact = self._artifacts.put(
-            payload,
-            kind=ArtifactKind.SOURCE_FINAL_RESULT,
-            media_type=SOURCE_FINAL_RESULT_MEDIA_TYPE,
-            sanitized=True,
-        )
-        if self._artifacts.read_by_sha256(
-            artifact.sha256, expected_size_bytes=artifact.size_bytes
-        ) != payload:
-            raise SourceResultAssemblyError
+        try:
+            artifact = self._artifacts.put(
+                payload,
+                kind=ArtifactKind.SOURCE_FINAL_RESULT,
+                media_type=SOURCE_FINAL_RESULT_MEDIA_TYPE,
+                sanitized=True,
+            )
+            if self._artifacts.read_by_sha256(
+                artifact.sha256, expected_size_bytes=artifact.size_bytes
+            ) != payload:
+                raise SourceResultAssemblyError
+        except SourceResultAssemblyError:
+            raise
+        except OSError:
+            raise SourceResultAssemblyError(
+                "ASSEMBLY_ARTIFACT_IO_FAILED", retryable=True
+            ) from None
         now = self._now()
         try:
             with self._sessions.begin() as session:
@@ -673,6 +715,8 @@ class SourceResultAssemblyService:
                     raise SourceResultAssemblyError
                 if parent.assembly_artifact_sha256 is not None:
                     self._validate_assembly_reference(parent, artifact.sha256, len(payload))
+                    parent.assembly_failure_code = None
+                    parent.assembly_failure_at = None
                     return self._record(parent, assembled=False)
                 if parent.lifecycle_state != OrchestrationLifecycleState.ASSEMBLY_READY.value:
                     raise SourceResultAssemblyError
@@ -682,6 +726,8 @@ class SourceResultAssemblyService:
                 parent.assembly_schema_version = SOURCE_FINAL_RESULT_SCHEMA_VERSION
                 parent.assembly_artifact_storage_path = artifact.storage_path
                 parent.assembled_at = now
+                parent.assembly_failure_code = None
+                parent.assembly_failure_at = None
                 parent.lifecycle_state = OrchestrationLifecycleState.COMMITTING.value
                 parent.state_version += 1
                 parent.updated_at = now
@@ -689,7 +735,9 @@ class SourceResultAssemblyService:
         except SourceResultAssemblyError:
             raise
         except SQLAlchemyError:
-            raise SourceResultAssemblyError from None
+            raise SourceResultAssemblyError(
+                "ASSEMBLY_DATABASE_FAILED", retryable=True
+            ) from None
 
     def publish(self, run_id: str) -> SourceAssemblyRecord:
         now = self._now()
@@ -719,17 +767,80 @@ class SourceResultAssemblyService:
                 parent.lifecycle_state = OrchestrationLifecycleState.TERMINAL.value
                 parent.terminal_outcome = outcome.value
                 parent.published_at = now
+                parent.assembly_failure_code = None
+                parent.assembly_failure_at = None
                 parent.state_version += 1
                 parent.updated_at = now
                 return self._record(parent, assembled=False)
         except SourceResultAssemblyError:
             raise
-        except (KeyError, SQLAlchemyError):
+        except KeyError:
             raise SourceResultAssemblyError from None
+        except SQLAlchemyError:
+            raise SourceResultAssemblyError(
+                "ASSEMBLY_DATABASE_FAILED", retryable=True, phase="PUBLICATION"
+            ) from None
 
     def assemble_and_publish(self, run_id: str) -> SourceAssemblyRecord:
         self.assemble(run_id)
         return self.publish(run_id)
+
+    def record_failure(
+        self, run_id: str, failure: SourceResultAssemblyError
+    ) -> SourceAssemblyFailureRecord:
+        if not isinstance(failure, SourceResultAssemblyError):
+            raise SourceResultAssemblyError
+        now = self._now()
+        try:
+            with self._sessions.begin() as session:
+                parent = self._locked_parent(session, run_id)
+                run = session.get(AnalysisRunRow, run_id)
+                if run is None:
+                    raise SourceResultAssemblyError
+                if (
+                    parent.lifecycle_state == OrchestrationLifecycleState.TERMINAL.value
+                    and parent.terminal_outcome
+                    == OrchestrationTerminalOutcome.FAILED.value
+                    and parent.assembly_failure_code is not None
+                ):
+                    return SourceAssemblyFailureRecord(
+                        run_id,
+                        parent.assembly_attempt_count,
+                        parent.assembly_failure_code,
+                        failure.retryable,
+                        True,
+                    )
+                if parent.lifecycle_state not in {
+                    OrchestrationLifecycleState.ASSEMBLY_READY.value,
+                    OrchestrationLifecycleState.COMMITTING.value,
+                }:
+                    raise SourceResultAssemblyError
+                parent.assembly_attempt_count += 1
+                parent.assembly_failure_code = failure.reason_code
+                parent.assembly_failure_at = now
+                terminalized = bool(
+                    not failure.retryable
+                    or parent.assembly_attempt_count >= SOURCE_ASSEMBLY_MAX_ATTEMPTS
+                )
+                if terminalized:
+                    parent.lifecycle_state = OrchestrationLifecycleState.TERMINAL.value
+                    parent.terminal_outcome = OrchestrationTerminalOutcome.FAILED.value
+                    run.status = RunStatus.FAILED.value
+                parent.state_version += 1
+                parent.updated_at = now
+                return SourceAssemblyFailureRecord(
+                    run_id,
+                    parent.assembly_attempt_count,
+                    failure.reason_code,
+                    failure.retryable,
+                    terminalized,
+                )
+        except SourceResultAssemblyError:
+            raise
+        except SQLAlchemyError:
+            raise SourceResultAssemblyError(
+                "ASSEMBLY_FAILURE_RECORD_FAILED", retryable=True
+            ) from None
 
     def load(self, run_id: str) -> SourceAssemblyRecord:
         try:
@@ -818,6 +929,10 @@ class SourceResultAssemblyService:
                 return report
         except SourceResultAssemblyError:
             raise
+        except OSError:
+            raise SourceResultAssemblyError(
+                "ASSEMBLY_ARTIFACT_IO_FAILED", retryable=True
+            ) from None
         except Exception:
             raise SourceResultAssemblyError from None
 

@@ -333,7 +333,9 @@ def _environment(tmp_path: Path, *, select_ignore: bool = False) -> _Environment
         target_id = target.id
 
     store = ContentAddressedArtifactStore(tmp_path / "artifacts")
-    projection_manager = SourceProjectionManager(tmp_path / "projections")
+    projection_manager = SourceProjectionManager.initialize_base_directory(
+        tmp_path / "projections"
+    )
     submission = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,

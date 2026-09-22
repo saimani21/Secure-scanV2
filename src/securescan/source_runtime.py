@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -7,7 +8,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol
 
-from sqlalchemy import and_, exists, func, or_, select
+from sqlalchemy import and_, exists, func, or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -15,7 +16,11 @@ from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.config import Settings, get_settings
 from securescan.execution.docker_sandbox import DockerSandboxExecutor
 from securescan.observability.readiness import _bootstrap_database_schema
-from securescan.orchestration.assembly import SourceResultAssemblyService
+from securescan.orchestration.assembly import (
+    SourceAssemblyFailureRecord,
+    SourceResultAssemblyError,
+    SourceResultAssemblyService,
+)
 from securescan.orchestration.coordinator import SourceOrchestrationCoordinatorService
 from securescan.orchestration.dependency_evaluation import (
     SourceDependencyEvaluationService,
@@ -60,6 +65,10 @@ from securescan.product_core import (
     SourceProductFinalizationRunner,
     SourceScanSubmissionService,
 )
+from securescan.runtime_storage import (
+    RuntimeStorageInitializationError,
+    initialize_source_runtime_storage,
+)
 from securescan.scanners.checkov import create_default_checkov_binding
 from securescan.scanners.gitleaks import create_default_gitleaks_binding
 from securescan.scanners.semgrep import (
@@ -75,11 +84,22 @@ from securescan.workspaces import PreparedRepositoryWorkspace, RepositoryWorkspa
 
 SOURCE_RUNTIME_WORKER_ID = "source-runtime-v1"
 SOURCE_RUNTIME_DISCOVERY_LIMIT = 200
+_LOGGER = logging.getLogger(__name__)
 
 
 class SourceRuntimeError(RuntimeError):
-    def __init__(self) -> None:
-        super().__init__("Source runtime cycle failed")
+    def __init__(
+        self,
+        code: str = "RUNTIME_UNAVAILABLE",
+        message: str = "Source runtime cycle failed",
+        *,
+        phase: str = "runtime_cycle",
+        remediation: str = "Review the worker logs and runtime configuration",
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.phase = phase
+        self.remediation = remediation
 
 
 class SourceRuntimeCandidateState(StrEnum):
@@ -186,6 +206,10 @@ class _Reconciliation(Protocol):
 
 class _Assembly(Protocol):
     def assemble_and_publish(self, run_id: str) -> object: ...
+
+    def record_failure(
+        self, run_id: str, failure: SourceResultAssemblyError
+    ) -> SourceAssemblyFailureRecord: ...
 
 
 class _Finalizer(Protocol):
@@ -490,7 +514,27 @@ class SourceRuntimeService:
         for run_id in run_ids:
             try:
                 record = self._assembly.assemble_and_publish(run_id)
-            except Exception:
+            except Exception as exc:
+                failure = (
+                    exc
+                    if isinstance(exc, SourceResultAssemblyError)
+                    else SourceResultAssemblyError("ASSEMBLY_UNEXPECTED_FAILURE")
+                )
+                try:
+                    resolution = self._assembly.record_failure(run_id, failure)
+                except Exception:
+                    raise SourceRuntimeError from None
+                _LOGGER.error(
+                    "Source assembly failed run_id=%s phase=%s exception_class=%s "
+                    "reason_code=%s attempt=%d retryable=%s terminalized=%s",
+                    run_id,
+                    failure.phase,
+                    type(exc).__name__,
+                    resolution.reason_code,
+                    resolution.attempt_count,
+                    resolution.retryable,
+                    resolution.terminalized,
+                )
                 failed += 1
                 continue
             published += int(bool(getattr(record, "published", False)))
@@ -515,12 +559,23 @@ def create_source_runtime(
     trusted_settings = get_settings() if settings is None else settings
     if not isinstance(trusted_settings, Settings):
         raise SourceRuntimeError
-    engine, sessions = create_session_factory(trusted_settings)
+    engine = None
+    phase = "runtime_storage"
     try:
+        initialize_source_runtime_storage(
+            trusted_settings,
+            allow_empty_projection=False,
+        )
+        phase = "database_connection"
+        engine, sessions = create_session_factory(trusted_settings)
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        phase = "database_schema"
         _bootstrap_database_schema(
             engine,
             allow_sqlite_schema_bootstrap=trusted_settings.allow_sqlite_schema_bootstrap,
         )
+        phase = "runtime_services"
         artifacts = ContentAddressedArtifactStore(trusted_settings.artifact_root)
         workspaces = RepositoryWorkspaceManager(trusted_settings.source_workspace_root)
         projections = SourceProjectionManager(trusted_settings.source_projection_root)
@@ -546,6 +601,7 @@ def create_source_runtime(
             SourceOsvRequestPermitService(sessions),
             trusted_settings.source_runtime_receipt_root / "osv",
         )
+        phase = "scanner_configuration"
         ruleset = load_baseline_ruleset()
         definition = create_semgrep_trusted_definition(
             image_reference=PRODUCTION_SEMGREP_IMAGE_REFERENCE,
@@ -588,6 +644,7 @@ def create_source_runtime(
             dispatcher,
             worker_id=SOURCE_RUNTIME_WORKER_ID,
         )
+        phase = "runtime_composition"
         runtime = SourceRuntimeService(
             discovery=SourceRuntimeWorkDiscovery(sessions),
             workspace_resolver=submissions,
@@ -599,9 +656,37 @@ def create_source_runtime(
             limits=limits,
         )
         yield SourceRuntimeComposition(runtime, sessions, workspaces)
+    except RuntimeStorageInitializationError as exc:
+        phase_codes = {
+            "artifact_storage": "ARTIFACT_ROOT_UNAVAILABLE",
+            "workspace_storage": "WORKSPACE_ROOT_UNAVAILABLE",
+            "runtime_receipt_storage": "RUNTIME_RECEIPT_ROOT_UNAVAILABLE",
+        }
+        raise SourceRuntimeError(
+            phase_codes.get(exc.phase, exc.code),
+            str(exc),
+            phase=exc.phase,
+            remediation="Run 'securescan init' with the worker configuration",
+        ) from None
     except SourceRuntimeError:
         raise
-    except Exception:
-        raise SourceRuntimeError from None
+    except Exception as exc:
+        _LOGGER.error(
+            "Source runtime construction failed phase=%s exception_class=%s",
+            phase,
+            type(exc).__name__,
+        )
+        phase_codes = {
+            "database_connection": "DATABASE_UNAVAILABLE",
+            "database_schema": "DATABASE_SCHEMA_UNAVAILABLE",
+            "scanner_configuration": "SCANNER_CONFIGURATION_INVALID",
+        }
+        raise SourceRuntimeError(
+            phase_codes.get(phase, "RUNTIME_COMPOSITION_FAILED"),
+            "Source runtime could not be constructed",
+            phase=phase,
+            remediation="Review the safe worker log category and trusted configuration",
+        ) from None
     finally:
-        engine.dispose()
+        if engine is not None:
+            engine.dispose()

@@ -17,6 +17,12 @@ def _default_securescan_data_root() -> Path:
     return (data_root / "securescan").resolve(strict=False)
 
 
+def _absolute_path_without_resolving_symlinks(value: Path) -> Path:
+    """Normalize lexical path components while preserving symlink detection."""
+
+    return Path(os.path.abspath(value.expanduser()))
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="SECURESCAN_",
@@ -30,6 +36,9 @@ class Settings(BaseSettings):
             f"sqlite:///{(_default_securescan_data_root() / 'securescan.db').as_posix()}"
         )
     )
+    deploy_data_root: Path | None = None
+    runtime_uid: int = Field(default=1000, ge=1)
+    runtime_gid: int = Field(default=1000, ge=1)
     artifact_root: Path = Field(
         default_factory=lambda: _default_securescan_data_root() / "artifacts"
     )
@@ -60,6 +69,7 @@ class Settings(BaseSettings):
     allow_sqlite_schema_bootstrap: bool = True
 
     @field_validator(
+        "deploy_data_root",
         "artifact_root",
         "source_projection_root",
         "source_workspace_root",
@@ -71,8 +81,10 @@ class Settings(BaseSettings):
         mode="after",
     )
     @classmethod
-    def normalize_source_runtime_root(cls, value: Path) -> Path:
-        return value.expanduser().resolve(strict=False)
+    def normalize_source_runtime_root(cls, value: Path | None) -> Path | None:
+        if value is None:
+            return None
+        return _absolute_path_without_resolving_symlinks(value)
 
     @field_validator("source_enry_helper_sha256")
     @classmethod

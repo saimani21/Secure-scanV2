@@ -186,7 +186,9 @@ class SourceDependencySummary:
     package_type: str
     purl: str | None
     locations: tuple[Mapping[str, Any], ...]
-    known_vulnerability_count: int
+    vulnerability_evaluation: str
+    vulnerability_evaluation_reason: str | None
+    known_vulnerability_count: int | None
     advisory_aliases: tuple[str, ...]
     fixed_versions: tuple[str, ...]
     priority_bands: tuple[str, ...]
@@ -406,6 +408,25 @@ class SourceScanQueryService:
             component_ref = self._required_string(subject, "component_ref")
             osv_by_component.setdefault(component_ref, []).append(finding)
         priorities = self._priorities(normalized)
+        osv_outcomes = tuple(
+            item
+            for item in self._list_field(report, "coverage_outcomes")
+            if item.get("authority") == "osv.dev"
+        )
+        if len(osv_outcomes) != 1:
+            raise SourceScanQueryPersistenceError
+        osv_state = self._required_string(osv_outcomes[0], "state")
+        evaluation_state = {
+            "COMPLETE": "COMPLETE",
+            "COMPLETE_WITH_FINDINGS": "COMPLETE",
+            "COMPLETE_WITH_SUPPRESSIONS": "COMPLETE",
+            "PARTIAL": "PARTIAL",
+            "FAILED": "FAILED",
+            "NOT_APPLICABLE": "NOT_APPLICABLE",
+        }.get(osv_state)
+        if evaluation_state is None:
+            raise SourceScanQueryPersistenceError
+        evaluation_reason = self._optional_string(osv_outcomes[0], "reason_code")
         dependencies = []
         for component in self._list_field(report, "components"):
             if component.get("component_kind") != "PACKAGE":
@@ -454,7 +475,13 @@ class SourceScanQueryService:
                     locations=tuple(
                         self._mapping(dict(value)) for value in sorted(locations)
                     ),
-                    known_vulnerability_count=len(osv_by_component.get(component_ref, [])),
+                    vulnerability_evaluation=evaluation_state,
+                    vulnerability_evaluation_reason=evaluation_reason,
+                    known_vulnerability_count=(
+                        len(osv_by_component.get(component_ref, []))
+                        if evaluation_state == "COMPLETE"
+                        else None
+                    ),
                     advisory_aliases=tuple(sorted(aliases)),
                     fixed_versions=tuple(sorted(fixed)),
                     priority_bands=tuple(sorted(bands)),

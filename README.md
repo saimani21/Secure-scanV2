@@ -23,12 +23,14 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev,postgres]'
 cp .env.example .env
+./.venv/bin/securescan init
 docker compose up -d postgres
 alembic upgrade head
 ```
 
-The example environment keeps SQLite as the application default. Use a separate database
-whose name ends in `_test` for destructive PostgreSQL integration tests.
+Replace the example secrets and materialized host database URL before running
+initialization. Use a separate database whose name ends in `_test` for destructive
+PostgreSQL integration tests.
 
 ## Tests
 
@@ -188,7 +190,10 @@ standards-valid PURLs, cataloger names, and authorized repository-relative
 locations. Arbitrary package metadata and raw scanner streams remain transient.
 `package_key` groups package coordinates for later advisory work, while
 `package_observation_id` also includes the cataloger and location set so
-structurally distinct evidence is preserved.
+structurally distinct evidence is preserved. Exact repeated Syft artifacts that
+normalize to the same complete observation are represented once; contradictory
+observations with the same identity fail closed. `package_count` is the number
+of unique normalized observations, not the raw Syft artifact-array length.
 
 The controlled S1 evidence covers Python, npm, and Go fixtures, including
 multiple manifests and generated/test/vendor paths, plus a successful
@@ -333,11 +338,19 @@ is separate and never runs during API startup.
 For the practical single-node Source v1 deployment, run PostgreSQL, Alembic, and
 the API with Docker Compose while keeping `securescan worker` on the trusted
 scanning host. See the [Source v1 deployment guide](docs/source-v1-deployment.md).
+The supported sequence starts with `securescan init`, which creates or validates
+the private shared runtime roots and projection ownership descriptor. It refuses
+unsafe or conflicting existing directories; do not delete or recreate descriptor
+files by hand. Both API and worker remain non-root.
 
 The API also serves a dependency-free, same-origin Source analysis console at
 `http://127.0.0.1:<SECURESCAN_API_PORT>/`. Submit repositories with the trusted-host
 `securescan scan` CLI, then open the returned run ID in the console. The browser
 does not accept repository paths or upload source trees.
+
+The host CLI also provides `securescan project create` and `securescan project
+list`, so a supported local scan never requires direct SQL or knowledge of the
+internal persistence model.
 
 The [Source v1 release-acceptance runbook](docs/source-v1-release-acceptance.md)
 defines the final four-run, five-authority acceptance path and its sanitized evidence

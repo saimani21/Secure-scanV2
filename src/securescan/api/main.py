@@ -39,6 +39,7 @@ from securescan.product_core import (
     SourceTrustedTargetSubmissionService,
 )
 from securescan.runs import RunQueryService
+from securescan.runtime_storage import initialize_source_runtime_storage
 from securescan.services.scan_service import ScanService
 from securescan.source.projection import SourceProjectionManager
 from securescan.web.routes import router as frontend_router
@@ -52,6 +53,7 @@ _ALEMBIC_CONFIG_PATH = _REPOSITORY_ROOT / "alembic.ini"
 async def lifespan(application: FastAPI):
     configure_structured_logging()
     settings = get_settings()
+    initialize_source_runtime_storage(settings, allow_empty_projection=False)
     engine, session_factory = create_session_factory(settings)
     try:
         _bootstrap_database_schema(

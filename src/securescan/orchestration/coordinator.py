@@ -162,7 +162,7 @@ class SourceOrchestrationCoordinatorService:
                     )
                     changed = evaluation.created
                 except SourceDependencyEvaluationError:
-                    return False
+                    return self._fail_dependency_evaluation(run_id, osv_node_id)
             elif syft_disposition is not None:
                 return self._block_dependency(
                     run_id, osv_node_id, syft_disposition, syft_reason
@@ -172,7 +172,7 @@ class SourceOrchestrationCoordinatorService:
         try:
             evaluation = self._evaluations.load(run_id=run_id, osv_node_id=osv_node_id)
         except SourceDependencyEvaluationError:
-            return changed
+            return self._fail_dependency_evaluation(run_id, osv_node_id) or changed
         if evaluation.evaluation.decision is DependencyEvaluationDecision.OSV_RUN_REQUIRED:
             try:
                 job = self._osv_jobs.create_job(run_id=run_id, node_id=osv_node_id)
@@ -182,6 +182,58 @@ class SourceOrchestrationCoordinatorService:
                 created.append(job.job_id)
                 changed = True
         return changed
+
+    def _fail_dependency_evaluation(self, run_id: str, node_id: str) -> bool:
+        """Persist a deterministic dependency-evaluation failure.
+
+        Dependency evaluation consumes already-accepted immutable Syft evidence.
+        Repeating the same failed evaluation without a state or evidence change
+        cannot make progress, so the OSV node must become an explicit failed
+        coverage authority rather than wait for the parent deadline.
+        """
+        try:
+            with self._sessions.begin() as session:
+                parent = session.scalar(
+                    select(SourceOrchestrationRow)
+                    .where(SourceOrchestrationRow.run_id == run_id)
+                    .with_for_update()
+                )
+                node = session.scalar(
+                    select(SourceOrchestrationNodeRow)
+                    .where(
+                        SourceOrchestrationNodeRow.run_id == run_id,
+                        SourceOrchestrationNodeRow.node_id == node_id,
+                    )
+                    .with_for_update()
+                )
+                mapping = session.scalar(
+                    select(SourceOrchestrationScannerJobRow).where(
+                        SourceOrchestrationScannerJobRow.run_id == run_id,
+                        SourceOrchestrationScannerJobRow.node_id == node_id,
+                    )
+                )
+                if (
+                    parent is None
+                    or node is None
+                    or mapping is not None
+                    or parent.lifecycle_state
+                    != OrchestrationLifecycleState.ACTIVE.value
+                    or parent.cancel_requested
+                    or node.lifecycle_state
+                    not in {
+                        OrchestrationNodeLifecycleState.WAITING_DEPENDENCY.value,
+                        OrchestrationNodeLifecycleState.READY.value,
+                    }
+                ):
+                    return False
+                _terminalize(
+                    node,
+                    OrchestrationNodeDisposition.FAILED,
+                    "DEPENDENCY_EVALUATION_FAILED",
+                )
+                return True
+        except SQLAlchemyError:
+            raise SourceCoordinatorError from None
 
     def _enforce_parent_boundary(self, run_id: str) -> bool:
         try:

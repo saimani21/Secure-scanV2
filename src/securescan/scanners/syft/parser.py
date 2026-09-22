@@ -315,6 +315,8 @@ class SyftParseResult:
             or self.requested_cataloger_strategy != ("directory", "file")
             or self.used_catalogers != tuple(sorted(set(self.used_catalogers)))
             or self.observations != expected_order
+            or len({item.package_observation_id for item in self.observations})
+            != len(self.observations)
             or self.package_count != len(self.observations)
             or any(
                 observation.projection_id != self.projection_id
@@ -466,9 +468,19 @@ def parse_syft_json(
                     binding_digest=binding_digest,
                 )
             )
+        unique_observations: dict[str, PackageObservation] = {}
+        for observation in observations:
+            existing = unique_observations.get(observation.package_observation_id)
+            if existing is not None and existing != observation:
+                # The identity deliberately covers the package coordinates,
+                # cataloger, and complete normalized location set. A repeated
+                # identity may therefore be collapsed only when every safe
+                # normalized field agrees.
+                raise ValueError
+            unique_observations[observation.package_observation_id] = observation
         ordered = tuple(
             sorted(
-                observations,
+                unique_observations.values(),
                 key=lambda item: (
                     item.package_observation_id,
                     item.package_key,

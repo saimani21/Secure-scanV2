@@ -579,6 +579,22 @@ class SourceProjectionManager:
             self._base_identity,
         ) = self._prepare_base_directory(base_directory)
 
+    @classmethod
+    def initialize_base_directory(
+        cls,
+        base_directory: Path,
+        limits: RepositoryIntakeLimits = _DEFAULT_LIMITS,
+        projection_id_factory: Callable[[], str] = _new_projection_suffix,
+    ) -> SourceProjectionManager:
+        """Explicitly initialize a new or provably empty private projection root."""
+
+        cls._prepare_base_directory(base_directory, initialize_empty=True)
+        return cls(
+            base_directory,
+            limits=limits,
+            projection_id_factory=projection_id_factory,
+        )
+
     @property
     def base_directory(self) -> Path:
         return self._base_directory
@@ -587,6 +603,8 @@ class SourceProjectionManager:
     def _prepare_base_directory(
         cls,
         value: object,
+        *,
+        initialize_empty: bool = False,
     ) -> tuple[Path, tuple[int, int]]:
         if (
             not isinstance(value, Path)
@@ -619,7 +637,10 @@ class SourceProjectionManager:
             else:
                 root_descriptor = os.open(resolved, _DIRECTORY_OPEN_FLAGS)
                 try:
-                    cls._validate_base_descriptor(root_descriptor)
+                    if initialize_empty:
+                        cls._initialize_empty_base_descriptor(root_descriptor)
+                    else:
+                        cls._validate_base_descriptor(root_descriptor)
                     metadata = os.fstat(root_descriptor)
                 finally:
                     os.close(root_descriptor)
@@ -628,6 +649,31 @@ class SourceProjectionManager:
         except (OSError, RuntimeError) as exc:
             raise SourceProjectionPublicationError from exc
         return resolved, (metadata.st_dev, metadata.st_ino)
+
+    @classmethod
+    def _initialize_empty_base_descriptor(cls, root_descriptor: int) -> None:
+        cls._validate_base_metadata(os.fstat(root_descriptor))
+        try:
+            marker_metadata = os.stat(
+                _ROOT_MARKER_NAME,
+                dir_fd=root_descriptor,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            try:
+                with os.scandir(root_descriptor) as entries:
+                    if next(entries, None) is not None:
+                        raise SourceProjectionOwnershipError
+                cls._write_root_marker(root_descriptor)
+                os.fsync(root_descriptor)
+            except SourceProjectionError:
+                raise
+            except OSError as exc:
+                raise SourceProjectionOwnershipError from exc
+        else:
+            if not stat.S_ISREG(marker_metadata.st_mode):
+                raise SourceProjectionOwnershipError
+        cls._validate_base_descriptor(root_descriptor)
 
     @staticmethod
     def _validate_base_metadata(metadata: os.stat_result) -> None:

@@ -33,6 +33,7 @@ NOW = datetime(2048, 2, 3, 4, 5, 6, tzinfo=UTC)
 def run_api_context(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    initialized_api_runtime_storage: None,
 ) -> Iterator[tuple[TestClient, sessionmaker[Session], str]]:
     database_url = f"sqlite:///{tmp_path / 'run-api.db'}"
     monkeypatch.setenv("SECURESCAN_DATABASE_URL", database_url)

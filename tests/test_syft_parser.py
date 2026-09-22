@@ -194,7 +194,7 @@ def test_coordinate_change_changes_package_key() -> None:
     assert first.package_key != _parse(document).observations[0].package_key
 
 
-def test_ordering_is_deterministic_and_exact_duplicates_are_not_deduplicated() -> None:
+def test_ordering_is_deterministic_and_exact_duplicates_normalize_once() -> None:
     document = _document()
     second = deepcopy(document["artifacts"][0])  # type: ignore[index]
     second["name"] = "alpha"
@@ -204,7 +204,18 @@ def test_ordering_is_deterministic_and_exact_duplicates_are_not_deduplicated() -
     document["artifacts"] = list(reversed(document["artifacts"]))  # type: ignore[arg-type]
     reverse = _parse(document)
     assert forward.canonical_json() == reverse.canonical_json()
-    assert forward.package_count == 3
+    assert forward.package_count == 2
+    assert len({item.package_observation_id for item in forward.observations}) == 2
+
+
+def test_same_normalized_identity_with_contradictory_language_fails_closed() -> None:
+    document = _document()
+    contradictory = deepcopy(document["artifacts"][0])  # type: ignore[index]
+    contradictory["language"] = "other"
+    document["artifacts"] = [document["artifacts"][0], contradictory]  # type: ignore[index]
+
+    with pytest.raises(SyftParserError):
+        _parse(document)
 
 
 def test_projection_snapshot_and_binding_identity_are_bound() -> None:

@@ -36,6 +36,12 @@ from .lifecycle import (
     ProductCoreLifecycleError,
     SourceFindingLifecycleService,
 )
+from .projects import (
+    MAX_PROJECT_LIST_LIMIT,
+    SourceProject,
+    SourceProjectError,
+    SourceProjectService,
+)
 from .query import (
     DEFAULT_QUERY_LIMIT,
     MAX_QUERY_LIMIT,
@@ -98,6 +104,10 @@ __all__ = [
     "SourceFindingLifecycleService",
     "ProductCoreFinalizationNotReadyError",
     "ProductCoreSubmissionError",
+    "MAX_PROJECT_LIST_LIMIT",
+    "SourceProject",
+    "SourceProjectError",
+    "SourceProjectService",
     "SourceIntakeKind",
     "SourcePreparedScanRequest",
     "SourceScanSubmission",

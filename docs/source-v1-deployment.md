@@ -28,7 +28,8 @@ is the trusted-host `securescan scan` operation.
 
 ## Configure the deployment
 
-Create a local environment file and replace both empty secret values:
+Create a local environment file, replace both empty secret values, and replace
+the `replace-me` password in the materialized host database URL:
 
 ```bash
 cd ~/projects/securescan-core-step1
@@ -47,21 +48,39 @@ API and host worker.
 
 Set `SECURESCAN_RUNTIME_UID` and `SECURESCAN_RUNTIME_GID` to the nonzero numeric
 identity that will run the host worker (normally the output of `id -u` and
-`id -g`). The image build rejects a root UID or GID. Use
-an absolute `SECURESCAN_DEPLOY_DATA_ROOT` for an installation intended to survive
-checkout moves. Before Compose starts, create it as that host identity:
+`id -g`). The image build rejects a root UID or GID. Use an absolute
+`SECURESCAN_DEPLOY_DATA_ROOT` for an installation intended to survive checkout
+moves. Keep the four host runtime roots at the standard child paths shown in
+`.env.example`; this lets the host worker and containerized API share the same
+artifacts and managed Source state.
+
+Initialize storage as the configured non-root runtime identity before starting
+Compose:
 
 ```bash
-install -d -m 0700 /absolute/path/to/securescan-data
+./.venv/bin/securescan init
 ```
+
+The command creates the deployment root and its artifact, workspace, projection,
+and runtime-receipt children with private permissions. It creates the projection
+ownership descriptor through the same production projection service that
+validates it, and re-running it is idempotent. Explicit initialization may mark
+an existing projection root only when it is empty, private, not a symlink, and
+owned by the configured runtime identity. A populated unmarked directory,
+malformed or contradictory descriptor, unsafe path, wrong owner, or wrong
+permissions is rejected without repair.
 
 The bind mount uses `create_host_path: false`, so Compose fails rather than
 silently creating a root-owned deployment directory. The image's default user is
-also non-root; its UID and GID are build arguments supplied by Compose. Do not
-pre-create the managed child roots. SecureScan creates them with their required
-permissions and, where applicable, ownership markers. In particular, an existing
-unmarked `source-projections` directory is deliberately rejected by the frozen
-projection trust boundary.
+also non-root; its UID and GID are build arguments supplied by Compose. This
+preserves write access without a root API process, a privileged container, broad
+permissions, or automatic `chown` of an arbitrary host path.
+
+The projection root is descriptor-protected. Do not delete or reconstruct
+`.securescan-source-projection-root`, and do not delete only the contents of a
+managed runtime root. If `securescan init` refuses an existing location, preserve
+it for diagnosis and select a new empty deployment root or deliberately correct
+the reported host ownership or permission problem.
 
 ### Existing PostgreSQL volume
 
@@ -93,7 +112,7 @@ password must contain only URL-unreserved characters (`A-Z`, `a-z`, `0-9`, `.`,
 
 ## Start PostgreSQL, migrate, and start the API
 
-After `.env` and the deployment directory are ready:
+After `.env` is complete and `securescan init` succeeds:
 
 ```bash
 docker compose config --quiet
@@ -106,8 +125,9 @@ curl --fail --silent --show-error \
   "http://127.0.0.1:${SECURESCAN_API_PORT:-8000}/health/ready"
 ```
 
-The startup dependency is `postgres healthy -> migrate completed successfully
--> api`. The API sets `SECURESCAN_ALLOW_SQLITE_SCHEMA_BOOTSTRAP=false`; Alembic is
+The supported startup sequence is `securescan init -> postgres healthy ->
+migrate completed successfully -> api`. The API sets
+`SECURESCAN_ALLOW_SQLITE_SCHEMA_BOOTSTRAP=false`; Alembic is
 the only deployment migration authority. The readiness response reports database
 reachability and whether the schema is at the migration head, without returning
 credentials or the database URL.
@@ -121,9 +141,12 @@ separate frontend service or Node build is required. Open:
 http://127.0.0.1:<SECURESCAN_API_PORT>/
 ```
 
-Submit a repository from the trusted SecureScan host, not from the browser:
+Create or select a durable project, then submit a repository from the trusted
+SecureScan host, not from the browser:
 
 ```bash
+./.venv/bin/securescan project create "My project"
+./.venv/bin/securescan project list
 ./.venv/bin/securescan scan /absolute/repository/path --project-id <project-uuid>
 ```
 
@@ -141,25 +164,23 @@ container-only root path.
 
 ## Configure and run the host worker
 
-Run the worker from the project environment on the same host. Supply the same
-database, HMAC, and filesystem identities as the API, using fully materialized
-values rather than `${...}` references inside a SQLAlchemy URL:
+Run the worker from the project environment on the same host. Load the same
+`.env` used for initialization and Compose. The database URL must remain fully
+materialized because SQLAlchemy does not expand `${...}` references:
 
 ```bash
-export SECURESCAN_DATABASE_URL='postgresql+psycopg://securescan:REPLACE_ME@127.0.0.1:55432/securescan'
-export SECURESCAN_HMAC_KEY='REPLACE_WITH_THE_SAME_API_HMAC_KEY'
-export SECURESCAN_ALLOW_SQLITE_SCHEMA_BOOTSTRAP=false
-export SECURESCAN_ARTIFACT_ROOT='/absolute/path/to/securescan-data/artifacts'
-export SECURESCAN_SOURCE_WORKSPACE_ROOT='/absolute/path/to/securescan-data/source-workspaces'
-export SECURESCAN_SOURCE_PROJECTION_ROOT='/absolute/path/to/securescan-data/source-projections'
-export SECURESCAN_SOURCE_RUNTIME_RECEIPT_ROOT='/absolute/path/to/securescan-data/source-runtime-receipts'
-export SECURESCAN_SOURCE_ENRY_HELPER_PATH="$PWD/tools/enry-helper/bin/securescan-enry-helper"
+set -a
+. ./.env
+set +a
 export SECURESCAN_SOURCE_ENRY_HELPER_SHA256='<independently-trusted-lowercase-sha256>'
-export SECURESCAN_SOURCE_GITLEAKS_EXECUTABLE_PATH="$HOME/.local/securescan-tools/gitleaks/8.30.1/gitleaks"
-export SECURESCAN_SOURCE_SYFT_EXECUTABLE_PATH="$PWD/.venv-syft-1.51/bin/syft"
-export SECURESCAN_SOURCE_CHECKOV_EXECUTABLE_PATH="$PWD/.venv-checkov-3.3.16/bin/checkov"
 ./.venv/bin/securescan worker
 ```
+
+The worker reports storage-bootstrap and database-connection failures with a
+safe reason code, phase, and remediation. For automation,
+`securescan worker --json` emits the same error fields as canonical JSON. Run
+`securescan init` with the identical loaded configuration for a storage failure;
+do not repair descriptor files by hand.
 
 The frozen host tool identities remain:
 
@@ -179,11 +200,23 @@ Use the existing frozen setup and verification mechanisms for these tools. The
 API image deliberately contains none of them and does not require Enry to start
 or accept an existing trusted target.
 
-After migrations and the host toolchain are ready, local trusted submission is:
+After migrations and the host toolchain are ready, the supported local workflow
+does not require direct database access:
 
 ```bash
+./.venv/bin/securescan project create "My project"
+./.venv/bin/securescan project list
 ./.venv/bin/securescan scan /absolute/repository/path --project-id <project-uuid>
+./.venv/bin/securescan status <run-id>
+./.venv/bin/securescan findings <run-id>
+./.venv/bin/securescan report <run-id>
 ```
+
+The same-origin console provides the bounded component, dependency, coverage,
+and gap views backed by the public `/v1/scans/{run_id}` read endpoints. A
+dependency row reports OSV evaluation status explicitly; its known-vulnerability
+count is unknown rather than zero when advisory evaluation was partial, failed,
+or not applicable.
 
 ## Shutdown and state
 
@@ -196,3 +229,20 @@ docker compose down
 Do not add `-v` to routine shutdown. Removing the named volume is a separate,
 destructive database operation. The deployment bind directory is also durable
 state and must be backed up and protected consistently with PostgreSQL.
+
+For a disposable local acceptance deployment only, first stop its worker, then
+use its explicit Compose project name to stop the containers. Inspect the exact
+named volume before removing it, and move the exact dedicated deployment root to
+a backup location so filesystem state remains recoverable:
+
+```bash
+docker compose --project-name securescan-acceptance down
+docker volume inspect securescan-acceptance_securescan_pg
+docker volume rm securescan-acceptance_securescan_pg
+mv -- /absolute/dedicated/securescan-acceptance-root \
+  /absolute/backup/securescan-acceptance-root.saved
+```
+
+Substitute only names and absolute paths verified for that disposable project.
+Never delete individual marker files or children from a runtime root, never use
+a broad or unresolved path, and never reset a shared deployment.

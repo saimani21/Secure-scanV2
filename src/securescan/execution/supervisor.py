@@ -173,6 +173,15 @@ class _SupervisedProcessHandle:
                 raise CancellableProcessStateError(
                     "Trusted process supervisor event channel did not close"
                 )
+            try:
+                if self._supervisor.poll() is None:
+                    self._supervisor.wait(timeout=2.0)
+            except subprocess.TimeoutExpired:
+                self._supervisor.kill()
+                self._supervisor.wait()
+                raise CancellableProcessStateError(
+                    "Trusted process supervisor did not exit after cleanup"
+                ) from None
 
     def _send_control(self, value: bytes) -> None:
         if self._result is not None or self._control_fd < 0:

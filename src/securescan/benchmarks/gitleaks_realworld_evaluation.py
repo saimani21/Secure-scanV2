@@ -1178,7 +1178,7 @@ def _execute_repository(
     if not _manifest_matches_slot(workspace, slot):
         raise GitleaksRealworldEvaluationError
     slot_id = str(slot["slot_id"])
-    projection_manager = SourceProjectionManager(
+    projection_manager = SourceProjectionManager.initialize_base_directory(
         temporary_root / f"projections-run-{run_number}-{slot_id.lower()}"
     )
     projection: PreparedSourceProjection | None = None

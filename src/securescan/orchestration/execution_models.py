@@ -7,17 +7,15 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from securescan.scanners.checkov.parser import CheckovParseResult
-from securescan.scanners.gitleaks.parser import GitleaksParseResult
-from securescan.scanners.semgrep.source_binding import (
-    PRODUCTION_SEMGREP_BINDING_DIGEST,
-)
-from securescan.scanners.syft.parser import SyftParseResult
-from securescan.source.execution_context import SourceExecutionContext
-from securescan.source.projection import PreparedSourceProjection
+if TYPE_CHECKING:
+    from securescan.scanners.checkov.parser import CheckovParseResult
+    from securescan.scanners.gitleaks.parser import GitleaksParseResult
+    from securescan.scanners.syft.parser import SyftParseResult
+    from securescan.source.execution_context import SourceExecutionContext
+    from securescan.source.projection import PreparedSourceProjection
 
 SAFE_NATIVE_RESULT_SCHEMA_VERSION = "securescan-source-native-result-s6b-v1"
 SAFE_NATIVE_RESULT_MEDIA_TYPE = "application/vnd.securescan.source-native-result+json"
@@ -93,7 +91,7 @@ _TRUSTED_NATIVE_IDENTITIES = {
     "semgrep-ce": (
         "1.171.0",
         "python-semgrep-v1",
-        PRODUCTION_SEMGREP_BINDING_DIGEST,
+        "265fd32e59296d6dc50fd7f8b7558f0e35ead821c4ee689f5ff953bf70393ed2",
         "securescan-semgrep-sanitized-v1",
     ),
     "syft": (
@@ -123,9 +121,7 @@ class SourceScannerFailureCode(StrEnum):
     CONTAINMENT_FAILURE = "ATTEMPT_CONTAINMENT_FAILURE"
 
 
-def source_sandbox_execution_identity(
-    job_id: str, attempt_number: int, attempt_token: str
-) -> str:
+def source_sandbox_execution_identity(job_id: str, attempt_number: int, attempt_token: str) -> str:
     if (
         not _canonical_uuid(job_id)
         or type(attempt_number) is not int
@@ -343,6 +339,10 @@ class SafeSourceNativeResult:
         analyzer_id: str,
         context: SourceExecutionContext,
     ) -> SafeSourceNativeResult:
+        from securescan.scanners.checkov.parser import CheckovParseResult
+        from securescan.scanners.gitleaks.parser import GitleaksParseResult
+        from securescan.scanners.syft.parser import SyftParseResult
+
         if not isinstance(result, (GitleaksParseResult, SyftParseResult, CheckovParseResult)):
             raise SourceScannerExecutionIntegrityError
         payload = result.canonical_json()
@@ -665,9 +665,7 @@ class SourceSandboxCleanupReceipt:
         if set(document) != _SANDBOX_RECEIPT_FIELDS:
             raise SourceScannerExecutionIntegrityError
         try:
-            document["cleanup_outcome"] = AttemptContainmentOutcome(
-                document["cleanup_outcome"]
-            )
+            document["cleanup_outcome"] = AttemptContainmentOutcome(document["cleanup_outcome"])
             receipt = cls(**document)
         except (TypeError, ValueError) as exc:
             raise SourceScannerExecutionIntegrityError from exc

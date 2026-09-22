@@ -121,7 +121,7 @@ def _prepare_environment(
         workspace_manager=workspace_manager,
         workspace=workspace,
         context=context,
-        projection_manager=SourceProjectionManager(
+        projection_manager=SourceProjectionManager.initialize_base_directory(
             tmp_path / "source-projections",
             projection_id_factory=_Suffixes(),
         ),
@@ -728,7 +728,7 @@ def test_projection_enforces_file_count_limit(
     projection_environment: _Environment,
     tmp_path: Path,
 ) -> None:
-    manager = SourceProjectionManager(
+    manager = SourceProjectionManager.initialize_base_directory(
         tmp_path / "count-limited-projections",
         limits=RepositoryIntakeLimits(max_file_count=1),
     )
@@ -762,7 +762,7 @@ def test_projection_enforces_byte_limits(tmp_path: Path, limit: str) -> None:
             max_total_bytes=1024,
         )
     )
-    manager = SourceProjectionManager(
+    manager = SourceProjectionManager.initialize_base_directory(
         tmp_path / "byte-limited-projections",
         limits=limits,
     )
@@ -796,7 +796,7 @@ def test_projection_enforces_depth_and_path_limits(
         selected={selected_path: b"x"},
         excluded={},
     )
-    manager = SourceProjectionManager(
+    manager = SourceProjectionManager.initialize_base_directory(
         tmp_path / "path-limited-projections",
         limits=limits,
     )
@@ -882,7 +882,7 @@ def test_cleanup_filesystem_failure_is_sanitized(
 
 def test_preexisting_final_projection_is_not_overwritten(tmp_path: Path) -> None:
     environment = _prepare_environment(tmp_path)
-    manager = SourceProjectionManager(
+    manager = SourceProjectionManager.initialize_base_directory(
         tmp_path / "fixed-projections",
         projection_id_factory=lambda: "f" * 32,
     )
@@ -903,7 +903,7 @@ def test_projection_root_first_initialization_is_owned_and_private(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "new-parent" / "source-projections"
-    manager = SourceProjectionManager(root)
+    manager = SourceProjectionManager.initialize_base_directory(root)
     marker = manager.base_directory / ROOT_MARKER_NAME
     root_metadata = manager.base_directory.stat(follow_symlinks=False)
     marker_metadata = marker.stat(follow_symlinks=False)
@@ -920,6 +920,18 @@ def test_projection_root_first_initialization_is_owned_and_private(
     if hasattr(os, "geteuid"):
         assert root_metadata.st_uid == os.geteuid()
         assert marker_metadata.st_uid == os.geteuid()
+
+
+def test_ordinary_constructor_initializes_genuinely_absent_root(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "missing-parent" / "source-projections"
+
+    manager = SourceProjectionManager(root)
+
+    assert manager.base_directory == root
+    assert stat.S_IMODE(root.stat().st_mode) == 0o700
+    assert (root / ROOT_MARKER_NAME).read_bytes() == ROOT_MARKER_CONTENT
 
 
 @pytest.mark.parametrize("foreign_entry", (False, True))
@@ -949,7 +961,7 @@ def test_projection_root_rejects_corrupt_marker(
     tamper: str,
 ) -> None:
     root = tmp_path / "corrupt-root-marker"
-    manager = SourceProjectionManager(root)
+    manager = SourceProjectionManager.initialize_base_directory(root)
     marker = manager.base_directory / ROOT_MARKER_NAME
     if tamper == "content":
         os.chmod(marker, 0o600, follow_symlinks=False)
@@ -964,7 +976,7 @@ def test_projection_root_rejects_corrupt_marker(
 
 def test_projection_root_rejects_marker_symlink(tmp_path: Path) -> None:
     root = tmp_path / "symlinked-root-marker"
-    manager = SourceProjectionManager(root)
+    manager = SourceProjectionManager.initialize_base_directory(root)
     marker = manager.base_directory / ROOT_MARKER_NAME
     outside = tmp_path / "outside-root-marker"
     outside.write_bytes(ROOT_MARKER_CONTENT)
@@ -978,7 +990,7 @@ def test_projection_root_rejects_marker_symlink(tmp_path: Path) -> None:
 @pytest.mark.skipif(os.name != "posix", reason="POSIX hard links are required")
 def test_projection_root_rejects_marker_hardlink(tmp_path: Path) -> None:
     root = tmp_path / "hardlinked-root-marker"
-    manager = SourceProjectionManager(root)
+    manager = SourceProjectionManager.initialize_base_directory(root)
     marker = manager.base_directory / ROOT_MARKER_NAME
     os.link(marker, tmp_path / "external-root-marker-link")
 
@@ -992,7 +1004,7 @@ def test_projection_root_rejects_wrong_permissions_without_repair(
     if os.name != "posix":
         pytest.skip("POSIX permission semantics are required")
     root = tmp_path / "wrong-root-permissions"
-    manager = SourceProjectionManager(root)
+    manager = SourceProjectionManager.initialize_base_directory(root)
     os.chmod(manager.base_directory, 0o755, follow_symlinks=False)
 
     with pytest.raises(SourceProjectionOwnershipError):
@@ -1008,7 +1020,7 @@ def test_projection_root_checks_effective_user_ownership(
     if not hasattr(os, "geteuid"):
         pytest.skip("effective-user ownership is unavailable")
     root = tmp_path / "foreign-owner"
-    SourceProjectionManager(root)
+    SourceProjectionManager.initialize_base_directory(root)
     current_effective_user = os.geteuid()
     monkeypatch.setattr(
         projection_module.os,

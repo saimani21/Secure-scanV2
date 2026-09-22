@@ -82,6 +82,7 @@ def _alembic_config() -> Config:
 @pytest.fixture
 def postgres_observability_database(
     monkeypatch: pytest.MonkeyPatch,
+    initialized_api_runtime_storage: None,
 ) -> Iterator[str]:
     database_url = _validated_test_database_url()
     monkeypatch.setenv("SECURESCAN_DATABASE_URL", database_url)

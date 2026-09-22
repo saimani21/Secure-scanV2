@@ -1,7 +1,7 @@
 from importlib import import_module
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from securescan.execution.cancellable_process import (
+from .cancellable_process import (
     CancellableProcessExecutor,
     CancellableProcessExecutorError,
     CancellableProcessHandle,
@@ -11,43 +11,44 @@ from securescan.execution.cancellable_process import (
     CancellableProcessStateError,
     InvalidCancellableProcessRequestError,
 )
-from securescan.execution.docker_sandbox import (
-    DockerCliCommandRunner,
-    DockerCommandRunner,
-    DockerContainerCleanupError,
-    DockerContainerCreationError,
-    DockerContainerInspectionError,
-    DockerContainerStartError,
-    DockerContainerTerminationError,
-    DockerControlCommandResult,
-    DockerImageUnavailableError,
-    DockerSandboxCommandBuilder,
-    DockerSandboxError,
-    DockerSandboxExecutionHandle,
-    DockerSandboxExecutionRequest,
-    DockerSandboxExecutor,
-    DockerSandboxTimeoutError,
-    DockerUnavailableError,
-    InvalidDockerSandboxRequestError,
-)
 
-if TYPE_CHECKING:
-    from securescan.execution.supervisor import (
-        AttemptBoundProcessExecutor,
-        SupervisorAttemptIdentity,
-        TrustedLocalProcessSupervisor,
-    )
+_SUPERVISOR_EXPORTS = {
+    "AttemptBoundProcessExecutor",
+    "SupervisorAttemptIdentity",
+    "TrustedLocalProcessSupervisor",
+}
+_DOCKER_EXPORTS = {
+    "DockerCliCommandRunner",
+    "DockerCommandRunner",
+    "DockerContainerCleanupError",
+    "DockerContainerCreationError",
+    "DockerContainerInspectionError",
+    "DockerContainerStartError",
+    "DockerContainerTerminationError",
+    "DockerControlCommandResult",
+    "DockerImageUnavailableError",
+    "DockerSandboxCommandBuilder",
+    "DockerSandboxError",
+    "DockerSandboxExecutionHandle",
+    "DockerSandboxExecutionRequest",
+    "DockerSandboxExecutor",
+    "DockerSandboxTimeoutError",
+    "DockerUnavailableError",
+    "InvalidDockerSandboxRequestError",
+}
 
 
 def __getattr__(name: str) -> Any:
-    if name in {
-        "AttemptBoundProcessExecutor",
-        "SupervisorAttemptIdentity",
-        "TrustedLocalProcessSupervisor",
-    }:
-        supervisor = import_module("securescan.execution.supervisor")
-        return getattr(supervisor, name)
-    raise AttributeError(name)
+    if name in _SUPERVISOR_EXPORTS:
+        module = import_module("securescan.execution.supervisor")
+    elif name in _DOCKER_EXPORTS:
+        module = import_module("securescan.execution.docker_sandbox")
+    else:
+        raise AttributeError(name)
+    value = getattr(module, name)
+    globals()[name] = value
+    return value
+
 
 __all__ = [
     "CancellableProcessExecutor",

@@ -19,7 +19,7 @@ pytestmark = pytest.mark.postgres
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "e6a1c4f9b207"
+HEAD_REVISION = "f7c2d4e8a901"
 
 APPLICATION_TABLES = {
     "projects",
@@ -227,11 +227,22 @@ def test_postgres_migration_round_trip_and_schema_contract(
         }
         assert isinstance(parent_columns["max_active_jobs"]["type"], Integer)
         assert parent_columns["max_active_jobs"]["nullable"] is False
-        assert "ck_source_orchestrations_max_active_jobs" in {
+        assert isinstance(parent_columns["assembly_attempt_count"]["type"], Integer)
+        assert parent_columns["assembly_attempt_count"]["nullable"] is False
+        assert isinstance(parent_columns["assembly_failure_code"]["type"], String)
+        assert parent_columns["assembly_failure_code"]["type"].length == 128
+        assert parent_columns["assembly_failure_code"]["nullable"] is True
+        assert isinstance(parent_columns["assembly_failure_at"]["type"], DateTime)
+        orchestration_checks = {
             constraint["name"]
             for constraint in inspector.get_check_constraints(
                 "source_orchestrations"
             )
+        }
+        assert orchestration_checks >= {
+            "ck_source_orchestrations_max_active_jobs",
+            "ck_source_orchestrations_assembly_attempt_count",
+            "ck_source_orchestrations_assembly_failure_pair",
         }
         _assert_lease_token_column(inspector)
         _assert_cancellation_timestamp_column(inspector)

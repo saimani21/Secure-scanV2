@@ -25,6 +25,7 @@ from securescan.persistence.database import (
 def job_api_context(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    initialized_api_runtime_storage: None,
 ) -> Iterator[tuple[TestClient, sessionmaker[Session], str]]:
     database_url = f"sqlite:///{tmp_path / 'job-api.db'}"
     monkeypatch.setenv("SECURESCAN_DATABASE_URL", database_url)

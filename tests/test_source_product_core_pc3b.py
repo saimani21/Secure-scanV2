@@ -577,7 +577,9 @@ def test_components_and_clean_dependencies_come_from_authoritative_s4(
     )
     request = next(item for item in dependencies.items if item.name == "requests")
     assert request.version == "2.31.0"
-    assert request.known_vulnerability_count == 0
+    assert request.vulnerability_evaluation == "NOT_APPLICABLE"
+    assert request.vulnerability_evaluation_reason == "NO_PACKAGES_OBSERVED"
+    assert request.known_vulnerability_count is None
     assert request.advisory_aliases == ()
 
 
@@ -604,8 +606,38 @@ def test_dependency_projection_includes_safe_osv_relationships(
 
     request = next(item for item in dependencies.items if item.name == "requests")
     assert request.known_vulnerability_count == 1
+    assert request.vulnerability_evaluation == "COMPLETE"
+    assert request.vulnerability_evaluation_reason is None
     assert request.advisory_aliases
     assert request.fixed_versions
+
+
+def test_dependency_projection_never_reports_zero_when_osv_failed(
+    completed_context: _Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = completed_context.submissions._index._rebuild_trusted_report(
+        completed_context.run_id
+    )
+    report = _vulnerable_osv_report(
+        original, completed_context.run_id
+    ).canonical_data()
+    osv = next(
+        item for item in report["coverage_outcomes"] if item["authority"] == "osv.dev"
+    )
+    osv["state"] = "FAILED"
+    osv["reason_code"] = "OSV_NETWORK_FAILURE"
+    monkeypatch.setattr(
+        completed_context.queries,
+        "_published_document",
+        lambda _run_id: report,
+    )
+
+    dependencies = completed_context.queries.list_dependencies(completed_context.run_id)
+
+    request = next(item for item in dependencies.items if item.name == "requests")
+    assert request.vulnerability_evaluation == "FAILED"
+    assert request.vulnerability_evaluation_reason == "OSV_NETWORK_FAILURE"
+    assert request.known_vulnerability_count is None
 
 
 def test_coverage_gaps_and_report_are_separate_authoritative_views(

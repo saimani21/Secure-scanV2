@@ -59,6 +59,7 @@ from securescan.product_core import (
     SourceScanSubmissionService,
     SourceTrustedTargetSubmissionService,
 )
+from securescan.runtime_storage import initialize_source_runtime_storage
 from tests.test_source_orchestration_s6b import (
     _CONTROLLED_SECRET,
     _RUN_ID,
@@ -518,7 +519,11 @@ def test_main_lifespan_composes_pc3c_application_services(
     monkeypatch.setenv("SECURESCAN_ARTIFACT_ROOT", str(tmp_path / "artifacts"))
     monkeypatch.setenv("SECURESCAN_SOURCE_WORKSPACE_ROOT", str(tmp_path / "workspaces"))
     monkeypatch.setenv("SECURESCAN_SOURCE_PROJECTION_ROOT", str(tmp_path / "projections"))
+    monkeypatch.setenv(
+        "SECURESCAN_SOURCE_RUNTIME_RECEIPT_ROOT", str(tmp_path / "receipts")
+    )
     get_settings.cache_clear()
+    initialize_source_runtime_storage(get_settings())
 
     async def verify() -> None:
         async with lifespan(main_app):
