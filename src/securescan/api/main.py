@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from securescan.adapters.fake_scanner import FakeScannerAdapter
 from securescan.api.job_routes import router as job_router
 from securescan.api.operations_routes import router as operations_router
+from securescan.api.project_routes import router as project_router
 from securescan.api.run_routes import router as run_router
 from securescan.api.source_scan_routes import router as source_scan_router
 from securescan.artifacts.store import ContentAddressedArtifactStore
@@ -34,6 +35,7 @@ from securescan.orchestration.models import frozen_source_v1_authority_roster
 from securescan.orchestration.service import SourceOrchestrationService
 from securescan.persistence.database import create_session_factory
 from securescan.product_core import (
+    SourceProjectService,
     SourceScanQueryService,
     SourceScanSubmissionService,
     SourceTrustedTargetSubmissionService,
@@ -84,6 +86,7 @@ async def lifespan(application: FastAPI):
         application.state.source_scan_query_service = SourceScanQueryService(
             session_factory, artifact_store
         )
+        application.state.source_project_service = SourceProjectService(session_factory)
         application.state.source_orchestration_coordinator_service = (
             SourceOrchestrationCoordinatorService(
                 session_factory,
@@ -103,6 +106,7 @@ app.add_middleware(CorrelationIdMiddleware)
 app.include_router(job_router)
 app.include_router(run_router)
 app.include_router(operations_router)
+app.include_router(project_router)
 app.include_router(source_scan_router)
 app.include_router(frontend_router)
 

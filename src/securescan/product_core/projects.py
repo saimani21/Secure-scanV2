@@ -3,8 +3,9 @@ from __future__ import annotations
 import unicodedata
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -14,8 +15,28 @@ MAX_PROJECT_LIST_LIMIT = 200
 
 
 class SourceProjectError(RuntimeError):
+    def __init__(self, message: str = "Source project operation failed") -> None:
+        super().__init__(message)
+
+
+class SourceProjectNotFoundError(SourceProjectError):
     def __init__(self) -> None:
-        super().__init__("Source project operation failed")
+        super().__init__("Source project was not found")
+
+
+class InvalidProjectIdentifierError(SourceProjectError):
+    def __init__(self) -> None:
+        super().__init__("Source project identifier is invalid")
+
+
+class InvalidProjectPaginationError(SourceProjectError):
+    def __init__(self) -> None:
+        super().__init__("Source project pagination is invalid")
+
+
+class SourceProjectPersistenceError(SourceProjectError):
+    def __init__(self) -> None:
+        super().__init__("Source project query is unavailable")
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +44,14 @@ class SourceProject:
     project_id: str
     name: str
     created_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class SourceProjectPage:
+    items: tuple[SourceProject, ...]
+    total: int
+    limit: int
+    offset: int
 
 
 class SourceProjectService:
@@ -69,6 +98,43 @@ class SourceProjectService:
         except SQLAlchemyError:
             raise SourceProjectError from None
 
+    def get(self, project_id: str) -> SourceProject:
+        normalized = self._project_id(project_id)
+        try:
+            with self._sessions() as session:
+                row = session.get(ProjectRow, normalized)
+                if row is None:
+                    raise SourceProjectNotFoundError
+                return self._record(row)
+        except SourceProjectError:
+            raise
+        except (SQLAlchemyError, TypeError, ValueError):
+            raise SourceProjectPersistenceError from None
+
+    def list_page(self, *, limit: int = 50, offset: int = 0) -> SourceProjectPage:
+        self._pagination(limit, offset)
+        try:
+            with self._sessions() as session:
+                total = session.scalar(select(func.count()).select_from(ProjectRow))
+                rows = tuple(
+                    session.scalars(
+                        select(ProjectRow)
+                        .order_by(ProjectRow.created_at.desc(), ProjectRow.id.desc())
+                        .limit(limit)
+                        .offset(offset)
+                    )
+                )
+            return SourceProjectPage(
+                tuple(self._record(row) for row in rows),
+                int(total or 0),
+                limit,
+                offset,
+            )
+        except SourceProjectError:
+            raise
+        except (SQLAlchemyError, TypeError, ValueError):
+            raise SourceProjectPersistenceError from None
+
     @staticmethod
     def _name(value: str) -> str:
         if (
@@ -80,6 +146,28 @@ class SourceProjectService:
         ):
             raise SourceProjectError
         return value
+
+    @staticmethod
+    def _project_id(value: object) -> str:
+        try:
+            valid = isinstance(value, str) and str(UUID(value)) == value
+        except ValueError:
+            valid = False
+        if not valid:
+            raise InvalidProjectIdentifierError
+        return value
+
+    @staticmethod
+    def _pagination(limit: int, offset: int) -> None:
+        if (
+            isinstance(limit, bool)
+            or not isinstance(limit, int)
+            or not 1 <= limit <= MAX_PROJECT_LIST_LIMIT
+            or isinstance(offset, bool)
+            or not isinstance(offset, int)
+            or offset < 0
+        ):
+            raise InvalidProjectPaginationError
 
     def _now(self) -> datetime:
         value = self._clock()

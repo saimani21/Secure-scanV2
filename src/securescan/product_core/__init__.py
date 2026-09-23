@@ -38,8 +38,13 @@ from .lifecycle import (
 )
 from .projects import (
     MAX_PROJECT_LIST_LIMIT,
+    InvalidProjectIdentifierError,
+    InvalidProjectPaginationError,
     SourceProject,
     SourceProjectError,
+    SourceProjectNotFoundError,
+    SourceProjectPage,
+    SourceProjectPersistenceError,
     SourceProjectService,
 )
 from .query import (
@@ -57,6 +62,7 @@ from .query import (
     SourceGapSummary,
     SourceProductStatus,
     SourcePublishedReport,
+    SourceScanListItem,
     SourceScanPage,
     SourceScanQueryError,
     SourceScanQueryErrorCode,
@@ -105,8 +111,13 @@ __all__ = [
     "ProductCoreFinalizationNotReadyError",
     "ProductCoreSubmissionError",
     "MAX_PROJECT_LIST_LIMIT",
+    "InvalidProjectIdentifierError",
+    "InvalidProjectPaginationError",
     "SourceProject",
     "SourceProjectError",
+    "SourceProjectNotFoundError",
+    "SourceProjectPage",
+    "SourceProjectPersistenceError",
     "SourceProjectService",
     "SourceIntakeKind",
     "SourcePreparedScanRequest",
@@ -131,5 +142,6 @@ __all__ = [
     "SourceScanQueryErrorCode",
     "SourceScanQueryPersistenceError",
     "SourceScanQueryService",
+    "SourceScanListItem",
     "SourceScanSummary",
 ]

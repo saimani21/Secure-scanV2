@@ -14,6 +14,7 @@ from securescan.api.source_scan_schemas import (
     FindingPageResponse,
     GapPageResponse,
     PublishedReportResponse,
+    ScanPageResponse,
     ScanSubmissionRequest,
     ScanSubmissionResponse,
     ScanSummaryResponse,
@@ -143,6 +144,17 @@ def _call(method, *args, **kwargs):
         return method(*args, **kwargs)
     except SourceScanQueryError as exc:
         raise _query_error(exc) from exc
+
+
+@router.get("", response_model=ScanPageResponse, responses=_QUERY_RESPONSES)
+def list_scans(
+    service: Annotated[SourceScanQueryService, Depends(get_source_query_service)],
+    limit: int = 50,
+    offset: int = 0,
+) -> ScanPageResponse:
+    return ScanPageResponse.model_validate(
+        _call(service.list_scans, limit=limit, offset=offset)
+    )
 
 
 @router.get("/{run_id}", response_model=ScanSummaryResponse, responses=_QUERY_RESPONSES)

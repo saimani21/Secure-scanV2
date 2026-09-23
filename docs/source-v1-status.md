@@ -179,11 +179,28 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | D1 | Single-node deployment and safe storage bootstrap | COMPLETE |
 | D2 | Same-origin Source analysis console | COMPLETE |
 | V1.1A | One-command local operator lifecycle | COMPLETE |
+| V1.1B1 | Project navigation and scan-history read model | IMPLEMENTED - PENDING REVIEW |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
 identity-verified trusted-host worker behind `securescan system up`. It does not
 change any frozen scanner, evidence, finding, coverage, or Product Core semantic.
+
+V1.1A manual acceptance completed against an isolated installation. The supported
+one-command lifecycle created a project and completed a real `nodejs-goof` scan
+(`bba11de4-80c1-406a-bc9b-e5d75708c8a0`) in lineage
+`c38363eb-78f5-4037-86c2-c5fe8ed0ddde`. The Product Core result contained 218
+findings: 35 CRITICAL, 83 HIGH, 68 MEDIUM, 8 LOW, and 24 UNRANKED. Coverage was
+complete with two `COMPLETE`, three `COMPLETE_WITH_FINDINGS`, and three
+`NOT_APPLICABLE` outcomes, with zero gaps. Restart/persistence was verified, the
+isolated installation shut down cleanly, and the existing normal and personal
+deployments remained untouched. No secret or private configuration value is part
+of this evidence record.
+
+V1.1B1 adds bounded read-only navigation for projects, recent scans, and project
+scan history while preserving the existing project CLI and per-scan APIs. It does
+not add browser submission, arbitrary host-path input, scanner changes, or a new
+frontend. See `docs/source-v1.1b1-product-navigation.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

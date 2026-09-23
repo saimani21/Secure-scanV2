@@ -498,7 +498,7 @@ def test_cancel_not_found_is_safe() -> None:
 def test_openapi_contains_expected_public_scan_operations() -> None:
     document = _app().openapi()
     expected = {
-        "/v1/scans": {"post"},
+        "/v1/scans": {"get", "post"},
         "/v1/scans/{run_id}": {"get"},
         "/v1/scans/{run_id}/findings": {"get"},
         "/v1/scans/{run_id}/components": {"get"},
@@ -530,6 +530,7 @@ def test_main_lifespan_composes_pc3c_application_services(
             for name in (
                 "source_trusted_target_submission_service",
                 "source_scan_query_service",
+                "source_project_service",
                 "source_orchestration_coordinator_service",
             ):
                 assert getattr(main_app.state, name, None) is not None

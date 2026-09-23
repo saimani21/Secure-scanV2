@@ -54,6 +54,28 @@ class ScanSummaryResponse(_StrictModel):
     gap_count: int | None
 
 
+class ScanListItemResponse(_StrictModel):
+    run_id: str
+    target_id: str
+    project_id: str
+    lineage_id: str
+    submission_sequence_number: int
+    predecessor_run_id: str | None
+    product_status: SourceProductStatus
+    created_at: datetime
+    published_at: datetime | None
+    finalized_at: datetime | None
+    indexed: bool
+    lifecycle_evaluated: bool
+
+
+class ScanPageResponse(_StrictModel):
+    items: tuple[ScanListItemResponse, ...]
+    total: int
+    limit: int
+    offset: int
+
+
 class FindingSummaryResponse(_StrictModel):
     finding_id: str
     authority: str

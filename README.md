@@ -361,6 +361,13 @@ The host CLI also provides `securescan project create` and `securescan project
 list`, so a supported local scan never requires direct SQL or knowledge of the
 internal persistence model.
 
+The read-only navigation API exposes bounded `GET /v1/projects`,
+`GET /v1/projects/{project_id}`, `GET /v1/projects/{project_id}/scans`, and
+`GET /v1/scans` views. Clients can discover durable project and run IDs without
+pasting a previously known UUID. Repository submission remains the trusted-host
+CLI workflow; the browser/API cannot submit arbitrary host filesystem paths. See
+the [V1.1B1 navigation contract](docs/source-v1.1b1-product-navigation.md).
+
 The [Source v1 release-acceptance runbook](docs/source-v1-release-acceptance.md)
 defines the final four-run, five-authority acceptance path and its sanitized evidence
 summary. Its committed RA1 fixtures and offline verifier do not themselves constitute a

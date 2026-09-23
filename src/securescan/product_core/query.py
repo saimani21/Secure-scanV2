@@ -15,12 +15,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from securescan.artifacts.store import ContentAddressedArtifactStore
+from securescan.domain.enums import TargetType
 from securescan.orchestration.models import (
     OrchestrationLifecycleState,
     OrchestrationTerminalOutcome,
 )
 from securescan.persistence.database import (
     AnalysisRunRow,
+    ProjectRow,
     SourceFindingLifecycleRow,
     SourceFindingOccurrenceRow,
     SourceLineageRunRow,
@@ -31,6 +33,8 @@ from securescan.persistence.database import (
 )
 
 from .finding_index import ProductCoreIndexError, SourceFindingIndexService
+from .projects import InvalidProjectIdentifierError, SourceProjectNotFoundError
+from .submission import SourceIntakeKind
 
 DEFAULT_QUERY_LIMIT = 50
 MAX_QUERY_LIMIT = 200
@@ -153,6 +157,24 @@ class SourceScanSummary:
     coverage_complete: bool | None
     coverage_counts: Mapping[str, int]
     gap_count: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class SourceScanListItem:
+    """Bounded navigation projection without per-run report reconstruction."""
+
+    run_id: str
+    target_id: str
+    project_id: str
+    lineage_id: str
+    submission_sequence_number: int
+    predecessor_run_id: str | None
+    product_status: SourceProductStatus
+    created_at: datetime
+    published_at: datetime | None
+    finalized_at: datetime | None
+    indexed: bool
+    lifecycle_evaluated: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -296,6 +318,150 @@ class SourceScanQueryService:
                 gap_count=gap_count,
             )
         except SourceScanQueryError:
+            raise
+        except (SQLAlchemyError, TypeError, ValueError):
+            raise SourceScanQueryPersistenceError from None
+
+    def list_scans(
+        self,
+        *,
+        project_id: str | None = None,
+        limit: int = DEFAULT_QUERY_LIMIT,
+        offset: int = 0,
+    ) -> SourceScanPage[SourceScanListItem]:
+        self._validate_pagination(limit, offset)
+        normalized_project = (
+            None if project_id is None else self._normalize_project_id(project_id)
+        )
+        try:
+            with self._sessions() as session:
+                if (
+                    normalized_project is not None
+                    and session.get(ProjectRow, normalized_project) is None
+                ):
+                    raise SourceProjectNotFoundError
+
+                predicates = self._source_scan_predicates(normalized_project)
+                total = session.scalar(
+                    select(func.count())
+                    .select_from(SourceScanSubmissionRow)
+                    .join(
+                        AnalysisRunRow,
+                        AnalysisRunRow.id == SourceScanSubmissionRow.run_id,
+                    )
+                    .join(TargetRow, TargetRow.id == AnalysisRunRow.target_id)
+                    .join(
+                        SourceOrchestrationRow,
+                        SourceOrchestrationRow.run_id == SourceScanSubmissionRow.run_id,
+                    )
+                    .join(
+                        SourceTargetLineageRow,
+                        SourceTargetLineageRow.lineage_id
+                        == SourceScanSubmissionRow.lineage_id,
+                    )
+                    .where(*predicates)
+                )
+                rows = tuple(
+                    session.execute(
+                        select(
+                            AnalysisRunRow,
+                            TargetRow,
+                            SourceScanSubmissionRow,
+                            SourceOrchestrationRow,
+                            SourceTargetLineageRow,
+                            SourceLineageRunRow,
+                        )
+                        .select_from(SourceScanSubmissionRow)
+                        .join(
+                            AnalysisRunRow,
+                            AnalysisRunRow.id == SourceScanSubmissionRow.run_id,
+                        )
+                        .join(TargetRow, TargetRow.id == AnalysisRunRow.target_id)
+                        .join(
+                            SourceOrchestrationRow,
+                            SourceOrchestrationRow.run_id
+                            == SourceScanSubmissionRow.run_id,
+                        )
+                        .join(
+                            SourceTargetLineageRow,
+                            SourceTargetLineageRow.lineage_id
+                            == SourceScanSubmissionRow.lineage_id,
+                        )
+                        .outerjoin(
+                            SourceLineageRunRow,
+                            SourceLineageRunRow.run_id == SourceScanSubmissionRow.run_id,
+                        )
+                        .where(*predicates)
+                        .order_by(
+                            AnalysisRunRow.created_at.desc(),
+                            AnalysisRunRow.id.desc(),
+                        )
+                        .limit(limit)
+                        .offset(offset)
+                    ).all()
+                )
+                contexts: list[_ScanContext] = []
+                for run, target, submission, parent, lineage, membership in rows:
+                    if (
+                        target.project_id != lineage.project_id
+                        or parent.run_id != run.id
+                        or (
+                            membership is not None
+                            and (
+                                membership.lineage_id != submission.lineage_id
+                                or membership.sequence_number
+                                != submission.submission_sequence_number
+                                or membership.predecessor_run_id
+                                != submission.predecessor_run_id
+                                or membership.predecessor_sequence_number
+                                != submission.predecessor_sequence_number
+                            )
+                        )
+                    ):
+                        raise SourceScanQueryPersistenceError
+                    contexts.append(
+                        _ScanContext(run, target, submission, parent, membership)
+                    )
+
+                predecessor_ids = tuple(
+                    context.submission.predecessor_run_id
+                    for context in contexts
+                    if context.submission.predecessor_run_id is not None
+                )
+                predecessor_submissions: dict[str, SourceScanSubmissionRow] = {}
+                predecessor_memberships: dict[str, SourceLineageRunRow] = {}
+                if predecessor_ids:
+                    predecessor_rows = session.execute(
+                        select(SourceScanSubmissionRow, SourceLineageRunRow)
+                        .outerjoin(
+                            SourceLineageRunRow,
+                            SourceLineageRunRow.run_id == SourceScanSubmissionRow.run_id,
+                        )
+                        .where(SourceScanSubmissionRow.run_id.in_(predecessor_ids))
+                    )
+                    for predecessor_submission, predecessor_membership in predecessor_rows:
+                        predecessor_submissions[
+                            predecessor_submission.run_id
+                        ] = predecessor_submission
+                        if predecessor_membership is not None:
+                            predecessor_memberships[
+                                predecessor_membership.run_id
+                            ] = predecessor_membership
+
+                items = tuple(
+                    self._list_item(
+                        context,
+                        predecessor_submissions.get(
+                            context.submission.predecessor_run_id or ""
+                        ),
+                        predecessor_memberships.get(
+                            context.submission.predecessor_run_id or ""
+                        ),
+                    )
+                    for context in contexts
+                )
+            return SourceScanPage(items, int(total or 0), limit, offset)
+        except (SourceScanQueryError, SourceProjectNotFoundError):
             raise
         except (SQLAlchemyError, TypeError, ValueError):
             raise SourceScanQueryPersistenceError from None
@@ -596,6 +762,22 @@ class SourceScanQueryService:
         return _ScanContext(run, target, submission, parent, membership)
 
     def _status(self, session: Session, context: _ScanContext) -> SourceProductStatus:
+        predecessor_submission: SourceScanSubmissionRow | None = None
+        predecessor_membership: SourceLineageRunRow | None = None
+        predecessor = context.submission.predecessor_run_id
+        if predecessor is not None:
+            predecessor_submission = session.get(SourceScanSubmissionRow, predecessor)
+            predecessor_membership = session.get(SourceLineageRunRow, predecessor)
+        return self._status_from_material(
+            context, predecessor_submission, predecessor_membership
+        )
+
+    @staticmethod
+    def _status_from_material(
+        context: _ScanContext,
+        predecessor_submission: SourceScanSubmissionRow | None,
+        predecessor_membership: SourceLineageRunRow | None,
+    ) -> SourceProductStatus:
         parent = context.parent
         if (
             parent.lifecycle_state == OrchestrationLifecycleState.TERMINAL.value
@@ -620,25 +802,62 @@ class SourceScanQueryService:
             return SourceProductStatus.COMPLETED
         if parent.published_at is not None:
             predecessor = context.submission.predecessor_run_id
-            if predecessor is not None:
-                predecessor_submission = session.get(SourceScanSubmissionRow, predecessor)
-                predecessor_membership = session.get(SourceLineageRunRow, predecessor)
-                if (
-                    predecessor_membership is None
-                    or predecessor_membership.lineage_id != context.submission.lineage_id
-                    or predecessor_membership.sequence_number
-                    != context.submission.predecessor_sequence_number
-                    or predecessor_membership.lifecycle_evaluated_at is None
-                    or (
-                        predecessor_submission is not None
-                        and predecessor_submission.finalized_at is None
-                    )
-                ):
-                    return SourceProductStatus.BLOCKED_BY_PREDECESSOR
+            if predecessor is not None and (
+                predecessor_membership is None
+                or predecessor_membership.lineage_id != context.submission.lineage_id
+                or predecessor_membership.sequence_number
+                != context.submission.predecessor_sequence_number
+                or predecessor_membership.lifecycle_evaluated_at is None
+                or (
+                    predecessor_submission is not None
+                    and predecessor_submission.finalized_at is None
+                )
+            ):
+                return SourceProductStatus.BLOCKED_BY_PREDECESSOR
             return SourceProductStatus.PUBLISHED_PENDING_FINALIZATION
         if parent.lifecycle_state == OrchestrationLifecycleState.PREPARED.value:
             return SourceProductStatus.QUEUED
         return SourceProductStatus.RUNNING
+
+    @classmethod
+    def _list_item(
+        cls,
+        context: _ScanContext,
+        predecessor_submission: SourceScanSubmissionRow | None,
+        predecessor_membership: SourceLineageRunRow | None,
+    ) -> SourceScanListItem:
+        membership = context.membership
+        return SourceScanListItem(
+            run_id=context.run.id,
+            target_id=context.target.id,
+            project_id=context.target.project_id,
+            lineage_id=context.submission.lineage_id,
+            submission_sequence_number=context.submission.submission_sequence_number,
+            predecessor_run_id=context.submission.predecessor_run_id,
+            product_status=cls._status_from_material(
+                context, predecessor_submission, predecessor_membership
+            ),
+            created_at=cls._as_utc(context.submission.created_at),
+            published_at=(
+                None
+                if context.parent.published_at is None
+                else cls._as_utc(context.parent.published_at)
+            ),
+            finalized_at=(
+                None
+                if context.submission.finalized_at is None
+                else cls._as_utc(context.submission.finalized_at)
+            ),
+            indexed=(
+                membership is not None
+                and membership.indexing_state == "INDEXED"
+                and membership.indexed_at is not None
+            ),
+            lifecycle_evaluated=(
+                membership is not None
+                and membership.lifecycle_evaluated_at is not None
+            ),
+        )
 
     @staticmethod
     def _finding_counts(
@@ -729,6 +948,29 @@ class SourceScanQueryService:
         if not valid:
             raise ScanNotFoundError
         return value
+
+    @staticmethod
+    def _normalize_project_id(value: object) -> str:
+        try:
+            valid = isinstance(value, str) and str(UUID(value)) == value
+        except ValueError:
+            valid = False
+        if not valid:
+            raise InvalidProjectIdentifierError
+        return value
+
+    @staticmethod
+    def _source_scan_predicates(project_id: str | None):
+        predicates = (
+            TargetRow.target_type == TargetType.SOURCE_REPOSITORY.value,
+            SourceScanSubmissionRow.intake_kind
+            == SourceIntakeKind.MANAGED_WORKSPACE_V1.value,
+            SourceScanSubmissionRow.intake_ref == TargetRow.source_path,
+            TargetRow.project_id == SourceTargetLineageRow.project_id,
+        )
+        if project_id is None:
+            return predicates
+        return (*predicates, TargetRow.project_id == project_id)
 
     @staticmethod
     def _validate_pagination(limit: int, offset: int) -> None:
