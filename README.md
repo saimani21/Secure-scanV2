@@ -23,14 +23,23 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev,postgres]'
 cp .env.example .env
-./.venv/bin/securescan init
-docker compose up -d postgres
-alembic upgrade head
+# Edit .env and set the required secrets, host database URL, runtime identity,
+# and independently trusted Enry digest.
+./.venv/bin/securescan system configure --from-env-file .env
+./.venv/bin/securescan doctor
+./.venv/bin/securescan system up
+./.venv/bin/securescan open
 ```
 
 Replace the example secrets and materialized host database URL before running
 initialization. Use a separate database whose name ends in `_test` for destructive
 PostgreSQL integration tests.
+
+The private operator profile lets later shells use `securescan system status`
+without sourcing a shell script. Operator commands ignore unrelated `.env`
+files in the current directory; process `SECURESCAN_*` values can explicitly
+override the profile. Stop the managed host worker and Compose services with
+`securescan system down`; PostgreSQL volumes and deployment data are preserved.
 
 ## Tests
 

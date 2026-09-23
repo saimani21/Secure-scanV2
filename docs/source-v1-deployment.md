@@ -34,10 +34,9 @@ the `replace-me` password in the materialized host database URL:
 ```bash
 cd ~/projects/securescan-core-step1
 cp .env.example .env
-# Edit .env, then make its configured values available to the commands below.
-set -a
-. ./.env
-set +a
+# Edit .env, then import its data without executing it as shell code.
+./.venv/bin/securescan system configure --from-env-file .env
+./.venv/bin/securescan doctor
 ```
 
 Set `SECURESCAN_POSTGRES_PASSWORD` to a strong URL-unreserved value and set
@@ -45,6 +44,15 @@ Set `SECURESCAN_POSTGRES_PASSWORD` to a strong URL-unreserved value and set
 generate two different 32-byte hex values with `openssl rand -hex 32`; do not
 print them in logs or commit `.env`. The same HMAC key must be supplied to the
 API and host worker.
+
+The import writes `~/.config/securescan/operator.json` (or
+`$XDG_CONFIG_HOME/securescan/operator.json`) as a mode `0600` JSON file inside
+a mode `0700` directory. It never sources the input. Operator commands ignore
+arbitrary current-directory `.env` files. Their runtime precedence is process
+environment, the private operator profile, then safe defaults. The explicit
+`system configure --from-env-file` import is the only operator path that reads
+an env file. Legacy v1 application commands retain their existing cwd `.env`
+compatibility.
 
 Set `SECURESCAN_RUNTIME_UID` and `SECURESCAN_RUNTIME_GID` to the nonzero numeric
 identity that will run the host worker (normally the output of `id -u` and
@@ -54,11 +62,10 @@ moves. Keep the four host runtime roots at the standard child paths shown in
 `.env.example`; this lets the host worker and containerized API share the same
 artifacts and managed Source state.
 
-Initialize storage as the configured non-root runtime identity before starting
-Compose:
+`system up` initializes storage as the configured non-root runtime identity:
 
 ```bash
-./.venv/bin/securescan init
+./.venv/bin/securescan system up
 ```
 
 The command creates the deployment root and its artifact, workspace, projection,
@@ -69,6 +76,16 @@ an existing projection root only when it is empty, private, not a symlink, and
 owned by the configured runtime identity. A populated unmarked directory,
 malformed or contradictory descriptor, unsafe path, wrong owner, or wrong
 permissions is rejected without repair.
+
+For lower-level diagnosis or administrator recovery, storage initialization can
+still be run independently with:
+
+```bash
+./.venv/bin/securescan init
+```
+
+Normal operation should use `securescan system up`, which invokes this same
+trusted storage boundary before starting any service.
 
 The bind mount uses `create_host_path: false`, so Compose fails rather than
 silently creating a root-owned deployment directory. The image's default user is
@@ -110,23 +127,19 @@ localhost port. The password is embedded in the Compose URL, so the deployment
 password must contain only URL-unreserved characters (`A-Z`, `a-z`, `0-9`, `.`,
 `_`, `~`, `-`).
 
-## Start PostgreSQL, migrate, and start the API
+## Start and inspect the complete service
 
-After `.env` is complete and `securescan init` succeeds:
+After the private profile is configured and `doctor` has no blocking failures:
 
 ```bash
-docker compose config --quiet
-docker compose build api migrate
-docker compose up -d postgres
-docker compose run --rm migrate
-docker compose up -d api
-docker compose ps
-curl --fail --silent --show-error \
-  "http://127.0.0.1:${SECURESCAN_API_PORT:-8000}/health/ready"
+./.venv/bin/securescan system up
+./.venv/bin/securescan system status
+./.venv/bin/securescan open
 ```
 
-The supported startup sequence is `securescan init -> postgres healthy ->
-migrate completed successfully -> api`. The API sets
+The manager enforces `storage -> postgres healthy -> migration success ->
+API /health/ready -> one verified host worker`. Repeated `system up` is
+idempotent and does not start another worker. The API sets
 `SECURESCAN_ALLOW_SQLITE_SCHEMA_BOOTSTRAP=false`; Alembic is
 the only deployment migration authority. The readiness response reports database
 reachability and whether the schema is at the migration head, without returning
@@ -162,19 +175,22 @@ mounted at `/var/lib/securescan` for the API. Durable database records retain
 opaque workspace and relative content-addressed references rather than a
 container-only root path.
 
-## Configure and run the host worker
+## Managed trusted-host worker
 
-Run the worker from the project environment on the same host. Load the same
-`.env` used for initialization and Compose. The database URL must remain fully
-materialized because SQLAlchemy does not expand `${...}` references:
+`system up` launches the existing worker on the trusted scanning host; it does
+not move scanners into Compose and does not require a second terminal. The
+database URL in the imported profile remains fully materialized because
+SQLAlchemy does not expand `${...}` references.
 
-```bash
-set -a
-. ./.env
-set +a
-export SECURESCAN_SOURCE_ENRY_HELPER_SHA256='<independently-trusted-lowercase-sha256>'
-./.venv/bin/securescan worker
-```
+Managed state is under `<SECURESCAN_DEPLOY_DATA_ROOT>/operator/`: the lifecycle
+lock, private worker identity, and `worker.log`. The identity binds PID, Linux
+process start time, executable, exact command, and a non-secret deployment
+marker read from the live process's bounded `/proc/<pid>/environ` data.
+`system down` re-verifies all of them before SIGTERM and again before any
+SIGKILL. A missing, malformed, or mismatched marker produces
+`STALE_WORKER_STATE` and no new signal. Diagnose the live PID and log without
+deleting state; only after independently confirming that no managed worker is
+alive should the exact stale identity file be archived for recovery.
 
 The worker reports storage-bootstrap and database-connection failures with a
 safe reason code, phase, and remediation. For automation,
@@ -218,15 +234,22 @@ dependency row reports OSV evaluation status explicitly; its known-vulnerability
 count is unknown rather than zero when advisory evaluation was partial, failed,
 or not applicable.
 
-## Shutdown and state
+## Status, diagnosis, and shutdown
 
-Stop the containers without destroying PostgreSQL state:
+`system status` reports `READY`, `DEGRADED`, `STOPPED`, or `ERROR` from the
+separate database, API readiness/schema, and worker states. `doctor` is
+read-only: `PASS` and `WARN` do not block its exit, while any `FAIL` returns a
+nonzero exit. Docker/Compose details remain available in their own logs, and
+host-worker output is in the private operator log.
+
+Stop the managed worker and this installation's deterministic Compose project
+without destroying PostgreSQL state:
 
 ```bash
-docker compose down
+./.venv/bin/securescan system down
 ```
 
-Do not add `-v` to routine shutdown. Removing the named volume is a separate,
+The command never adds `-v`. Removing the named volume is a separate,
 destructive database operation. The deployment bind directory is also durable
 state and must be backed up and protected consistently with PostgreSQL.
 

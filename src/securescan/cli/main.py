@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import webbrowser
 from pathlib import Path
 from typing import Annotated
 
@@ -10,10 +11,18 @@ import typer
 
 from securescan.adapters.fake_scanner import FakeScannerAdapter
 from securescan.artifacts.store import ContentAddressedArtifactStore
-from securescan.config import get_settings
+from securescan.config import Settings, get_operator_settings, get_settings
 from securescan.domain.enums import TargetType
 from securescan.domain.models import TargetProfile
 from securescan.execution.local_executor import LocalProcessExecutor
+from securescan.operator.doctor import Doctor
+from securescan.operator.manager import OperatorManager
+from securescan.operator.models import DoctorReport, OperatorError, SystemStatus
+from securescan.operator.profile import (
+    OperatorProfileError,
+    parse_operator_env_file,
+    write_operator_profile,
+)
 from securescan.persistence.database import initialize_database
 from securescan.runtime import shutdown_signal_handlers
 from securescan.runtime_storage import (
@@ -46,7 +55,190 @@ from .source import (
 
 app = typer.Typer(no_args_is_help=True, help="SecureScan execution-kernel CLI")
 project_app = typer.Typer(no_args_is_help=True, help="Manage durable Source projects")
+system_app = typer.Typer(no_args_is_help=True, help="Operate the local Source service")
 app.add_typer(project_app, name="project")
+app.add_typer(system_app, name="system")
+
+
+def _operator_manager() -> OperatorManager:
+    return OperatorManager(get_operator_settings())
+
+
+def _operator_fail(error: Exception, *, json_output: bool) -> None:
+    code = error.code if isinstance(error, OperatorError) else "OPERATOR_UNAVAILABLE"
+    if isinstance(error, (OperatorError, OperatorProfileError)):
+        message = str(error)
+    else:
+        message = "Operator configuration is invalid"
+    if json_output:
+        typer.echo(
+            canonical_json({"error": {"code": code, "message": message}}),
+            err=True,
+        )
+    else:
+        typer.echo(f"Error [{code}]: {message}", err=True)
+    raise typer.Exit(5)
+
+
+def _display_system_status(status: SystemStatus, *, json_output: bool) -> None:
+    if json_output:
+        typer.echo(canonical_json(status.canonical_data()))
+        return
+    typer.echo("SecureScan Source v1.1")
+    typer.echo("------------------------------")
+    typer.echo(f"Database      {status.database.value}")
+    typer.echo(f"API           {status.api.value}")
+    typer.echo(f"Schema        {status.schema.value}")
+    typer.echo(f"Worker        {status.worker.value}")
+    typer.echo(f"System        {status.system_status.value}")
+    typer.echo(f"UI            {status.ui_url}/")
+
+
+def _display_doctor(report: DoctorReport, *, json_output: bool) -> None:
+    if json_output:
+        typer.echo(canonical_json(report.canonical_data()))
+        return
+    typer.echo("SecureScan Doctor")
+    typer.echo("---------------------------------------")
+    for check in report.checks:
+        typer.echo(f"{check.name:<28} {check.status.value:<4}  {check.detail}")
+    typer.echo(f"\nResult: {'READY' if report.ready else 'BLOCKED'}")
+
+
+@system_app.command("up")
+def system_up(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+    open_browser: Annotated[bool, typer.Option("--open")] = False,
+) -> None:
+    """Start PostgreSQL, migrate, start the API, and manage one host worker."""
+
+    try:
+        manager = _operator_manager()
+        status = manager.up()
+        _display_system_status(status, json_output=json_output)
+        if not json_output:
+            typer.echo("\nSecureScan is ready.")
+        if open_browser:
+            _open_ui(manager.ui_url)
+    except Exception as exc:
+        _operator_fail(exc, json_output=json_output)
+
+
+@system_app.command("down")
+def system_down(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Stop the managed worker and deployment while preserving persistent data."""
+
+    try:
+        status = _operator_manager().down()
+        _display_system_status(status, json_output=json_output)
+        if not json_output:
+            typer.echo("\nSecureScan stopped. Persistent data preserved.")
+    except Exception as exc:
+        _operator_fail(exc, json_output=json_output)
+
+
+@system_app.command("status")
+def system_status(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Show truthful database, API, schema, and managed-worker state."""
+
+    try:
+        _display_system_status(_operator_manager().status(), json_output=json_output)
+    except Exception as exc:
+        _operator_fail(exc, json_output=json_output)
+
+
+_PROFILE_PATH_FIELDS = frozenset(
+    {
+        "deploy_data_root",
+        "artifact_root",
+        "source_projection_root",
+        "source_workspace_root",
+        "source_runtime_receipt_root",
+        "source_enry_helper_path",
+        "source_gitleaks_executable_path",
+        "source_syft_executable_path",
+        "source_checkov_executable_path",
+        "operator_compose_file",
+    }
+)
+
+
+@system_app.command("configure")
+def system_configure(
+    from_env_file: Annotated[
+        Path,
+        typer.Option("--from-env-file", exists=True, dir_okay=False, readable=True),
+    ],
+) -> None:
+    """Import a controlled KEY=VALUE file into the private operator profile."""
+
+    try:
+        values = parse_operator_env_file(from_env_file)
+        if not values.keys() <= Settings.model_fields.keys():
+            raise OperatorProfileError(
+                "Configuration contains unsupported SecureScan settings"
+            )
+        base = from_env_file.resolve().parent
+        for name in _PROFILE_PATH_FIELDS & values.keys():
+            path = Path(values[name]).expanduser()
+            values[name] = str(
+                path if path.is_absolute() else (base / path).resolve()
+            )
+        settings = Settings(**values, _env_file=None)
+        profile = write_operator_profile(settings.model_dump(mode="json"))
+        get_operator_settings.cache_clear()
+        typer.echo("SecureScan operator profile configured.")
+        typer.echo(f"Profile: {profile}")
+        typer.echo("Permissions: directory 0700, file 0600")
+    except Exception as exc:
+        _operator_fail(exc, json_output=False)
+
+
+@app.command("doctor")
+def doctor(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Run read-only operator prerequisite checks."""
+
+    try:
+        report = Doctor(get_operator_settings()).run()
+        _display_doctor(report, json_output=json_output)
+        if not report.ready:
+            raise typer.Exit(5)
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _operator_fail(exc, json_output=json_output)
+
+
+def _open_ui(url: str) -> None:
+    target = f"{url.rstrip('/')}/"
+    typer.echo(f"Opening SecureScan:\n{target}")
+    try:
+        opened = webbrowser.open(target, new=2)
+    except Exception:
+        opened = False
+    if not opened:
+        typer.echo(
+            "Browser launch was unavailable; open the URL above manually.", err=True
+        )
+        raise typer.Exit(5)
+
+
+@app.command("open")
+def open_ui() -> None:
+    """Open the configured local Source UI in the default browser."""
+
+    try:
+        _open_ui(_operator_manager().ui_url)
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        _operator_fail(exc, json_output=False)
 
 
 def _fail(error: SourceCliError, *, json_output: bool) -> None:

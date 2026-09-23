@@ -274,6 +274,11 @@ class EnryClient:
     def configuration(self) -> TrustedEnryHelper:
         return self._configuration
 
+    def verify_runtime(self) -> None:
+        """Verify the configured helper identity without classifying user data."""
+
+        _verify_helper(self._configuration)
+
     def classify(
         self,
         files: tuple[EnryFileInput, ...],

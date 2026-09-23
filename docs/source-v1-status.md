@@ -178,6 +178,12 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | R1A/R1B | Source runtime composition and bounded worker cycle | COMPLETE |
 | D1 | Single-node deployment and safe storage bootstrap | COMPLETE |
 | D2 | Same-origin Source analysis console | COMPLETE |
+| V1.1A | One-command local operator lifecycle | COMPLETE |
+
+V1.1A adds a private persistent operator profile, read-only doctor, deterministic
+Compose project management, authoritative API readiness waits, and exactly one
+identity-verified trusted-host worker behind `securescan system up`. It does not
+change any frozen scanner, evidence, finding, coverage, or Product Core semantic.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

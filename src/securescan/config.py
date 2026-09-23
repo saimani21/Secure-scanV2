@@ -2,9 +2,16 @@ import os
 import re
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
+
+from securescan.operator.profile import read_operator_profile
 
 
 def _default_securescan_data_root() -> Path:
@@ -67,6 +74,17 @@ class Settings(BaseSettings):
     max_output_bytes: int = Field(default=1_048_576, ge=1_024)
     default_timeout_seconds: int = Field(default=15, ge=1, le=3_600)
     allow_sqlite_schema_bootstrap: bool = True
+    postgres_db: str = "securescan"
+    postgres_user: str = "securescan"
+    postgres_password: str = ""
+    postgres_port: int = Field(default=55_432, ge=1, le=65_535)
+    api_port: int = Field(default=8_000, ge=1, le=65_535)
+    operator_compose_file: Path = Field(
+        default_factory=lambda: Path(__file__).resolve().parents[2] / "compose.yaml"
+    )
+    operator_compose_project: str = "securescan-source-v11"
+    operator_startup_timeout_seconds: float = Field(default=120.0, ge=5, le=600)
+    operator_shutdown_timeout_seconds: float = Field(default=15.0, ge=1, le=120)
 
     @field_validator(
         "deploy_data_root",
@@ -78,6 +96,7 @@ class Settings(BaseSettings):
         "source_gitleaks_executable_path",
         "source_syft_executable_path",
         "source_checkov_executable_path",
+        "operator_compose_file",
         mode="after",
     )
     @classmethod
@@ -93,7 +112,47 @@ class Settings(BaseSettings):
             raise ValueError("Source Enry helper digest must be lowercase SHA-256")
         return value
 
+    @field_validator("operator_compose_project")
+    @classmethod
+    def validate_operator_compose_project(cls, value: str) -> str:
+        if re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,62}", value) is None:
+            raise ValueError("Operator Compose project name is invalid")
+        return value
+
+    @field_validator("postgres_db", "postgres_user", "postgres_password")
+    @classmethod
+    def validate_postgres_value(cls, value: str) -> str:
+        if any(ord(character) < 32 or ord(character) == 127 for character in value):
+            raise ValueError("PostgreSQL configuration contains control characters")
+        return value
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource | Any, ...]:
+        # Highest priority first. Legacy Settings() retains cwd .env compatibility;
+        # operator commands use Settings(_env_file=None), which disables that source.
+        return (
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            read_operator_profile,
+            file_secret_settings,
+        )
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+@lru_cache
+def get_operator_settings() -> Settings:
+    """Load operator configuration without consulting an arbitrary cwd .env."""
+
+    return Settings(_env_file=None)
