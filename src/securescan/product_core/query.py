@@ -16,9 +16,19 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.domain.enums import TargetType
+from securescan.evidence.models import CoverageState
 from securescan.orchestration.models import (
     OrchestrationLifecycleState,
+    OrchestrationNodeDisposition,
+    OrchestrationNodeLifecycleState,
     OrchestrationTerminalOutcome,
+    SourceAuthority,
+    SourceOrchestrationIntegrityError,
+    frozen_source_v1_authority_roster,
+)
+from securescan.orchestration.service import (
+    SourceOrchestrationError,
+    SourceOrchestrationService,
 )
 from securescan.persistence.database import (
     AnalysisRunRow,
@@ -26,6 +36,7 @@ from securescan.persistence.database import (
     SourceFindingLifecycleRow,
     SourceFindingOccurrenceRow,
     SourceLineageRunRow,
+    SourceOrchestrationNodeRow,
     SourceOrchestrationRow,
     SourceScanSubmissionRow,
     SourceTargetLineageRow,
@@ -58,6 +69,15 @@ _CATEGORIES = frozenset(
 )
 _PRIORITIES = frozenset({"CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "UNRANKED"})
 _LIFECYCLE_STATES = frozenset({"NEW", "EXISTING", "RESOLVED", "REOPENED"})
+_SAFE_STAGE_REASON_CODES = {
+    "DEPENDENCY_COVERAGE_LIMITED": "DEPENDENCY_INCOMPLETE",
+    "DEPENDENCY_EVALUATION_FAILED": "DEPENDENCY_FAILED",
+    "MIXED_SCOPE_PACKAGE_OBSERVATION": "DEPENDENCY_INCOMPLETE",
+    "NO_PACKAGES_IN_ADVISORY_SCOPE": "NO_PACKAGES_IN_ADVISORY_SCOPE",
+    "NO_PACKAGES_OBSERVED": "NO_PACKAGES_OBSERVED",
+    "NO_SUPPORTED_OSV_COORDINATES": "NO_SUPPORTED_COORDINATES",
+    "SYFT_PREREQUISITE_PARTIAL": "DEPENDENCY_INCOMPLETE",
+}
 
 
 class SourceProductStatus(StrEnum):
@@ -68,6 +88,17 @@ class SourceProductStatus(StrEnum):
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
     FAILED = "FAILED"
+
+
+class SourceStageProgressState(StrEnum):
+    PENDING = "PENDING"
+    WAITING = "WAITING"
+    RUNNING = "RUNNING"
+    COMPLETE = "COMPLETE"
+    PARTIAL = "PARTIAL"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class SourceScanQueryErrorCode(StrEnum):
@@ -178,6 +209,24 @@ class SourceScanListItem:
 
 
 @dataclass(frozen=True, slots=True)
+class SourceStageSummary:
+    authority: str
+    capability: str
+    progress_state: SourceStageProgressState
+    coverage_states: tuple[str, ...] | None
+    reason_code: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class SourceScanStages:
+    run_id: str
+    product_status: SourceProductStatus
+    published_at: datetime | None
+    finalized_at: datetime | None
+    stages: tuple[SourceStageSummary, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SourceFindingSummary:
     finding_id: str
     authority: str
@@ -259,6 +308,11 @@ class SourceScanQueryService:
             raise SourceScanQueryPersistenceError
         self._sessions = session_factory
         self._index = SourceFindingIndexService(session_factory, artifact_store)
+        self._orchestrations = SourceOrchestrationService(
+            session_factory,
+            artifact_store,
+            frozen_source_v1_authority_roster(),
+        )
 
     def get_scan(self, run_id: str) -> SourceScanSummary:
         normalized = self._normalize_run_id(run_id)
@@ -464,6 +518,92 @@ class SourceScanQueryService:
         except (SourceScanQueryError, SourceProjectNotFoundError):
             raise
         except (SQLAlchemyError, TypeError, ValueError):
+            raise SourceScanQueryPersistenceError from None
+
+    def get_stages(self, run_id: str) -> SourceScanStages:
+        normalized = self._normalize_run_id(run_id)
+        try:
+            with self._sessions() as session:
+                context = self._context(session, normalized)
+                self._require_canonical_source_scan(context)
+                product_status = self._status(session, context)
+                published_at = context.parent.published_at
+                finalized_at = context.submission.finalized_at
+
+            orchestration = self._orchestrations.load(normalized)
+            with self._sessions() as session:
+                nodes = tuple(
+                    session.scalars(
+                        select(SourceOrchestrationNodeRow)
+                        .where(SourceOrchestrationNodeRow.run_id == normalized)
+                        .order_by(SourceOrchestrationNodeRow.node_id)
+                    )
+                )
+
+            expected_node_ids = {item.node_id for item in orchestration.snapshot.nodes}
+            if {item.node_id for item in nodes} != expected_node_ids:
+                raise SourceScanQueryPersistenceError
+
+            roster = tuple(
+                sorted(
+                    orchestration.snapshot.roster.authorities,
+                    key=lambda item: (item.authority.value, item.capability.value),
+                )
+            )
+            roster_pairs = {(item.authority.value, item.capability.value) for item in roster}
+            nodes_by_stage = {
+                pair: tuple(node for node in nodes if (node.authority, node.capability) == pair)
+                for pair in roster_pairs
+            }
+
+            coverage_by_stage: dict[tuple[str, str], tuple[str, ...]] | None = None
+            if published_at is not None:
+                report = self._published_document(normalized)
+                coverage_sets: dict[tuple[str, str], set[str]] = {
+                    pair: set() for pair in roster_pairs
+                }
+                for outcome in self._list_field(report, "coverage_outcomes"):
+                    pair = (
+                        self._required_string(outcome, "authority"),
+                        self._required_string(outcome, "capability"),
+                    )
+                    state = CoverageState(self._required_string(outcome, "state")).value
+                    if pair not in coverage_sets:
+                        raise SourceScanQueryPersistenceError
+                    coverage_sets[pair].add(state)
+                coverage_by_stage = {
+                    pair: tuple(sorted(states)) for pair, states in coverage_sets.items()
+                }
+
+            stages = tuple(
+                self._stage_summary(
+                    authority=item.authority.value,
+                    capability=item.capability.value,
+                    nodes=nodes_by_stage[(item.authority.value, item.capability.value)],
+                    coverage_states=(
+                        None
+                        if coverage_by_stage is None
+                        else coverage_by_stage[(item.authority.value, item.capability.value)]
+                    ),
+                )
+                for item in roster
+            )
+            return SourceScanStages(
+                run_id=normalized,
+                product_status=product_status,
+                published_at=(None if published_at is None else self._as_utc(published_at)),
+                finalized_at=(None if finalized_at is None else self._as_utc(finalized_at)),
+                stages=stages,
+            )
+        except SourceScanQueryError:
+            raise
+        except (
+            SourceOrchestrationError,
+            SourceOrchestrationIntegrityError,
+            SQLAlchemyError,
+            TypeError,
+            ValueError,
+        ):
             raise SourceScanQueryPersistenceError from None
 
     def list_findings(
@@ -760,6 +900,141 @@ class SourceScanQueryService:
         ):
             raise SourceScanQueryPersistenceError
         return _ScanContext(run, target, submission, parent, membership)
+
+    @staticmethod
+    def _require_canonical_source_scan(context: _ScanContext) -> None:
+        if (
+            context.target.target_type != TargetType.SOURCE_REPOSITORY.value
+            or context.submission.intake_kind != SourceIntakeKind.MANAGED_WORKSPACE_V1.value
+        ):
+            raise ScanNotFoundError
+        if context.submission.intake_ref != context.target.source_path:
+            raise SourceScanQueryPersistenceError
+
+    @classmethod
+    def _stage_summary(
+        cls,
+        *,
+        authority: str,
+        capability: str,
+        nodes: tuple[SourceOrchestrationNodeRow, ...],
+        coverage_states: tuple[str, ...] | None,
+    ) -> SourceStageSummary:
+        if not nodes:
+            return SourceStageSummary(
+                authority=authority,
+                capability=capability,
+                progress_state=SourceStageProgressState.NOT_APPLICABLE,
+                coverage_states=coverage_states,
+                reason_code=None,
+            )
+
+        lifecycle_states = tuple(
+            OrchestrationNodeLifecycleState(node.lifecycle_state) for node in nodes
+        )
+        if any(
+            state
+            in {
+                OrchestrationNodeLifecycleState.RUNNING,
+                OrchestrationNodeLifecycleState.RETRY_PENDING,
+                OrchestrationNodeLifecycleState.RECONCILIATION_REQUIRED,
+            }
+            for state in lifecycle_states
+        ):
+            progress = SourceStageProgressState.RUNNING
+        elif any(
+            state is OrchestrationNodeLifecycleState.WAITING_DEPENDENCY
+            for state in lifecycle_states
+        ):
+            progress = SourceStageProgressState.WAITING
+        elif any(
+            state
+            in {
+                OrchestrationNodeLifecycleState.PLANNED,
+                OrchestrationNodeLifecycleState.READY,
+                OrchestrationNodeLifecycleState.QUEUED,
+            }
+            for state in lifecycle_states
+        ):
+            progress = SourceStageProgressState.PENDING
+        else:
+            progress = cls._terminal_stage_progress(nodes, lifecycle_states)
+
+        return SourceStageSummary(
+            authority=authority,
+            capability=capability,
+            progress_state=progress,
+            coverage_states=coverage_states,
+            reason_code=cls._stage_reason(authority, progress, nodes),
+        )
+
+    @staticmethod
+    def _terminal_stage_progress(
+        nodes: tuple[SourceOrchestrationNodeRow, ...],
+        lifecycle_states: tuple[OrchestrationNodeLifecycleState, ...],
+    ) -> SourceStageProgressState:
+        dispositions = tuple(
+            OrchestrationNodeDisposition(node.terminal_disposition)
+            for node, lifecycle in zip(nodes, lifecycle_states, strict=True)
+            if lifecycle is OrchestrationNodeLifecycleState.TERMINAL
+        )
+        non_terminal = tuple(
+            state
+            for state in lifecycle_states
+            if state
+            not in {
+                OrchestrationNodeLifecycleState.TERMINAL,
+                OrchestrationNodeLifecycleState.NOT_APPLICABLE,
+            }
+        )
+        if non_terminal or len(dispositions) + lifecycle_states.count(
+            OrchestrationNodeLifecycleState.NOT_APPLICABLE
+        ) != len(nodes):
+            raise SourceScanQueryPersistenceError
+        if any(value is OrchestrationNodeDisposition.PARTIAL for value in dispositions):
+            return SourceStageProgressState.PARTIAL
+        incomplete = {
+            OrchestrationNodeDisposition.FAILED,
+            OrchestrationNodeDisposition.BLOCKED_BY_DEPENDENCY,
+            OrchestrationNodeDisposition.CANCELLED,
+        }
+        if dispositions and all(value in incomplete for value in dispositions):
+            if all(value is OrchestrationNodeDisposition.CANCELLED for value in dispositions):
+                return SourceStageProgressState.CANCELLED
+            return SourceStageProgressState.FAILED
+        if any(value in incomplete for value in dispositions):
+            return SourceStageProgressState.PARTIAL
+        if any(value is OrchestrationNodeDisposition.COMPLETE for value in dispositions):
+            return SourceStageProgressState.COMPLETE
+        return SourceStageProgressState.NOT_APPLICABLE
+
+    @staticmethod
+    def _stage_reason(
+        authority: str,
+        progress: SourceStageProgressState,
+        nodes: tuple[SourceOrchestrationNodeRow, ...],
+    ) -> str | None:
+        if progress is SourceStageProgressState.WAITING and authority == SourceAuthority.OSV.value:
+            return "WAITING_FOR_PACKAGE_INVENTORY"
+        normalized = {
+            _SAFE_STAGE_REASON_CODES[reason]
+            for reason in (node.terminal_reason_code for node in nodes)
+            if reason in _SAFE_STAGE_REASON_CODES
+        }
+        if len(normalized) == 1:
+            return normalized.pop()
+        dispositions = {
+            node.terminal_disposition for node in nodes if node.terminal_disposition is not None
+        }
+        if progress is SourceStageProgressState.CANCELLED:
+            return "CANCELLED"
+        if progress is SourceStageProgressState.FAILED:
+            if dispositions and dispositions <= {
+                OrchestrationNodeDisposition.BLOCKED_BY_DEPENDENCY.value
+            }:
+                return "DEPENDENCY_FAILED"
+            return "EXECUTION_FAILED"
+        return None
 
     def _status(self, session: Session, context: _ScanContext) -> SourceProductStatus:
         predecessor_submission: SourceScanSubmissionRow | None = None

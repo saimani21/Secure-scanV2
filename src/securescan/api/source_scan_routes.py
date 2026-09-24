@@ -15,6 +15,7 @@ from securescan.api.source_scan_schemas import (
     GapPageResponse,
     PublishedReportResponse,
     ScanPageResponse,
+    ScanStagesResponse,
     ScanSubmissionRequest,
     ScanSubmissionResponse,
     ScanSummaryResponse,
@@ -162,6 +163,13 @@ def get_scan(
     run_id: UUID, service: Annotated[SourceScanQueryService, Depends(get_source_query_service)]
 ):
     return ScanSummaryResponse.model_validate(_call(service.get_scan, str(run_id)))
+
+
+@router.get("/{run_id}/stages", response_model=ScanStagesResponse, responses=_QUERY_RESPONSES)
+def get_stages(
+    run_id: UUID, service: Annotated[SourceScanQueryService, Depends(get_source_query_service)]
+):
+    return ScanStagesResponse.model_validate(_call(service.get_stages, str(run_id)))
 
 
 @router.get("/{run_id}/findings", response_model=FindingPageResponse, responses=_QUERY_RESPONSES)

@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from securescan.product_core import SourceProductStatus
+from securescan.product_core import SourceProductStatus, SourceStageProgressState
 
 
 class _StrictModel(BaseModel):
@@ -67,6 +67,22 @@ class ScanListItemResponse(_StrictModel):
     finalized_at: datetime | None
     indexed: bool
     lifecycle_evaluated: bool
+
+
+class StageSummaryResponse(_StrictModel):
+    authority: str
+    capability: str
+    progress_state: SourceStageProgressState
+    coverage_states: tuple[str, ...] | None
+    reason_code: str | None
+
+
+class ScanStagesResponse(_StrictModel):
+    run_id: str
+    product_status: SourceProductStatus
+    published_at: datetime | None
+    finalized_at: datetime | None
+    stages: tuple[StageSummaryResponse, ...]
 
 
 class ScanPageResponse(_StrictModel):

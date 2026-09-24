@@ -180,6 +180,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | D2 | Same-origin Source analysis console | COMPLETE |
 | V1.1A | One-command local operator lifecycle | COMPLETE |
 | V1.1B1 | Project navigation and scan-history read model | IMPLEMENTED - PENDING REVIEW |
+| V1.1B2 | Safe scan stage/progress read model | IMPLEMENTED - PENDING REVIEW |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -201,6 +202,13 @@ V1.1B1 adds bounded read-only navigation for projects, recent scans, and project
 scan history while preserving the existing project CLI and per-scan APIs. It does
 not add browser submission, arbitrary host-path input, scanner changes, or a new
 frontend. See `docs/source-v1.1b1-product-navigation.md`.
+
+V1.1B2 adds a safe per-scan stage projection over validated durable planning,
+orchestration progress, and published coverage. It preserves one stage per trusted
+authority/capability, represents OSV dependency waiting without calling it failure,
+and returns exact sorted distinct `coverage_states` without inventing a coverage
+aggregation policy. Detailed coverage and all execution semantics remain unchanged.
+See `docs/source-v1.1b2-stage-progress.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

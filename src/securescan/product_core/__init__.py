@@ -68,7 +68,10 @@ from .query import (
     SourceScanQueryErrorCode,
     SourceScanQueryPersistenceError,
     SourceScanQueryService,
+    SourceScanStages,
     SourceScanSummary,
+    SourceStageProgressState,
+    SourceStageSummary,
 )
 from .submission import (
     ProductCoreFinalizationNotReadyError,
@@ -142,6 +145,9 @@ __all__ = [
     "SourceScanQueryErrorCode",
     "SourceScanQueryPersistenceError",
     "SourceScanQueryService",
+    "SourceScanStages",
     "SourceScanListItem",
     "SourceScanSummary",
+    "SourceStageProgressState",
+    "SourceStageSummary",
 ]
