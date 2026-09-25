@@ -124,7 +124,11 @@ def test_static_assets_are_strictly_allowlisted_and_no_cache(client: TestClient)
         "api.js": "text/javascript",
         "components.js": "text/javascript",
         "format.js": "text/javascript",
+        "overview.js": "text/javascript",
+        "project.js": "text/javascript",
+        "projects.js": "text/javascript",
         "router.js": "text/javascript",
+        "scans.js": "text/javascript",
         "state.js": "text/javascript",
         "base.css": "text/css",
         "shell.css": "text/css",
@@ -192,7 +196,7 @@ def test_javascript_uses_no_html_injection_or_dynamic_execution_sinks() -> None:
     assert 'startsWith("on")' in _JAVASCRIPT["components.js"]
 
 
-def test_browser_code_remains_get_only_and_requests_only_readiness_in_c1() -> None:
+def test_browser_code_remains_get_only_and_uses_only_frozen_c2_read_apis() -> None:
     api = _JAVASCRIPT["api.js"]
     assert 'method: "GET"' in api
     assert "encodeURIComponent(String(value))" in api
@@ -202,8 +206,22 @@ def test_browser_code_remains_get_only_and_requests_only_readiness_in_c1() -> No
     assert 'acceptedStatuses: [503]' in api
     for forbidden in ('method: "POST"', 'method: "PUT"', 'method: "PATCH"', 'method: "DELETE"'):
         assert forbidden not in _ALL_JAVASCRIPT
-    assert "/v1/projects" not in _ALL_JAVASCRIPT
-    assert "/v1/scans" not in _ALL_JAVASCRIPT
+    for endpoint in (
+        "/v1/projects?",
+        "/v1/projects/${segment}",
+        "/v1/projects/${segment}/scans?",
+        "/v1/scans?",
+    ):
+        assert endpoint in api
+    for forbidden_path in (
+        "/findings?",
+        "/dependencies?",
+        "/coverage",
+        "/gaps?",
+        "/report",
+        "/stages",
+    ):
+        assert forbidden_path not in api
 
 
 def test_router_has_exact_history_api_and_uuid_security_contract() -> None:

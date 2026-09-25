@@ -12,7 +12,11 @@ import {
   statusIndicator,
 } from "/assets/components.js";
 import { formatDateTime, statusLabel, truncateMiddle } from "/assets/format.js";
+import { renderOverviewPage } from "/assets/overview.js";
+import { renderProjectPage } from "/assets/project.js";
+import { renderProjectsPage } from "/assets/projects.js";
 import { installNavigation, parseRoute } from "/assets/router.js";
+import { renderScansPage } from "/assets/scans.js";
 import { beginRequest, beginRoute } from "/assets/state.js";
 
 const ROUTE_SHELLS = Object.freeze({
@@ -179,7 +183,7 @@ function breadcrumbItems(route) {
   return items;
 }
 
-function renderRouteShell(route, region) {
+function renderCheckpointShell(route, region) {
   const contract = ROUTE_SHELLS[route.name];
   const content = createElement("div", { className: "route-stack" });
   content.append(pageHeader(contract));
@@ -202,6 +206,21 @@ function renderRouteShell(route, region) {
   );
   region.replaceChildren(content);
   region.setAttribute("aria-busy", "false");
+}
+
+function renderRoute(route, region) {
+  const renderers = {
+    overview: renderOverviewPage,
+    projects: renderProjectsPage,
+    project: renderProjectPage,
+    scans: renderScansPage,
+  };
+  const renderer = renderers[route.name];
+  if (renderer) {
+    return renderer({ region, route });
+  }
+  renderCheckpointShell(route, region);
+  return null;
 }
 
 function statusDetails(payload) {
@@ -441,7 +460,7 @@ function buildShell(route) {
   closeButton.addEventListener("click", () => closeMobileNavigation());
   backdrop.addEventListener("click", () => closeMobileNavigation());
 
-  renderRouteShell(route, region);
+  renderRoute(route, region);
   loadSystemStatus([sidebarStatus, topbarStatus]);
   return region;
 }

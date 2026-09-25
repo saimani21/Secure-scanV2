@@ -191,6 +191,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1E | Dependency Semantics v2 | COMPLETE - FROZEN |
 | V1.1P | Exact-pinned `requirements*.txt` advisory scope | COMPLETE - FROZEN |
 | V1.1C1 | Web UI 2.0 design system, shell, and routing | COMPLETE - CHECKPOINT |
+| V1.1C2 | Overview, projects, project detail, and global scans | COMPLETE - CHECKPOINT |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -296,6 +297,15 @@ Overview, project and scan navigation, findings, dependencies, coverage, gaps,
 and reports remain later C2-C6 work. No Product Core, API schema, scanner,
 dependency, lifecycle, orchestration, database, or migration semantic changed.
 See `docs/source-v1.1c-web-ui.md`.
+
+V1.1C2 replaces UUID-first navigation with real Overview, Projects, Project
+Detail, project scan history, and Global Scans pages over the frozen read APIs.
+Pagination uses authoritative metadata; project-name enrichment is cached and
+strictly bounded; resource failures remain local; hostile display strings stay
+text-only; and the trusted-host scan drawer interpolates only the canonical
+project UUID into a literal command. It adds no global security aggregates and
+does not fetch scan-detail data. V1.1C remains incomplete and unfrozen pending
+C3-C8. See `docs/source-v1.1c-web-ui.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

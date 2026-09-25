@@ -315,9 +315,11 @@ body.navigation-open {
   }
 
   .topbar {
+    position: relative;
     min-height: 64px;
     align-items: flex-start;
     padding: var(--space-3) var(--space-5);
+    padding-right: var(--space-8);
   }
 
   .topbar-leading {
@@ -325,7 +327,20 @@ body.navigation-open {
   }
 
   .topbar-status {
-    padding-top: var(--space-3);
+    position: absolute;
+    top: 28px;
+    right: var(--space-5);
+    padding: 0;
+  }
+
+  .topbar-status .status-indicator span:last-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .breadcrumb {

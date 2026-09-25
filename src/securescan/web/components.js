@@ -96,7 +96,10 @@ export function emptyState(title, message, note = "") {
   if (note) {
     content.push(createElement("p", { className: "state-note", textContent: note }));
   }
-  return createElement("section", { className: "state-message state-empty" }, content);
+  return createElement("section", {
+    className: "state-message state-empty",
+    attributes: { role: "status" },
+  }, content);
 }
 
 export function errorState(title, message, code) {
@@ -129,4 +132,48 @@ export function copyButton(value, label = "Copy") {
     }
   });
   return createElement("span", { className: "copy-control" }, [button, announcement]);
+}
+
+export function sectionHeading(title, description = "", id = "") {
+  const content = [
+    createElement("h2", { textContent: title, attributes: id ? { id } : {} }),
+  ];
+  if (description) {
+    content.push(createElement("p", { textContent: description }));
+  }
+  return createElement("header", { className: "section-heading" }, content);
+}
+
+export function resourceRegion(label) {
+  const region = createElement("div", {
+    className: "resource-region",
+    attributes: { "aria-label": label, "aria-busy": "true" },
+  });
+  region.append(loadingState(`Loading ${label.toLowerCase()}`));
+  return region;
+}
+
+export function paginationControls(page, onPrevious, onNext) {
+  const previous = createElement("button", {
+    className: "button button-secondary",
+    textContent: "Previous",
+    attributes: { type: "button", "aria-label": "Previous page" },
+  });
+  const next = createElement("button", {
+    className: "button button-secondary",
+    textContent: "Next",
+    attributes: { type: "button", "aria-label": "Next page" },
+  });
+  previous.disabled = page.offset <= 0;
+  next.disabled = page.offset + page.limit >= page.total;
+  previous.addEventListener("click", onPrevious);
+  next.addEventListener("click", onNext);
+  return createElement("nav", {
+    className: "pagination",
+    attributes: { "aria-label": "Pagination" },
+  }, [
+    previous,
+    createElement("span", { className: "pagination-label", textContent: page.label }),
+    next,
+  ]);
 }

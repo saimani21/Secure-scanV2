@@ -1,5 +1,7 @@
 "use strict";
 
+import { isCanonicalUuid } from "/assets/router.js";
+
 export class ApiError extends Error {
   constructor(status, code, message) {
     super(message);
@@ -11,6 +13,41 @@ export class ApiError extends Error {
 
 export function encodePathSegment(value) {
   return encodeURIComponent(String(value));
+}
+
+function pageQuery(limit, offset) {
+  if (
+    !Number.isInteger(limit) ||
+    limit < 1 ||
+    limit > 200 ||
+    !Number.isInteger(offset) ||
+    offset < 0
+  ) {
+    throw new TypeError("SecureScan pagination must use a valid limit and offset.");
+  }
+  return new URLSearchParams({ limit: String(limit), offset: String(offset) }).toString();
+}
+
+function uuidSegment(value, label) {
+  if (!isCanonicalUuid(value)) {
+    throw new TypeError(`${label} must be a canonical UUID.`);
+  }
+  return encodePathSegment(value);
+}
+
+function validatedPage(payload, status) {
+  if (
+    !Array.isArray(payload.items) ||
+    !Number.isInteger(payload.total) ||
+    payload.total < 0 ||
+    !Number.isInteger(payload.limit) ||
+    payload.limit < 1 ||
+    !Number.isInteger(payload.offset) ||
+    payload.offset < 0
+  ) {
+    throw new ApiError(status, "INVALID_RESPONSE", "SecureScan returned an invalid response.");
+  }
+  return payload;
 }
 
 function normalizedError(response, payload) {
@@ -69,4 +106,32 @@ export async function getJson(path, { signal, acceptedStatuses = [] } = {}) {
 
 export function getReadiness({ signal } = {}) {
   return getJson("/health/ready", { signal, acceptedStatuses: [503] });
+}
+
+export async function getProjects({ limit = 50, offset = 0, signal } = {}) {
+  const result = await getJson(`/v1/projects?${pageQuery(limit, offset)}`, { signal });
+  return validatedPage(result.payload, result.status);
+}
+
+export async function getProject(projectId, { signal } = {}) {
+  const segment = uuidSegment(projectId, "Project ID");
+  const result = await getJson(`/v1/projects/${segment}`, { signal });
+  return result.payload;
+}
+
+export async function getProjectScans(
+  projectId,
+  { limit = 50, offset = 0, signal } = {},
+) {
+  const segment = uuidSegment(projectId, "Project ID");
+  const result = await getJson(
+    `/v1/projects/${segment}/scans?${pageQuery(limit, offset)}`,
+    { signal },
+  );
+  return validatedPage(result.payload, result.status);
+}
+
+export async function getScans({ limit = 50, offset = 0, signal } = {}) {
+  const result = await getJson(`/v1/scans?${pageQuery(limit, offset)}`, { signal });
+  return validatedPage(result.payload, result.status);
 }

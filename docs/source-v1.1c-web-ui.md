@@ -2,10 +2,12 @@
 
 ## Status
 
-V1.1C0 is the approved UI/API architecture and design contract. V1.1C1 is the
-first implementation checkpoint: design tokens, application shell, explicit
-browser routing, readiness presentation, and accessibility foundations. Product
-pages remain intentionally unimplemented until their later checkpoints.
+V1.1C0 is the approved UI/API architecture and design contract. V1.1C1
+established design tokens, the application shell, explicit browser routing,
+readiness presentation, and accessibility foundations. V1.1C2 adds real
+Overview, Projects, Project Detail, and Global Scans navigation while preserving
+the frozen read API and Product Core contracts. Scan-detail pages remain later
+checkpoints.
 
 V1.1C is not frozen or complete.
 
@@ -86,6 +88,56 @@ paths, uploads, source content, or arbitrary Git URLs. Repository preparation
 and scan submission remain trusted-host CLI operations. C1 contains no project,
 scan, finding, dependency, coverage, gap, or report read implementation beyond
 truthful route shells.
+
+## C2 product navigation
+
+The Overview independently loads the first project and global scan pages. It
+shows only the authoritative `total` values returned by those pages, a bounded
+project subset in API order, and the first six global scan rows in API order.
+Projects and scans fail independently, so one available resource remains usable
+when the other is unavailable.
+
+The Projects page uses native project links and `total`, `limit`, and `offset`
+for Previous/Next pagination. Its empty state gives the exact trusted-host
+project-creation command and does not claim browser creation.
+
+Project Detail loads project identity and project scan history in parallel. The
+first newest-first history row is shown as Latest scan; history rows use the
+lineage-relative label `Sequence N`, never a project-global scan number. The
+scan command is copied as plain text with a literal repository placeholder and
+only the canonical route UUID:
+
+```text
+securescan scan /path/to/repository \
+  --project-id <canonical-project-uuid>
+```
+
+The browser does not inspect a filesystem, accept a path or Git URL, upload
+source, submit a scan, or execute this command.
+
+Global Scans remains a lean navigation projection. It does not fetch scan
+detail, findings, dependencies, coverage, gaps, stages, or reports. Project
+names are joined by walking at most four 50-project catalog pages for the
+project IDs visible on the current scan page. Resolved names are cached in
+memory; an unresolved or unavailable project degrades only that row to
+`Project unavailable`.
+
+### Initial-load API bounds
+
+| Page | Worst-case initial requests |
+| --- | ---: |
+| Overview | 5: one projects page, one scans page, and at most three additional project-name pages |
+| Projects | 1 project page |
+| Project Detail | 2 in parallel: project identity and project scan history |
+| Global Scans | 5: one scans page and at most four project-name pages |
+
+Each pagination action makes one new primary page request. Global scan
+pagination may additionally make the same bounded project-name lookup, reduced
+by the in-memory cache. There is no per-scan detail enrichment.
+
+C2 intentionally provides no global finding count, vulnerability count,
+coverage score, risk score, or running-scan count. A first page is never summed
+or relabeled as a global security aggregate.
 
 ## Checkpoint plan
 
