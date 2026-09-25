@@ -3,6 +3,344 @@
   gap: var(--space-7);
 }
 
+/* Coverage, gaps, and verified report */
+
+.coverage-roster,
+.coverage-outcomes,
+.gap-list,
+.report-page,
+.report-compact-list {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+}
+
+.coverage-capability {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(180px, 0.28fr) minmax(260px, 0.72fr);
+  gap: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-5) 0;
+}
+
+.coverage-capability:last-child {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.coverage-capability-heading h2,
+.coverage-capability-heading p,
+.report-section-heading h2,
+.report-section-heading p {
+  margin: 0;
+}
+
+.coverage-capability-heading p,
+.report-section-heading p,
+.coverage-pending-note {
+  color: var(--color-text-secondary);
+}
+
+.coverage-state-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin: 0;
+}
+
+.coverage-state-pair > div {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.coverage-state-pair dt,
+.report-metric dt,
+.report-provenance dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-metadata);
+}
+
+.coverage-state-pair dd,
+.report-metric dd,
+.report-provenance dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.coverage-outcomes {
+  grid-column: 2;
+  gap: var(--space-3);
+}
+
+.coverage-outcome {
+  min-width: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.coverage-outcome-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.coverage-technical,
+.gap-technical,
+.report-raw {
+  min-width: 0;
+  margin-top: var(--space-3);
+}
+
+.coverage-technical summary,
+.gap-technical summary,
+.report-raw summary {
+  min-height: 40px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.coverage-scope-list,
+.gap-technical,
+.report-compact-list {
+  margin-bottom: 0;
+}
+
+.coverage-scope-list,
+.report-compact-list {
+  padding-left: var(--space-5);
+}
+
+.coverage-scope-list li,
+.gap-scope,
+.report-compact-list li {
+  overflow-wrap: anywhere;
+  unicode-bidi: isolate;
+}
+
+.gap-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gap-row {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-5) 0;
+}
+
+.gap-row:last-child {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.gap-row article {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-4);
+}
+
+.gap-heading,
+.report-section-heading,
+.report-actions {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.gap-heading h2,
+.gap-heading p,
+.gap-message {
+  margin: 0;
+}
+
+.gap-heading > * {
+  min-width: 0;
+}
+
+.gap-heading .code-value {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.gap-scope {
+  font-family: var(--font-mono);
+}
+
+.gaps-total {
+  color: var(--color-text);
+  font: 700 var(--font-item)/var(--line-item) var(--font-mono);
+}
+
+.report-header {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.report-actions {
+  justify-content: flex-start;
+}
+
+.report-actions .copy-control {
+  display: inline-flex;
+}
+
+.report-section {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-6);
+}
+
+.report-section-heading {
+  align-items: end;
+}
+
+.report-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin: 0;
+}
+
+.report-metric,
+.report-provenance > div {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.report-metric dd {
+  font: 700 var(--font-item)/var(--line-item) var(--font-mono);
+}
+
+.report-compact-list {
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.report-compact-list li {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.3fr) minmax(0, 0.7fr);
+  gap: var(--space-2) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-3);
+}
+
+.report-provenance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin: 0;
+}
+
+.report-raw {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+.report-raw pre {
+  max-height: 560px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font: var(--font-metadata)/1.6 var(--font-mono);
+  padding: var(--space-5);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+@media (max-width: 767px) {
+  .coverage-capability {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+
+  .coverage-outcomes {
+    grid-column: auto;
+  }
+
+  .coverage-state-pair,
+  .report-metrics,
+  .report-provenance {
+    grid-template-columns: 1fr;
+  }
+
+  .coverage-state-pair > div,
+  .report-metric,
+  .report-provenance > div {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-3);
+  }
+
+  .report-compact-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .gap-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gaps-page .pagination {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    justify-content: start;
+  }
+
+  .gaps-page .pagination-label {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-width: 0;
+    text-align: left;
+  }
+}
+
+@media print {
+  .app-sidebar,
+  .topbar,
+  .mobile-nav-dialog,
+  .report-actions,
+  .skip-link {
+    display: none !important;
+  }
+
+  body,
+  .app-shell,
+  .app-main,
+  .route-region,
+  .report-page {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .app-main {
+    margin: 0 !important;
+  }
+
+  .route-region {
+    padding: 0 !important;
+  }
+
+  .report-page {
+    max-width: none;
+  }
+
+  .report-raw pre {
+    max-height: none;
+    border-color: #777;
+    background: #fff;
+    color: #000;
+  }
+}
+
 /* Dependency inventory and advisory evidence */
 
 .dependencies-header,

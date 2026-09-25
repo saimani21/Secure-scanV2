@@ -123,12 +123,15 @@ def test_static_assets_are_strictly_allowlisted_and_no_cache(client: TestClient)
         "app.js": "text/javascript",
         "api.js": "text/javascript",
         "components.js": "text/javascript",
+        "coverage.js": "text/javascript",
         "dependencies.js": "text/javascript",
         "findings.js": "text/javascript",
+        "gaps.js": "text/javascript",
         "format.js": "text/javascript",
         "overview.js": "text/javascript",
         "project.js": "text/javascript",
         "projects.js": "text/javascript",
+        "report.js": "text/javascript",
         "router.js": "text/javascript",
         "scan.js": "text/javascript",
         "scans.js": "text/javascript",
@@ -199,7 +202,7 @@ def test_javascript_uses_no_html_injection_or_dynamic_execution_sinks() -> None:
     assert 'startsWith("on")' in _JAVASCRIPT["components.js"]
 
 
-def test_browser_code_remains_get_only_and_uses_only_frozen_c3_read_apis() -> None:
+def test_browser_code_remains_get_only_and_uses_only_frozen_read_apis() -> None:
     api = _JAVASCRIPT["api.js"]
     assert 'method: "GET"' in api
     assert "encodeURIComponent(String(value))" in api
@@ -219,15 +222,10 @@ def test_browser_code_remains_get_only_and_uses_only_frozen_c3_read_apis() -> No
         "/v1/scans/${segment}/findings?",
         "/v1/scans/${segment}/report",
         "/v1/scans/${segment}/dependencies?",
+        "/v1/scans/${segment}/coverage",
+        "/v1/scans/${segment}/gaps?",
     ):
         assert endpoint in api
-    for forbidden_path in (
-        "/coverage",
-        "/gaps?",
-    ):
-        assert forbidden_path not in api
-
-
 def test_router_has_exact_history_api_and_uuid_security_contract() -> None:
     router = _JAVASCRIPT["router.js"]
     for marker in (

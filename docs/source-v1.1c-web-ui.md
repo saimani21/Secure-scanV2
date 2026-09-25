@@ -315,6 +315,41 @@ Search and detail selection make zero requests. Empty, 409, and 503 states are
 distinct and never imply that dependencies are secure. All API strings remain
 text-only, bidi-isolated where technical, and safely wrapped.
 
+## C6 coverage, gaps, and verified report
+
+`/scans/{run UUID}/coverage` always starts from the authoritative five-stage
+roster. Execution progress and published coverage are separate labeled facts.
+Detailed outcomes retain the exact frozen states `COMPLETE`,
+`COMPLETE_WITH_FINDINGS`, `COMPLETE_WITH_SUPPRESSIONS`, `PARTIAL`, `FAILED`,
+and `NOT_APPLICABLE`; no percentage or security score is derived. Scope arrays,
+reason codes, and counts remain behind Technical scope disclosure. A 409 from
+the coverage endpoint becomes pending publication while the execution roster
+remains visible. Other coverage-detail failures stay local and never become a
+global zero.
+
+`/scans/{run UUID}/gaps` renders the authoritative, server-paginated gap
+projection. Each row identifies the fixed capability and authority, exact safe
+reason code, primary scope value, optional returned message, and secondary
+technical scope. Empty means only that SecureScan published no analysis gap;
+the page explicitly does not claim full coverage. Pagination performs one
+bounded gaps request per page, and all returned strings remain inert text.
+
+`/scans/{run UUID}/report` is a human evidence workspace backed by six bounded,
+parallel reads: summary, stages, detailed coverage, the first six gaps, the
+verified report, and one dependency page entry used only for the authoritative
+package total. Its Summary, Analysis coverage, Findings, Dependencies, Analysis
+gaps, and Provenance sections do not reconstruct canonical totals or infer
+package-vulnerability counts. Failure of one independent resource stays local.
+If the verified report is unavailable, the human sections remain but the page
+states that canonical raw evidence is unavailable rather than fabricating it.
+
+Raw evidence is serialized once with `JSON.stringify(..., null, 2)` and placed
+into a native `pre` by `textContent`. Copy uses plain text. Download creates an
+`application/json` Blob with a static run-UUID-derived filename. Print invokes
+the browser and a restrained print stylesheet removes navigation and controls,
+uses black-on-white content, and preserves readable evidence sections. There
+are no external export services or PDF generators.
+
 ## Checkpoint plan
 
 ```text
@@ -323,7 +358,7 @@ C2  overview, projects, project history, scans
 C3  scan overview and progress
 C4  findings and detail
 C5  dependencies and detail
-C6  coverage, gaps, report
+C6  coverage, gaps, report (complete checkpoint)
 C7  responsive, accessibility, hostile-input hardening
 C8  isolated E2E, visual acceptance, final freeze
 ```

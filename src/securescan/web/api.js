@@ -224,3 +224,25 @@ export async function getDependencies(
   );
   return validatedPage(result.payload, result.status);
 }
+
+export async function getCoverage(runId, { signal } = {}) {
+  const segment = uuidSegment(runId, "Run ID");
+  const result = await getJson(`/v1/scans/${segment}/coverage`, { signal });
+  return result.payload;
+}
+
+export async function getGaps(
+  runId,
+  { authority = null, limit = 50, offset = 0, signal } = {},
+) {
+  const segment = uuidSegment(runId, "Run ID");
+  const query = new URLSearchParams(pageQuery(limit, offset));
+  optionalExactFilter(
+    query,
+    "authority",
+    authority,
+    new Set(["semgrep-ce", "gitleaks", "syft", "osv.dev", "checkov"]),
+  );
+  const result = await getJson(`/v1/scans/${segment}/gaps?${query.toString()}`, { signal });
+  return validatedPage(result.payload, result.status);
+}

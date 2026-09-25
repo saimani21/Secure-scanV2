@@ -134,10 +134,22 @@ export function authorityLabel(value) {
   const authorities = {
     "semgrep-ce": "Semgrep",
     gitleaks: "Gitleaks",
+    syft: "Syft",
     "osv.dev": "OSV",
     checkov: "Checkov",
   };
   return authorities[value] || "Unknown authority";
+}
+
+export function capabilityLabel(value) {
+  const capabilities = {
+    python_sast: "SAST",
+    secret_detection: "Secrets",
+    package_inventory: "Package inventory",
+    dependency_advisory_matching: "Dependency vulnerabilities",
+    configuration_security: "Configuration security",
+  };
+  return capabilities[value] || "Unknown analysis";
 }
 
 export function findingCategory(value) {

@@ -11,12 +11,15 @@ import {
   pageHeader,
   statusIndicator,
 } from "/assets/components.js";
+import { renderCoveragePage } from "/assets/coverage.js";
 import { renderDependenciesPage } from "/assets/dependencies.js";
 import { formatDateTime, statusLabel, truncateMiddle } from "/assets/format.js";
 import { renderFindingsPage } from "/assets/findings.js";
+import { renderGapsPage } from "/assets/gaps.js";
 import { renderOverviewPage } from "/assets/overview.js";
 import { renderProjectPage } from "/assets/project.js";
 import { renderProjectsPage } from "/assets/projects.js";
+import { renderReportPage } from "/assets/report.js";
 import { installNavigation, parseRoute } from "/assets/router.js";
 import { renderScanPage } from "/assets/scan.js";
 import { renderScansPage } from "/assets/scans.js";
@@ -220,6 +223,9 @@ function renderRoute(route, region, shellContext) {
     scans: renderScansPage,
     findings: renderFindingsPage,
     dependencies: renderDependenciesPage,
+    coverage: renderCoveragePage,
+    gaps: renderGapsPage,
+    report: renderReportPage,
   };
   const renderer = renderers[route.name];
   if (renderer) {

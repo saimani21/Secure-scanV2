@@ -195,6 +195,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1C3 | Scan overview and authoritative analysis progress | COMPLETE - CHECKPOINT |
 | V1.1C4 | Findings workspace and evidence-backed finding detail | COMPLETE - CHECKPOINT |
 | V1.1C5 | Dependencies and canonical advisory detail | COMPLETE - CHECKPOINT |
+| V1.1C6 | Coverage, gaps, and verified report workspaces | COMPLETE - CHECKPOINT |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -353,6 +354,20 @@ strings, and long technical values passed browser and executable review. No
 Product Core, API schema, scanner, dependency, orchestration, lifecycle,
 database, or migration behavior changed. V1.1C remains incomplete and unfrozen
 pending C6-C8. See `docs/source-v1.1c-web-ui.md`.
+
+V1.1C6 completes every approved product route with authoritative coverage, gap,
+and report workspaces. Coverage keeps the fixed stage roster, execution state,
+and exact detailed coverage outcomes separate; pending or failed detail never
+becomes zero. Gaps remain server-paginated and identify both capability and
+authority without turning an empty projection into a full-coverage claim. The
+report uses bounded parallel reads for human summary sections and preserves the
+verified report as independently loaded canonical evidence. Raw JSON is
+text-only, serialized once, and supports local copy, Blob download, and browser
+print without an external export path. The prescribed desktop, tablet, mobile,
+hostile-text, failure-isolation, and print-pipeline checks passed. No Product
+Core, API schema, scanner, dependency, orchestration, lifecycle, database, or
+migration behavior changed. V1.1C remains incomplete and unfrozen pending C7-C8.
+See `docs/source-v1.1c-web-ui.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,
