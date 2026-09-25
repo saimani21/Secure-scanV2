@@ -515,12 +515,21 @@ def test_openapi_contains_expected_public_scan_operations() -> None:
 def test_main_lifespan_composes_pc3c_application_services(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    deploy_root = tmp_path / "deploy"
     monkeypatch.setenv("SECURESCAN_DATABASE_URL", f"sqlite:///{tmp_path / 'api.db'}")
-    monkeypatch.setenv("SECURESCAN_ARTIFACT_ROOT", str(tmp_path / "artifacts"))
-    monkeypatch.setenv("SECURESCAN_SOURCE_WORKSPACE_ROOT", str(tmp_path / "workspaces"))
-    monkeypatch.setenv("SECURESCAN_SOURCE_PROJECTION_ROOT", str(tmp_path / "projections"))
+    monkeypatch.setenv("SECURESCAN_DEPLOY_DATA_ROOT", str(deploy_root))
+    monkeypatch.setenv("SECURESCAN_ARTIFACT_ROOT", str(deploy_root / "artifacts"))
     monkeypatch.setenv(
-        "SECURESCAN_SOURCE_RUNTIME_RECEIPT_ROOT", str(tmp_path / "receipts")
+        "SECURESCAN_SOURCE_WORKSPACE_ROOT",
+        str(deploy_root / "source-workspaces"),
+    )
+    monkeypatch.setenv(
+        "SECURESCAN_SOURCE_PROJECTION_ROOT",
+        str(deploy_root / "source-projections"),
+    )
+    monkeypatch.setenv(
+        "SECURESCAN_SOURCE_RUNTIME_RECEIPT_ROOT",
+        str(deploy_root / "source-runtime-receipts"),
     )
     get_settings.cache_clear()
     initialize_source_runtime_storage(get_settings())

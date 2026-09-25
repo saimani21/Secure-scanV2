@@ -18,12 +18,34 @@ from postgres_test_guard import (
 
 from securescan.adapters.fake_scanner import FakeScannerAdapter
 from securescan.artifacts.store import ContentAddressedArtifactStore
-from securescan.config import get_settings
+from securescan.config import get_operator_settings, get_settings
 from securescan.domain.enums import TargetType
 from securescan.domain.models import TargetProfile
 from securescan.execution.local_executor import LocalProcessExecutor
 from securescan.runtime_storage import initialize_source_runtime_storage
 from securescan.services.scan_service import ScanService
+
+
+@pytest.fixture(scope="session", autouse=True)
+def isolate_operator_profile_from_host(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Iterator[None]:
+    """Prevent a developer's persistent operator profile from affecting tests."""
+
+    isolated_profile = (
+        tmp_path_factory.mktemp("securescan-test-profile")
+        / "missing-operator.json"
+    )
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("SECURESCAN_OPERATOR_PROFILE", str(isolated_profile))
+        get_settings.cache_clear()
+        get_operator_settings.cache_clear()
+        try:
+            yield
+        finally:
+            get_settings.cache_clear()
+            get_operator_settings.cache_clear()
 
 
 @pytest.fixture(scope="session", autouse=True)

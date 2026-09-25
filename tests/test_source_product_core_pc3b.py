@@ -33,6 +33,7 @@ from securescan.product_core import (
     SourceScanQueryPersistenceError,
     SourceScanQueryService,
     SourceScanSubmissionService,
+    SourceStageProgressState,
 )
 from tests.test_source_orchestration_s6b import _CONTROLLED_SECRET, _RUN_ID, _Environment
 from tests.test_source_product_core_pc1 import _clone_published_run, _publish_environment
@@ -99,6 +100,36 @@ def completed_context(pending_context: _Context) -> _Context:
     result = pending_context.runner.finalize_ready()
     assert result.finalized_count == 1
     return pending_context
+
+
+def _with_osv_stage_state(
+    context: _Context,
+    progress_state: SourceStageProgressState,
+    *,
+    reason_code: str | None = None,
+):
+    stages = context.queries.get_stages(context.run_id)
+    matches = tuple(
+        stage
+        for stage in stages.stages
+        if stage.authority == "osv.dev"
+        and stage.capability == "dependency_advisory_matching"
+    )
+    assert len(matches) == 1
+    return replace(
+        stages,
+        stages=tuple(
+            replace(
+                stage,
+                progress_state=progress_state,
+                coverage_states=(),
+                reason_code=reason_code,
+            )
+            if stage is matches[0]
+            else stage
+            for stage in stages.stages
+        ),
+    )
 
 
 def _add_second(context: _Context, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -610,6 +641,120 @@ def test_dependency_projection_includes_safe_osv_relationships(
     assert request.vulnerability_evaluation_reason is None
     assert request.advisory_aliases
     assert request.fixed_versions
+
+
+def test_dependency_projection_accepts_authoritative_not_applicable_without_osv_outcome(
+    completed_context: _Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = completed_context.submissions._index._rebuild_trusted_report(
+        completed_context.run_id
+    )
+    report = _vulnerable_osv_report(original, completed_context.run_id).canonical_data()
+    report["coverage_outcomes"] = [
+        outcome
+        for outcome in report["coverage_outcomes"]
+        if outcome["authority"] != "osv.dev"
+    ]
+    report["findings"] = [
+        finding
+        for finding in report["findings"]
+        if finding["authority"] != "osv.dev"
+    ]
+    report["evidence"] = [
+        item for item in report["evidence"] if item["authority"] != "osv.dev"
+    ]
+    stages = _with_osv_stage_state(
+        completed_context,
+        SourceStageProgressState.NOT_APPLICABLE,
+        reason_code="NO_PACKAGES_OBSERVED",
+    )
+    monkeypatch.setattr(
+        completed_context.queries,
+        "_published_document",
+        lambda _run_id: report,
+    )
+    monkeypatch.setattr(
+        completed_context.queries,
+        "get_stages",
+        lambda _run_id: stages,
+    )
+
+    dependencies = completed_context.queries.list_dependencies(completed_context.run_id)
+
+    assert dependencies.total >= 1
+    request = next(item for item in dependencies.items if item.name == "requests")
+    assert request.vulnerability_evaluation == "NOT_APPLICABLE"
+    assert request.vulnerability_evaluation_reason == "NO_PACKAGES_OBSERVED"
+    assert request.known_vulnerability_count is None
+
+
+def test_dependency_projection_rejects_missing_osv_outcome_without_not_applicable_stage(
+    completed_context: _Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    report = completed_context.submissions._index._rebuild_trusted_report(
+        completed_context.run_id
+    ).canonical_data()
+    report["coverage_outcomes"] = [
+        outcome
+        for outcome in report["coverage_outcomes"]
+        if outcome["authority"] != "osv.dev"
+    ]
+    report["findings"] = [
+        finding
+        for finding in report["findings"]
+        if finding["authority"] != "osv.dev"
+    ]
+    stages = _with_osv_stage_state(
+        completed_context,
+        SourceStageProgressState.COMPLETE,
+    )
+    monkeypatch.setattr(
+        completed_context.queries,
+        "_published_document",
+        lambda _run_id: report,
+    )
+    monkeypatch.setattr(
+        completed_context.queries,
+        "get_stages",
+        lambda _run_id: stages,
+    )
+
+    with pytest.raises(SourceScanQueryPersistenceError):
+        completed_context.queries.list_dependencies(completed_context.run_id)
+
+
+def test_dependency_projection_rejects_missing_osv_outcome_with_osv_findings(
+    completed_context: _Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = completed_context.submissions._index._rebuild_trusted_report(
+        completed_context.run_id
+    )
+    report = _vulnerable_osv_report(
+        original, completed_context.run_id
+    ).canonical_data()
+    report["coverage_outcomes"] = [
+        outcome
+        for outcome in report["coverage_outcomes"]
+        if outcome["authority"] != "osv.dev"
+    ]
+    assert any(finding["authority"] == "osv.dev" for finding in report["findings"])
+    stages = _with_osv_stage_state(
+        completed_context,
+        SourceStageProgressState.NOT_APPLICABLE,
+    )
+    monkeypatch.setattr(
+        completed_context.queries,
+        "_published_document",
+        lambda _run_id: report,
+    )
+    monkeypatch.setattr(
+        completed_context.queries,
+        "get_stages",
+        lambda _run_id: stages,
+    )
+
+    with pytest.raises(SourceScanQueryPersistenceError):
+        completed_context.queries.list_dependencies(completed_context.run_id)
 
 
 def test_dependency_projection_never_reports_zero_when_osv_failed(

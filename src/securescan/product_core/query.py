@@ -719,20 +719,45 @@ class SourceScanQueryService:
             for item in self._list_field(report, "coverage_outcomes")
             if item.get("authority") == "osv.dev"
         )
-        if len(osv_outcomes) != 1:
+        if len(osv_outcomes) > 1:
             raise SourceScanQueryPersistenceError
-        osv_state = self._required_string(osv_outcomes[0], "state")
-        evaluation_state = {
-            "COMPLETE": "COMPLETE",
-            "COMPLETE_WITH_FINDINGS": "COMPLETE",
-            "COMPLETE_WITH_SUPPRESSIONS": "COMPLETE",
-            "PARTIAL": "PARTIAL",
-            "FAILED": "FAILED",
-            "NOT_APPLICABLE": "NOT_APPLICABLE",
-        }.get(osv_state)
-        if evaluation_state is None:
-            raise SourceScanQueryPersistenceError
-        evaluation_reason = self._optional_string(osv_outcomes[0], "reason_code")
+
+        if not osv_outcomes:
+            if osv_by_component:
+                raise SourceScanQueryPersistenceError
+            stages = self.get_stages(normalized)
+            osv_stages = tuple(
+                stage
+                for stage in stages.stages
+                if stage.authority == SourceAuthority.OSV.value
+                and stage.capability == "dependency_advisory_matching"
+            )
+            if len(osv_stages) != 1:
+                raise SourceScanQueryPersistenceError
+            osv_stage = osv_stages[0]
+            if (
+                osv_stage.progress_state
+                is not SourceStageProgressState.NOT_APPLICABLE
+                or osv_stage.coverage_states != ()
+            ):
+                raise SourceScanQueryPersistenceError
+            evaluation_state = "NOT_APPLICABLE"
+            evaluation_reason = osv_stage.reason_code
+        else:
+            osv_state = self._required_string(osv_outcomes[0], "state")
+            evaluation_state = {
+                "COMPLETE": "COMPLETE",
+                "COMPLETE_WITH_FINDINGS": "COMPLETE",
+                "COMPLETE_WITH_SUPPRESSIONS": "COMPLETE",
+                "PARTIAL": "PARTIAL",
+                "FAILED": "FAILED",
+                "NOT_APPLICABLE": "NOT_APPLICABLE",
+            }.get(osv_state)
+            if evaluation_state is None:
+                raise SourceScanQueryPersistenceError
+            evaluation_reason = self._optional_string(
+                osv_outcomes[0], "reason_code"
+            )
         dependencies = []
         for component in self._list_field(report, "components"):
             if component.get("component_kind") != "PACKAGE":
