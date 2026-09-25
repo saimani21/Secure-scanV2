@@ -11,6 +11,7 @@ import {
   pageHeader,
   statusIndicator,
 } from "/assets/components.js";
+import { renderDependenciesPage } from "/assets/dependencies.js";
 import { formatDateTime, statusLabel, truncateMiddle } from "/assets/format.js";
 import { renderFindingsPage } from "/assets/findings.js";
 import { renderOverviewPage } from "/assets/overview.js";
@@ -218,6 +219,7 @@ function renderRoute(route, region, shellContext) {
     scan: renderScanPage,
     scans: renderScansPage,
     findings: renderFindingsPage,
+    dependencies: renderDependenciesPage,
   };
   const renderer = renderers[route.name];
   if (renderer) {

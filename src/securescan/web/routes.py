@@ -29,6 +29,7 @@ _ASSETS = {
     "app.js": "text/javascript; charset=utf-8",
     "api.js": "text/javascript; charset=utf-8",
     "components.js": "text/javascript; charset=utf-8",
+    "dependencies.js": "text/javascript; charset=utf-8",
     "format.js": "text/javascript; charset=utf-8",
     "findings.js": "text/javascript; charset=utf-8",
     "overview.js": "text/javascript; charset=utf-8",

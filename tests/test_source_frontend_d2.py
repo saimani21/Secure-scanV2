@@ -123,6 +123,7 @@ def test_static_assets_are_strictly_allowlisted_and_no_cache(client: TestClient)
         "app.js": "text/javascript",
         "api.js": "text/javascript",
         "components.js": "text/javascript",
+        "dependencies.js": "text/javascript",
         "findings.js": "text/javascript",
         "format.js": "text/javascript",
         "overview.js": "text/javascript",
@@ -217,10 +218,10 @@ def test_browser_code_remains_get_only_and_uses_only_frozen_c3_read_apis() -> No
         "/v1/scans/${segment}/stages",
         "/v1/scans/${segment}/findings?",
         "/v1/scans/${segment}/report",
+        "/v1/scans/${segment}/dependencies?",
     ):
         assert endpoint in api
     for forbidden_path in (
-        "/dependencies?",
         "/coverage",
         "/gaps?",
     ):

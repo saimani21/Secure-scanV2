@@ -194,6 +194,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1C2 | Overview, projects, project detail, and global scans | COMPLETE - CHECKPOINT |
 | V1.1C3 | Scan overview and authoritative analysis progress | COMPLETE - CHECKPOINT |
 | V1.1C4 | Findings workspace and evidence-backed finding detail | COMPLETE - CHECKPOINT |
+| V1.1C5 | Dependencies and canonical advisory detail | COMPLETE - CHECKPOINT |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -339,6 +340,19 @@ and mobile dedicated-detail layouts passed hostile-content and long-path browser
 review. No Product Core, API schema, scanner, dependency, orchestration,
 lifecycle, database, or migration behavior changed. V1.1C remains incomplete
 and unfrozen pending C5-C8. See `docs/source-v1.1c-web-ui.md`.
+
+V1.1C5 replaces the dependency shell with an authoritative Product Core package
+workspace. Server pagination and current-page search remain bounded; component
+selection is durable query state. The UI preserves exact dependency semantics:
+complete zero is zero, partial and failed are unknown, and not applicable is
+N/A. Observed advisories under partial coverage never become a known total.
+Canonical advisory groups are rendered once with exact priority, aliases, OSV
+record IDs, and fixed-version facts without remediation language or external
+lookups. Desktop split, tablet drawer, mobile detail, nullable fields, hostile
+strings, and long technical values passed browser and executable review. No
+Product Core, API schema, scanner, dependency, orchestration, lifecycle,
+database, or migration behavior changed. V1.1C remains incomplete and unfrozen
+pending C6-C8. See `docs/source-v1.1c-web-ui.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

@@ -8,8 +8,9 @@ readiness presentation, and accessibility foundations. V1.1C2 added real
 Overview, Projects, Project Detail, and Global Scans navigation while preserving
 the frozen read API and Product Core contracts. V1.1C3 added the real Scan
 Overview and authoritative Analysis stage progress. V1.1C4 adds the real
-Findings workspace and evidence-backed finding detail. Dependencies, coverage
-detail, gaps, and reports remain later checkpoints.
+Findings workspace and evidence-backed finding detail. V1.1C5 adds the package
+inventory, dependency-evaluation workspace, and canonical advisory detail.
+Coverage detail, gaps, and reports remain later checkpoints.
 
 V1.1C is not frozen or complete.
 
@@ -273,6 +274,46 @@ filter-empty response is a distinct `No matching findings` state. A 404 is
 and a Scan Overview link; a 503 is a fail-closed `Findings unavailable` state,
 never zero. Report failure leaves the list and selected summary functional.
 Raw API errors are not rendered.
+
+## C5 dependency workspace and advisory detail
+
+`/scans/{run UUID}/dependencies` uses only the frozen Product Core dependency
+projection. It does not call OSV, parse manifests, infer package coordinates, or
+recompute advisory identity. One returned `advisories[]` element is one
+canonical advisory group; CVE, GHSA, other aliases, and OSV record IDs remain
+attributes and never inflate the known-vulnerability count.
+
+The list is server-paginated and ordered by the backend. Search is explicitly
+limited to the loaded page and safe package identity, ecosystem, PURL, location,
+and canonical advisory strings. Selection uses a bounded 64-character component
+reference in query state. A component outside the current page is not fetched by
+crawling other pages. Desktop uses the established 42/58 split, tablet a native
+modal drawer, and mobile a dedicated detail state with focus restoration and a
+Back to dependencies action.
+
+Dependency truth is rendered exhaustively:
+
+| Evaluation | Exact count | Presentation |
+| --- | ---: | --- |
+| `COMPLETE` | positive | exact known-vulnerability count |
+| `COMPLETE` | zero | `0 known vulnerabilities` |
+| `PARTIAL` | `null` | `Unknown`; observed canonical advisories shown separately |
+| `FAILED` | `null` | `Unknown` |
+| `NOT_APPLICABLE` | `null` | `N/A` |
+
+Detail shows only returned package identity, repository-relative observation
+locations, evaluation, exact count, and canonical advisories. Advisory priority
+is labeled `SecureScan priority`; `UNRANKED` becomes `Priority not assigned`.
+Fixed events use the factual label `Fixed versions reported by advisory`, never
+an upgrade or remediation recommendation. OSV record IDs, finding IDs,
+component references, and evaluation reason codes remain secondary technical
+evidence. Nullable PURLs and versions remain visibly unavailable rather than
+being synthesized.
+
+Initial load and every pagination action make exactly one dependency request.
+Search and detail selection make zero requests. Empty, 409, and 503 states are
+distinct and never imply that dependencies are secure. All API strings remain
+text-only, bidi-isolated where technical, and safely wrapped.
 
 ## Checkpoint plan
 

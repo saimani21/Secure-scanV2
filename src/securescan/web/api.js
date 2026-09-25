@@ -212,3 +212,15 @@ export async function getScanReport(runId, { signal } = {}) {
   const result = await getJson(`/v1/scans/${segment}/report`, { signal });
   return result.payload;
 }
+
+export async function getDependencies(
+  runId,
+  { limit = 50, offset = 0, signal } = {},
+) {
+  const segment = uuidSegment(runId, "Run ID");
+  const result = await getJson(
+    `/v1/scans/${segment}/dependencies?${pageQuery(limit, offset)}`,
+    { signal },
+  );
+  return validatedPage(result.payload, result.status);
+}

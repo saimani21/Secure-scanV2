@@ -150,6 +150,49 @@ export function findingCategory(value) {
   return categories[value] || "Unknown category";
 }
 
+export function dependencyEvaluation(value, count, observedAdvisories = 0) {
+  const observed = Number.isInteger(observedAdvisories) && observedAdvisories >= 0
+    ? observedAdvisories
+    : 0;
+  if (value === "COMPLETE" && Number.isInteger(count) && count >= 0) {
+    return {
+      state: "Complete",
+      result: `${count} known ${count === 1 ? "vulnerability" : "vulnerabilities"}`,
+      observed: null,
+      tone: count > 0 ? "failure" : "success",
+    };
+  }
+  if (value === "PARTIAL") {
+    return {
+      state: "Partial",
+      result: "Unknown",
+      observed: observed ? `${observed} observed ${observed === 1 ? "advisory" : "advisories"}` : null,
+      tone: "warning",
+    };
+  }
+  if (value === "FAILED") {
+    return { state: "Failed", result: "Unknown", observed: null, tone: "failure" };
+  }
+  if (value === "NOT_APPLICABLE") {
+    return { state: "Not applicable", result: "N/A", observed: null, tone: "neutral" };
+  }
+  return { state: "Unknown", result: "Unknown", observed: null, tone: "neutral" };
+}
+
+export function packageTypeLabel(value) {
+  const types = {
+    python: "Python",
+    go: "Go",
+    npm: "npm",
+    java: "Java",
+    gem: "RubyGems",
+    cargo: "Rust",
+    deb: "Debian",
+    rpm: "RPM",
+  };
+  return types[value] || "Unknown ecosystem";
+}
+
 export function paginationLabel({ total, limit, offset }) {
   if (!total) {
     return "Showing 0 of 0";
