@@ -128,6 +128,7 @@ def test_static_assets_are_strictly_allowlisted_and_no_cache(client: TestClient)
         "project.js": "text/javascript",
         "projects.js": "text/javascript",
         "router.js": "text/javascript",
+        "scan.js": "text/javascript",
         "scans.js": "text/javascript",
         "state.js": "text/javascript",
         "base.css": "text/css",
@@ -196,7 +197,7 @@ def test_javascript_uses_no_html_injection_or_dynamic_execution_sinks() -> None:
     assert 'startsWith("on")' in _JAVASCRIPT["components.js"]
 
 
-def test_browser_code_remains_get_only_and_uses_only_frozen_c2_read_apis() -> None:
+def test_browser_code_remains_get_only_and_uses_only_frozen_c3_read_apis() -> None:
     api = _JAVASCRIPT["api.js"]
     assert 'method: "GET"' in api
     assert "encodeURIComponent(String(value))" in api
@@ -211,6 +212,8 @@ def test_browser_code_remains_get_only_and_uses_only_frozen_c2_read_apis() -> No
         "/v1/projects/${segment}",
         "/v1/projects/${segment}/scans?",
         "/v1/scans?",
+        "/v1/scans/${segment}",
+        "/v1/scans/${segment}/stages",
     ):
         assert endpoint in api
     for forbidden_path in (
@@ -219,7 +222,6 @@ def test_browser_code_remains_get_only_and_uses_only_frozen_c2_read_apis() -> No
         "/coverage",
         "/gaps?",
         "/report",
-        "/stages",
     ):
         assert forbidden_path not in api
 

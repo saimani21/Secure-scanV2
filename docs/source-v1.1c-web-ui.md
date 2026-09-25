@@ -4,10 +4,11 @@
 
 V1.1C0 is the approved UI/API architecture and design contract. V1.1C1
 established design tokens, the application shell, explicit browser routing,
-readiness presentation, and accessibility foundations. V1.1C2 adds real
+readiness presentation, and accessibility foundations. V1.1C2 added real
 Overview, Projects, Project Detail, and Global Scans navigation while preserving
-the frozen read API and Product Core contracts. Scan-detail pages remain later
-checkpoints.
+the frozen read API and Product Core contracts. V1.1C3 adds the real Scan
+Overview and authoritative Analysis stage progress. Findings, dependencies,
+coverage detail, gaps, and reports remain later checkpoints.
 
 V1.1C is not frozen or complete.
 
@@ -71,7 +72,7 @@ preferences disable the short layout transitions.
 - Every API and repository-derived string is untrusted display text.
 - DOM content is constructed with `textContent`, safe properties, and explicit
   elements; HTML injection and dynamic code execution APIs are prohibited.
-- The browser performs only same-origin GET requests in C1.
+- The browser performs only same-origin GET requests.
 - The shell consumes only `GET /health/ready`; a structured 503 response remains
   a truthful not-ready state, while no response is shown as unavailable.
 - The CSP remains self-only without `unsafe-inline` or `unsafe-eval`.
@@ -85,9 +86,9 @@ preferences disable the short layout transitions.
 
 The browser remains read-only for repository intake. It does not accept local
 paths, uploads, source content, or arbitrary Git URLs. Repository preparation
-and scan submission remain trusted-host CLI operations. C1 contains no project,
-scan, finding, dependency, coverage, gap, or report read implementation beyond
-truthful route shells.
+and scan submission remain trusted-host CLI operations. C3 adds no browser
+mutation and does not fetch findings, dependencies, coverage detail, gaps, or
+reports.
 
 ## C2 product navigation
 
@@ -138,6 +139,48 @@ by the in-memory cache. There is no per-scan detail enrichment.
 C2 intentionally provides no global finding count, vulnerability count,
 coverage score, risk score, or running-scan count. A first page is never summed
 or relabeled as a global security aggregate.
+
+## C3 scan overview and analysis progress
+
+`/scans/{run UUID}` reads the frozen scan summary and stage roster in parallel.
+It resolves the project name from the C2 in-memory cache or one direct project
+read, then presents a human-readable project link without hiding the technical
+identifiers. The stable page shell contains product status, a compact summary,
+the semantic ordered stage roster, and a native disclosure for technical scan
+details.
+
+Product status and stage progress are separate fixed allowlists. The five
+authority/capability pairs map to SAST, Secrets, Package inventory, Dependency
+vulnerabilities, and Configuration security; an unrecognized pair remains
+`Unknown analysis` from `Unknown authority`. Execution progress never substitutes
+for coverage. Before publication, findings, coverage, and gaps are `Pending`
+even when a pre-publication transport value is zero. After publication, counts
+are shown only when they are nonnegative integers, coverage uses the exact
+boolean, and priority counts appear only after indexing and only for returned
+known priority keys. Null, absent, malformed, and unknown values never become
+zero.
+
+Nonterminal states are `QUEUED`, `RUNNING`,
+`PUBLISHED_PENDING_FINALIZATION`, and `BLOCKED_BY_PREDECESSOR`. They use one
+chained five-second timeout after the previous refresh settles. Each cycle makes
+exactly two parallel reads: scan summary and stages. The single in-flight refresh
+promise prevents overlap; the route generation and `AbortController` cancel work
+on navigation. `COMPLETED`, `CANCELLED`, and `FAILED` stop polling. Contained
+region updates preserve scroll, focus, and an open Technical details disclosure.
+
+Summary failure is route-level. Stage and project failures are isolated, and a
+later transient polling failure preserves the last successful content with a
+restrained safe warning. Raw API bodies are never rendered.
+
+### Scan-page API bounds
+
+| Situation | Maximum requests |
+| --- | ---: |
+| Initial load | 3: one summary, one stage roster, and zero or one project lookup |
+| Polling cycle | 2: one summary and one stage roster |
+| Manual refresh | 2, plus one project lookup only while project context is unresolved |
+
+No C4-C6 resource is preloaded.
 
 ## Checkpoint plan
 

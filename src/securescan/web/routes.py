@@ -34,6 +34,7 @@ _ASSETS = {
     "project.js": "text/javascript; charset=utf-8",
     "projects.js": "text/javascript; charset=utf-8",
     "router.js": "text/javascript; charset=utf-8",
+    "scan.js": "text/javascript; charset=utf-8",
     "scans.js": "text/javascript; charset=utf-8",
     "state.js": "text/javascript; charset=utf-8",
     "base.css": "text/css; charset=utf-8",

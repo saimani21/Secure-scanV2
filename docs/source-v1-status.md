@@ -192,6 +192,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1P | Exact-pinned `requirements*.txt` advisory scope | COMPLETE - FROZEN |
 | V1.1C1 | Web UI 2.0 design system, shell, and routing | COMPLETE - CHECKPOINT |
 | V1.1C2 | Overview, projects, project detail, and global scans | COMPLETE - CHECKPOINT |
+| V1.1C3 | Scan overview and authoritative analysis progress | COMPLETE - CHECKPOINT |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -306,6 +307,21 @@ text-only; and the trusted-host scan drawer interpolates only the canonical
 project UUID into a literal command. It adds no global security aggregates and
 does not fetch scan-detail data. V1.1C remains incomplete and unfrozen pending
 C3-C8. See `docs/source-v1.1c-web-ui.md`.
+
+V1.1C3 replaces the scan shell with a real Scan Overview over the frozen scan
+summary, stage roster, and direct project read. Fixed allowlists keep product
+status, execution progress, and coverage distinct; pre-publication and unknown
+values remain pending or unknown rather than becoming zero. One non-overlapping
+five-second polling chain refreshes only summary and stages for explicitly
+nonterminal scans, is generation-guarded and abortable on navigation, preserves
+the stable page shell and focused controls, and stops on terminal state. Summary
+failure is route-level while project and stage failures stay local; transient
+refresh failure preserves the last successful data. Initial load is bounded to
+two scan reads plus zero or one project read, and each poll is exactly two reads.
+No finding, dependency, coverage-detail, gap, report, Product Core, API schema,
+scanner, orchestration, lifecycle, database, or migration behavior changed.
+V1.1C remains incomplete and unfrozen pending C4-C8. See
+`docs/source-v1.1c-web-ui.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

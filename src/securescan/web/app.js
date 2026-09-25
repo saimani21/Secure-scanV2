@@ -16,6 +16,7 @@ import { renderOverviewPage } from "/assets/overview.js";
 import { renderProjectPage } from "/assets/project.js";
 import { renderProjectsPage } from "/assets/projects.js";
 import { installNavigation, parseRoute } from "/assets/router.js";
+import { renderScanPage } from "/assets/scan.js";
 import { renderScansPage } from "/assets/scans.js";
 import { beginRequest, beginRoute } from "/assets/state.js";
 
@@ -208,16 +209,17 @@ function renderCheckpointShell(route, region) {
   region.setAttribute("aria-busy", "false");
 }
 
-function renderRoute(route, region) {
+function renderRoute(route, region, shellContext) {
   const renderers = {
     overview: renderOverviewPage,
     projects: renderProjectsPage,
     project: renderProjectPage,
+    scan: renderScanPage,
     scans: renderScansPage,
   };
   const renderer = renderers[route.name];
   if (renderer) {
-    return renderer({ region, route });
+    return renderer({ region, route, ...shellContext });
   }
   renderCheckpointShell(route, region);
   return null;
@@ -419,10 +421,13 @@ function buildShell(route) {
     },
   });
   const header = createElement("header", { className: "topbar" });
+  const breadcrumbRegion = createElement("div", { className: "topbar-breadcrumb" }, [
+    breadcrumb(breadcrumbItems(route)),
+  ]);
   header.append(
     createElement("div", { className: "topbar-leading" }, [
       menuButton,
-      breadcrumb(breadcrumbItems(route)),
+      breadcrumbRegion,
     ]),
     topbarStatus,
   );
@@ -460,7 +465,11 @@ function buildShell(route) {
   closeButton.addEventListener("click", () => closeMobileNavigation());
   backdrop.addEventListener("click", () => closeMobileNavigation());
 
-  renderRoute(route, region);
+  renderRoute(route, region, {
+    setBreadcrumb(items) {
+      breadcrumbRegion.replaceChildren(breadcrumb(items));
+    },
+  });
   loadSystemStatus([sidebarStatus, topbarStatus]);
   return region;
 }

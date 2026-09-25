@@ -148,8 +148,16 @@
 .topbar-leading {
   display: flex;
   min-width: 0;
+  flex: 1 1 auto;
   align-items: center;
   gap: var(--space-4);
+}
+
+.topbar-breadcrumb,
+.breadcrumb,
+.breadcrumb ol,
+.breadcrumb li {
+  min-width: 0;
 }
 
 .menu-button {
@@ -170,6 +178,7 @@
   color: var(--color-text-muted);
   font-size: var(--font-metadata);
   line-height: var(--line-metadata);
+  overflow-wrap: anywhere;
 }
 
 .breadcrumb li:not(:last-child)::after {
@@ -344,6 +353,7 @@ body.navigation-open {
   }
 
   .breadcrumb {
+    max-width: 100%;
     padding-top: var(--space-3);
   }
 

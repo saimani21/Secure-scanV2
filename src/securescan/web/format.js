@@ -67,6 +67,44 @@ export function productStatus(value) {
   return statuses[value] || { label: "Unknown status", tone: "neutral" };
 }
 
+export function stageProgress(value) {
+  const states = {
+    PENDING: { label: "Pending", tone: "neutral" },
+    WAITING: { label: "Waiting", tone: "neutral" },
+    RUNNING: { label: "Running", tone: "warning" },
+    COMPLETE: { label: "Complete", tone: "success" },
+    PARTIAL: { label: "Partial", tone: "warning" },
+    FAILED: { label: "Failed", tone: "failure" },
+    CANCELLED: { label: "Cancelled", tone: "neutral" },
+    NOT_APPLICABLE: { label: "Not applicable", tone: "neutral" },
+  };
+  return states[value] || { label: "Unknown state", tone: "neutral" };
+}
+
+export function coverageState(value) {
+  const states = {
+    COMPLETE: "Complete",
+    COMPLETE_WITH_FINDINGS: "Complete with findings",
+    COMPLETE_WITH_SUPPRESSIONS: "Complete with suppressions",
+    PARTIAL: "Partial",
+    FAILED: "Failed",
+    NOT_APPLICABLE: "Not applicable",
+  };
+  return states[value] || "Unknown state";
+}
+
+export function priorityLabel(value) {
+  const priorities = {
+    CRITICAL: "Critical",
+    HIGH: "High",
+    MEDIUM: "Medium",
+    LOW: "Low",
+    INFO: "Info",
+    UNRANKED: "Priority not assigned",
+  };
+  return priorities[value] || "Unknown priority";
+}
+
 export function paginationLabel({ total, limit, offset }) {
   if (!total) {
     return "Showing 0 of 0";

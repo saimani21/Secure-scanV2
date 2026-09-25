@@ -26,11 +26,23 @@ export const MAX_PROJECT_LOOKUP_PAGES = 4;
 
 const projectNameCache = new Map();
 
+export function rememberProject(project) {
+  if (
+    project &&
+    isCanonicalUuid(project.project_id) &&
+    typeof project.name === "string"
+  ) {
+    projectNameCache.set(project.project_id, project.name);
+  }
+}
+
+export function cachedProjectName(projectId) {
+  return isCanonicalUuid(projectId) ? projectNameCache.get(projectId) || null : null;
+}
+
 export function rememberProjectPage(page) {
   for (const project of page && Array.isArray(page.items) ? page.items : []) {
-    if (isCanonicalUuid(project.project_id) && typeof project.name === "string") {
-      projectNameCache.set(project.project_id, project.name);
-    }
+    rememberProject(project);
   }
 }
 
