@@ -541,3 +541,113 @@ E1 requires no migration, new persistence field, scanner change, external data
 source, or orchestration change. E2 is authorized only after E1 review and must
 implement this contract with adversarial unit/integration coverage before any UI
 change or release acceptance work.
+
+## E2 Product Core advisory and dependency projection
+
+Status: `E2 COMPLETE - AWAITING REVIEW`
+
+E2 implements the frozen E1 contract as an internal Product Core read-model
+projection. It does not change the HTTP schema, route, OpenAPI document, UI,
+persistence schema, evidence producers, scanner execution, orchestration,
+assembly, or lifecycle semantics.
+
+### Implementation architecture
+
+`src/securescan/product_core/dependencies.py` contains the isolated projection
+boundary. `SourceDependencyProjectionService` acquires the durable run-level
+material through the existing verified loaders, while
+`resolve_dependency_summaries()` performs deterministic in-memory validation,
+indexing, correlation, and package projection. `SourceScanQueryService` remains
+responsible for loading the verified S4 report once, loading Product Core
+priorities once, delegating one projection, and applying pagination after the
+fully ordered dependency collection.
+
+The internal `SourceDependencyAdvisorySummary` is the exact E1 frozen model:
+`canonical_advisory_id`, public S4 `finding_id`, `osv_record_ids`, `aliases`,
+`cve_aliases`, `ghsa_aliases`, `fixed_versions`, and finalized Product Core
+`priority_band`. `SourceDependencySummary` adds `advisories` while retaining all
+V1.1B fields. No synthetic advisory identity is introduced.
+
+### Package resolver and observation aggregation
+
+The resolver first validates the S4 package/component and Syft observation
+bindings, then correlates the dependency evaluation, accepted OSV input, and
+accepted result. Report scope and accepted input must agree on run, repository,
+profile, and plan identities. Evaluation/input/result candidate identities and
+the complete accepted-result/S4 advisory sets must also agree.
+
+For every package key, all structural observations participate:
+
+- all `OUTSIDE_SCOPE` observations produce `NOT_APPLICABLE`;
+- any mixed observation, heterogeneous observation classes, coordinate gap, or
+  incomplete prerequisite prevents `COMPLETE` and produces `PARTIAL` unless an
+  unaccepted required candidate has an authoritative failure;
+- an authoritative failure for a required candidate produces `FAILED` and
+  exposes no advisories;
+- an accepted completed candidate with a complete prerequisite and no local
+  limitation produces `COMPLETE`, independently of a run-level `PARTIAL` caused
+  by another package; and
+- multiple independent limitation codes, or heterogeneous classes without one
+  exhaustive code, retain `PARTIAL` with a null reason.
+
+Only `COMPLETE` returns an exact `known_vulnerability_count`, computed as
+`len(advisories)`. `PARTIAL`, `FAILED`, and `NOT_APPLICABLE` return null.
+Accepted, package-bound advisories may remain visible for `PARTIAL`; they are
+forbidden for `FAILED` and `NOT_APPLICABLE`.
+
+### Advisory correlation and compatibility fields
+
+The report is indexed once by component, evidence ID, package key, and public
+finding ID. Every projected OSV advisory must bind one valid package component,
+one correlated `OSV_ADVISORY_GROUP`, its supporting Syft observations, one
+public S4 finding identity, one accepted-result advisory group, and one finalized
+priority. Missing references, component mismatches, invalid evidence kinds,
+missing priorities, duplicate public identities, repeated native relationships,
+and identity-connected same-package groups fail the whole projection.
+
+Advisories sort by public `finding_id`. Their tuple fields retain canonical
+producer order, and dependencies sort by `component_ref`. The V1.1B flat fields
+have no independent extraction path: `advisory_aliases`, `fixed_versions`, and
+`priority_bands` are deterministic sorted unique unions derived exclusively from
+the nested advisory tuple.
+
+### Indexing and bounded loading
+
+One pass over S4 evidence validates Syft observations and builds
+`locations_by_component_ref`; package projection performs indexed lookups rather
+than rescanning all evidence for every component. Focused instrumentation proves
+one location extraction per Syft evidence object even when multiple package
+components are projected.
+
+For one dependency-page request, verified acquisition is bounded to one S4
+report load, one bulk priority query, at most one dependency-evaluation artifact
+load, at most one accepted OSV input load, and at most one accepted OSV result
+load. Planning material is loaded once only for the legitimate no-node omission
+path. The loader performs bounded run-level row queries and never performs a DB
+query or CAS read per component or advisory. It makes no external request.
+
+### Files, tests, and limitations
+
+Production changes are limited to:
+
+- `src/securescan/product_core/dependencies.py`;
+- `src/securescan/product_core/query.py`; and
+- `src/securescan/product_core/__init__.py`.
+
+Focused coverage is in
+`tests/test_source_dependency_projection_v11e2.py` with 27 passing cases across
+the 25 required semantic/adversarial scenarios plus bounded-loader, query-call,
+one-pass-location, read-only, confidentiality, alias-connected duplicate, and
+cross-artifact scope-binding proofs. Existing synthetic PC3B tests were changed
+only where E1 makes their old report-only/run-level assumptions invalid; the
+updated tests now supply authoritative projection material or assert fail-closed
+behavior.
+
+The implemented structure follows the E1 proposal, with one concrete
+organization choice: verified material loading and the pure resolver share the
+focused `dependencies.py` module instead of extending the already large
+`query.py`. Indexes are request-local and are not persisted. E2 deliberately
+does not expose the nested advisory tuple over HTTP; strict public response
+models, route serialization, OpenAPI, and legacy UI compatibility remain E3.
+No CVSS, reachability, exploitability, upgrade recommendation, or external
+vulnerability enrichment is added.

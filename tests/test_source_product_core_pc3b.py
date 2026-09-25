@@ -35,6 +35,7 @@ from securescan.product_core import (
     SourceScanSubmissionService,
     SourceStageProgressState,
 )
+from securescan.product_core.dependencies import DependencyProjectionMaterial
 from tests.test_source_orchestration_s6b import _CONTROLLED_SECRET, _RUN_ID, _Environment
 from tests.test_source_product_core_pc1 import _clone_published_run, _publish_environment
 from tests.test_source_product_core_pc2 import _clone_gitleaks_runtime, _vulnerable_osv_report
@@ -581,7 +582,8 @@ def test_components_and_clean_dependencies_come_from_authoritative_s4(
                     *(
                         item
                         for item in original.coverage_outcomes
-                        if item.authority is not EvidenceAuthority.SYFT
+                        if item.authority
+                        not in {EvidenceAuthority.SYFT, EvidenceAuthority.OSV}
                     ),
                     *syft.coverage_outcomes,
                 ),
@@ -600,6 +602,14 @@ def test_components_and_clean_dependencies_come_from_authoritative_s4(
         "load_verified_published_report",
         lambda *, run_id: report,
     )
+    monkeypatch.setattr(
+        completed_context.queries._dependency_projection,
+        "_load_material",
+        lambda _run_id: DependencyProjectionMaterial(
+            fallback_evaluation="NOT_APPLICABLE",
+            public_reason="NO_PACKAGES_OBSERVED",
+        ),
+    )
     components = completed_context.queries.list_components(_SECOND_RUN)
     dependencies = completed_context.queries.list_dependencies(_SECOND_RUN)
     assert components.total >= dependencies.total >= 1
@@ -614,7 +624,7 @@ def test_components_and_clean_dependencies_come_from_authoritative_s4(
     assert request.advisory_aliases == ()
 
 
-def test_dependency_projection_includes_safe_osv_relationships(
+def test_dependency_projection_rejects_report_only_osv_relationships(
     completed_context: _Context, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     original = completed_context.submissions._index._rebuild_trusted_report(
@@ -633,14 +643,8 @@ def test_dependency_projection_includes_safe_osv_relationships(
         lambda *, run_id: report,
     )
 
-    dependencies = completed_context.queries.list_dependencies(_SECOND_RUN)
-
-    request = next(item for item in dependencies.items if item.name == "requests")
-    assert request.known_vulnerability_count == 1
-    assert request.vulnerability_evaluation == "COMPLETE"
-    assert request.vulnerability_evaluation_reason is None
-    assert request.advisory_aliases
-    assert request.fixed_versions
+    with pytest.raises(SourceScanQueryPersistenceError):
+        completed_context.queries.list_dependencies(_SECOND_RUN)
 
 
 def test_dependency_projection_accepts_authoritative_not_applicable_without_osv_outcome(
@@ -663,20 +667,18 @@ def test_dependency_projection_accepts_authoritative_not_applicable_without_osv_
     report["evidence"] = [
         item for item in report["evidence"] if item["authority"] != "osv.dev"
     ]
-    stages = _with_osv_stage_state(
-        completed_context,
-        SourceStageProgressState.NOT_APPLICABLE,
-        reason_code="NO_PACKAGES_OBSERVED",
-    )
     monkeypatch.setattr(
         completed_context.queries,
         "_published_document",
         lambda _run_id: report,
     )
     monkeypatch.setattr(
-        completed_context.queries,
-        "get_stages",
-        lambda _run_id: stages,
+        completed_context.queries._dependency_projection,
+        "_load_material",
+        lambda _run_id: DependencyProjectionMaterial(
+            fallback_evaluation="NOT_APPLICABLE",
+            public_reason="NO_PACKAGES_OBSERVED",
+        ),
     )
 
     dependencies = completed_context.queries.list_dependencies(completed_context.run_id)
@@ -757,7 +759,7 @@ def test_dependency_projection_rejects_missing_osv_outcome_with_osv_findings(
         completed_context.queries.list_dependencies(completed_context.run_id)
 
 
-def test_dependency_projection_never_reports_zero_when_osv_failed(
+def test_dependency_projection_rejects_failed_state_with_osv_findings(
     completed_context: _Context, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     original = completed_context.submissions._index._rebuild_trusted_report(
@@ -777,12 +779,8 @@ def test_dependency_projection_never_reports_zero_when_osv_failed(
         lambda _run_id: report,
     )
 
-    dependencies = completed_context.queries.list_dependencies(completed_context.run_id)
-
-    request = next(item for item in dependencies.items if item.name == "requests")
-    assert request.vulnerability_evaluation == "FAILED"
-    assert request.vulnerability_evaluation_reason == "OSV_NETWORK_FAILURE"
-    assert request.known_vulnerability_count is None
+    with pytest.raises(SourceScanQueryPersistenceError):
+        completed_context.queries.list_dependencies(completed_context.run_id)
 
 
 def test_coverage_gaps_and_report_are_separate_authoritative_views(

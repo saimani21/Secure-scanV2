@@ -1,5 +1,6 @@
 """Thin Product Core indexes over authoritative SecureScan evidence."""
 
+from .dependencies import SourceDependencyAdvisorySummary
 from .finalization import (
     DEFAULT_FINALIZATION_LIMIT,
     MAX_FINALIZATION_LIMIT,
@@ -135,6 +136,7 @@ __all__ = [
     "ScanNotPublishedError",
     "SourceComponentSummary",
     "SourceCoverageSummary",
+    "SourceDependencyAdvisorySummary",
     "SourceDependencySummary",
     "SourceFindingSummary",
     "SourceGapSummary",

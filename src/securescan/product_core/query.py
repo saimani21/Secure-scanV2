@@ -43,6 +43,11 @@ from securescan.persistence.database import (
     TargetRow,
 )
 
+from .dependencies import (
+    DependencyProjectionError,
+    SourceDependencyProjectionService,
+    SourceDependencySummary,
+)
 from .finding_index import ProductCoreIndexError, SourceFindingIndexService
 from .projects import InvalidProjectIdentifierError, SourceProjectNotFoundError
 from .submission import SourceIntakeKind
@@ -250,22 +255,6 @@ class SourceComponentSummary:
 
 
 @dataclass(frozen=True, slots=True)
-class SourceDependencySummary:
-    component_ref: str
-    name: str
-    version: str | None
-    package_type: str
-    purl: str | None
-    locations: tuple[Mapping[str, Any], ...]
-    vulnerability_evaluation: str
-    vulnerability_evaluation_reason: str | None
-    known_vulnerability_count: int | None
-    advisory_aliases: tuple[str, ...]
-    fixed_versions: tuple[str, ...]
-    priority_bands: tuple[str, ...]
-
-
-@dataclass(frozen=True, slots=True)
 class SourceCoverageSummary:
     complete: bool
     counts_by_state: Mapping[str, int]
@@ -312,6 +301,9 @@ class SourceScanQueryService:
             session_factory,
             artifact_store,
             frozen_source_v1_authority_roster(),
+        )
+        self._dependency_projection = SourceDependencyProjectionService(
+            session_factory, artifact_store
         )
 
     def get_scan(self, run_id: str) -> SourceScanSummary:
@@ -702,123 +694,15 @@ class SourceScanQueryService:
         normalized = self._normalize_run_id(run_id)
         self._validate_pagination(limit, offset)
         report = self._published_document(normalized)
-        evidence = {
-            self._required_string(item, "evidence_id"): item
-            for item in self._list_field(report, "evidence")
-        }
-        osv_by_component: dict[str, list[Mapping[str, Any]]] = {}
-        for finding in self._list_field(report, "findings"):
-            if finding.get("authority") != "osv.dev":
-                continue
-            subject = self._required_mapping(finding, "subject")
-            component_ref = self._required_string(subject, "component_ref")
-            osv_by_component.setdefault(component_ref, []).append(finding)
         priorities = self._priorities(normalized)
-        osv_outcomes = tuple(
-            item
-            for item in self._list_field(report, "coverage_outcomes")
-            if item.get("authority") == "osv.dev"
-        )
-        if len(osv_outcomes) > 1:
-            raise SourceScanQueryPersistenceError
-
-        if not osv_outcomes:
-            if osv_by_component:
-                raise SourceScanQueryPersistenceError
-            stages = self.get_stages(normalized)
-            osv_stages = tuple(
-                stage
-                for stage in stages.stages
-                if stage.authority == SourceAuthority.OSV.value
-                and stage.capability == "dependency_advisory_matching"
+        try:
+            dependencies = self._dependency_projection.project(
+                run_id=normalized,
+                report=report,
+                priorities=priorities,
             )
-            if len(osv_stages) != 1:
-                raise SourceScanQueryPersistenceError
-            osv_stage = osv_stages[0]
-            if (
-                osv_stage.progress_state
-                is not SourceStageProgressState.NOT_APPLICABLE
-                or osv_stage.coverage_states != ()
-            ):
-                raise SourceScanQueryPersistenceError
-            evaluation_state = "NOT_APPLICABLE"
-            evaluation_reason = osv_stage.reason_code
-        else:
-            osv_state = self._required_string(osv_outcomes[0], "state")
-            evaluation_state = {
-                "COMPLETE": "COMPLETE",
-                "COMPLETE_WITH_FINDINGS": "COMPLETE",
-                "COMPLETE_WITH_SUPPRESSIONS": "COMPLETE",
-                "PARTIAL": "PARTIAL",
-                "FAILED": "FAILED",
-                "NOT_APPLICABLE": "NOT_APPLICABLE",
-            }.get(osv_state)
-            if evaluation_state is None:
-                raise SourceScanQueryPersistenceError
-            evaluation_reason = self._optional_string(
-                osv_outcomes[0], "reason_code"
-            )
-        dependencies = []
-        for component in self._list_field(report, "components"):
-            if component.get("component_kind") != "PACKAGE":
-                continue
-            component_ref = self._required_string(component, "component_ref")
-            payload = self._required_mapping(component, "payload")
-            aliases: set[str] = set()
-            fixed: set[str] = set()
-            bands: set[str] = set()
-            for finding in osv_by_component.get(component_ref, []):
-                finding_id = self._required_string(finding, "finding_id")
-                if finding_id in priorities:
-                    bands.add(priorities[finding_id])
-                for evidence_ref in self._required_string_list(
-                    finding, "primary_evidence_refs"
-                ):
-                    item = evidence.get(evidence_ref)
-                    if item is None:
-                        raise SourceScanQueryPersistenceError
-                    osv_payload = self._required_mapping(item, "payload")
-                    if osv_payload.get("kind") == "OSV_ADVISORY_GROUP":
-                        aliases.update(self._required_string_list(osv_payload, "aliases"))
-                        aliases.update(
-                            self._required_string_list(osv_payload, "cve_aliases")
-                        )
-                        aliases.update(
-                            self._required_string_list(osv_payload, "ghsa_aliases")
-                        )
-                        fixed.update(
-                            self._required_string_list(osv_payload, "fixed_versions")
-                        )
-            locations = {
-                self._canonical_location(location)
-                for item in self._list_field(report, "evidence")
-                if item.get("authority") == "syft"
-                and component_ref in item.get("component_refs", [])
-                for location in self._list_field(item, "locations")
-            }
-            dependencies.append(
-                SourceDependencySummary(
-                    component_ref=component_ref,
-                    name=self._required_string(payload, "package_name"),
-                    version=self._optional_string(payload, "package_version"),
-                    package_type=self._required_string(payload, "package_type"),
-                    purl=self._optional_string(payload, "purl"),
-                    locations=tuple(
-                        self._mapping(dict(value)) for value in sorted(locations)
-                    ),
-                    vulnerability_evaluation=evaluation_state,
-                    vulnerability_evaluation_reason=evaluation_reason,
-                    known_vulnerability_count=(
-                        len(osv_by_component.get(component_ref, []))
-                        if evaluation_state == "COMPLETE"
-                        else None
-                    ),
-                    advisory_aliases=tuple(sorted(aliases)),
-                    fixed_versions=tuple(sorted(fixed)),
-                    priority_bands=tuple(sorted(bands)),
-                )
-            )
-        dependencies.sort(key=lambda item: item.component_ref)
+        except DependencyProjectionError:
+            raise SourceScanQueryPersistenceError from None
         return SourceScanPage(
             tuple(dependencies[offset : offset + limit]),
             len(dependencies),

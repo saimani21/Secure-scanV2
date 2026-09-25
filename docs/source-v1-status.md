@@ -183,7 +183,8 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1B1 | Project navigation and scan-history read model | COMPLETE |
 | V1.1B2 | Safe scan stage/progress read model | COMPLETE |
 | V1.1E0 | Dependency-semantics evidence-contract audit | COMPLETE - FROZEN |
-| V1.1E1 | Public dependency semantics contract | COMPLETE |
+| V1.1E1 | Public dependency semantics contract | COMPLETE - FROZEN |
+| V1.1E2 | Advisory and dependency Product Core projection | COMPLETE - AWAITING REVIEW |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -235,7 +236,11 @@ Syft, dependency-evaluation, accepted OSV input/result, S4, and Product Core
 chain. V1.1E1 freezes an additive nested advisory contract, conservative hybrid
 package-state algorithm, exact count/nullability rules, closed reason mapping,
 compatibility-summary derivation, and bounded artifact-loading invariant. It
-does not change production behavior; E2 implementation remains review-gated.
+does not change production behavior. V1.1E2 implements that contract inside
+Product Core with verified cross-artifact correlation, fail-closed advisory
+projection, bounded artifact acquisition, and a one-pass Syft location index.
+The nested advisory model remains internal until E3 adds the strict public
+schema, route serialization, OpenAPI, and UI compatibility work.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,
