@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 from types import SimpleNamespace
 
 import pytest
@@ -192,7 +193,7 @@ def _case(
             item for item in report["coverage_outcomes"] if item["authority"] == "osv.dev"
         )
         outcome["state"] = "PARTIAL"
-        outcome["reason_code"] = "PACKAGE_GAPS_PRESENT"
+        outcome["reason_code"] = "DEPENDENCY_COVERAGE_LIMITED"
     return (
         report,
         priorities,
@@ -260,8 +261,47 @@ def test_partial_prerequisite_retains_advisory_but_count_is_unknown() -> None:
     dependency = _resolve(report, priorities, material)
     assert dependency.vulnerability_evaluation == "PARTIAL"
     assert dependency.vulnerability_evaluation_reason == "SYFT_PREREQUISITE_PARTIAL"
+    assert dependency.vulnerability_evaluation_reason != "DEPENDENCY_COVERAGE_LIMITED"
     assert dependency.known_vulnerability_count is None
     assert len(dependency.advisories) == 1
+
+
+def test_package_gaps_present_remains_a_compatible_published_reason() -> None:
+    report, priorities, material = _case(
+        vulnerable=True, prerequisite_complete=False
+    )
+    outcome = next(
+        item for item in report["coverage_outcomes"] if item["authority"] == "osv.dev"
+    )
+    outcome["reason_code"] = "PACKAGE_GAPS_PRESENT"
+
+    dependency = _resolve(report, priorities, material)
+
+    assert dependency.vulnerability_evaluation == "PARTIAL"
+    assert dependency.vulnerability_evaluation_reason == "SYFT_PREREQUISITE_PARTIAL"
+    assert dependency.known_vulnerability_count is None
+    assert len(dependency.advisories) == 1
+
+
+def test_generic_partial_requires_an_accepted_result() -> None:
+    report, priorities, material = _case(
+        vulnerable=True, prerequisite_complete=False
+    )
+
+    with pytest.raises(DependencyProjectionError):
+        _resolve(report, priorities, replace(material, accepted_result=None))
+
+
+def test_generic_partial_rejects_complete_artifact_correlation() -> None:
+    report, priorities, material = _case(vulnerable=False)
+    outcome = next(
+        item for item in report["coverage_outcomes"] if item["authority"] == "osv.dev"
+    )
+    outcome["state"] = "PARTIAL"
+    outcome["reason_code"] = "DEPENDENCY_COVERAGE_LIMITED"
+
+    with pytest.raises(DependencyProjectionError):
+        _resolve(report, priorities, material)
 
 
 def test_required_candidate_failure_has_no_count_or_advisories() -> None:
@@ -657,7 +697,7 @@ def test_run_level_partial_does_not_demote_complete_package() -> None:
         item for item in report["coverage_outcomes"] if item["authority"] == "osv.dev"
     )
     osv_outcome["state"] = "PARTIAL"
-    osv_outcome["reason_code"] = "PACKAGE_GAPS_PRESENT"
+    osv_outcome["reason_code"] = "DEPENDENCY_COVERAGE_LIMITED"
     first_observation = first_result.observations[0]
     second_observation = second_result.observations[0]
     coordinate_gap = DependencyGapEvidence(
@@ -736,6 +776,10 @@ def test_run_level_partial_does_not_demote_complete_package() -> None:
     assert by_name_version[("requests", "2.31.0")].known_vulnerability_count == 0
     limited = by_name_version[("requests", None)]
     assert limited.vulnerability_evaluation == "PARTIAL"
+    assert limited.vulnerability_evaluation_reason == (
+        OsvGapReason.PACKAGE_VERSION_UNRESOLVED.value
+    )
+    assert limited.vulnerability_evaluation_reason != "DEPENDENCY_COVERAGE_LIMITED"
     assert limited.known_vulnerability_count is None
 
 

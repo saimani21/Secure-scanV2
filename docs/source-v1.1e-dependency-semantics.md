@@ -412,10 +412,13 @@ has no accepted result because of an authoritative failure, `FAILED` and its
 failure reason take precedence; package limitations never turn that failure into
 an apparently accepted partial result.
 
-An accepted result's run-level `PARTIAL`/`PACKAGE_GAPS_PRESENT` state is a signal
-to perform package aggregation, not a state to copy. Conversely, incomplete
-Syft prerequisite evidence is global to the dependency-evaluation boundary and
-keeps every otherwise eligible candidate package `PARTIAL`.
+An accepted result's final run-level
+`PARTIAL`/`DEPENDENCY_COVERAGE_LIMITED` state is a signal to perform package
+aggregation, not a state to copy. The intermediate assembly fragment may use
+`PACKAGE_GAPS_PRESENT`; Product Core retains that value as a compatibility form
+for previously accepted E1/E2 material. Conversely, incomplete Syft prerequisite
+evidence is global to the dependency-evaluation boundary and keeps every
+otherwise eligible candidate package `PARTIAL`.
 
 ### Closed public reason mapping
 
@@ -575,6 +578,17 @@ bindings, then correlates the dependency evaluation, accepted OSV input, and
 accepted result. Report scope and accepted input must agree on run, repository,
 profile, and plan identities. Evaluation/input/result candidate identities and
 the complete accepted-result/S4 advisory sets must also agree.
+
+E4 discovered and corrected one E1/E2 correlation assumption without changing
+the producer. Assembly forms an intermediate `PARTIAL` outcome with
+`PACKAGE_GAPS_PRESENT`, then its established generic partial limiter publishes
+the durable run-level reason `DEPENDENCY_COVERAGE_LIMITED`. Product Core accepts
+that final reason only after the dependency evaluation, OSV input/result, Syft
+observations and gaps, and S4 findings/evidence independently pass their exact
+correlation checks. `PACKAGE_GAPS_PRESENT` remains accepted only as the E1/E2
+compatibility form. Neither generic run-level reason becomes a package reason:
+package state and reason continue to come from the correlated package artifacts,
+and missing or contradictory material fails closed.
 
 For every package key, all structural observations participate:
 
@@ -772,3 +786,72 @@ No external integration or dependency-read network call was introduced. E3 does
 not add finding-detail navigation or a large reason-message mapping. PostgreSQL
 parity, bounded-query/load measurement at scale, and performance/confidentiality
 acceptance remain E4; isolated real end-to-end and final freeze/tag remain E5.
+
+## E4 PostgreSQL parity, bounded reads, and integrity acceptance
+
+Status: `E4 COMPLETE - AWAITING REVIEW`
+
+E4 found one producer/consumer correlation defect and corrected it without
+changing assembly. The established publication path first forms an intermediate
+OSV `PARTIAL` outcome with `PACKAGE_GAPS_PRESENT`, then the generic partial
+limiter publishes the durable run-level reason `DEPENDENCY_COVERAGE_LIMITED`.
+Product Core had required the intermediate value and therefore rejected a
+legitimate final report. Its accepted-result validation now recognizes the final
+published value and retains `PACKAGE_GAPS_PRESENT` as the E1/E2 compatibility
+form. Both remain only run-level consistency boundaries: package state and reason
+still require valid dependency-evaluation, accepted OSV input/result, Syft
+observation/gap, S4 finding/evidence, and Product Core priority correlation.
+Missing or contradictory material remains fail-closed, and neither generic
+reason is copied to a package.
+
+### PostgreSQL and bounded-load observations
+
+A fresh isolated PostgreSQL 16 environment used Compose project
+`securescan-v11e-e4`, loopback port `55436`, and database
+`securescan_v11e_e4_test`. Credentials were newly generated in a mode-`0600`
+temporary file, represented as redacted test data, never persisted in the
+repository, and destroyed with the isolated database after validation. The
+container, project network, and project volume were also removed; no existing
+deployment was operated.
+
+For accepted complete dependency reads at 1, 100, 500, and 1000 packages, the
+request path performed exactly 29 SQL statements and 16 raw CAS reads at every
+scale. Each request invoked the verified report loader once, the bulk priority
+loader once, and the dependency-evaluation, accepted OSV input, and accepted OSV
+result loaders once each. Planning loaded zero times on those paths. The
+legitimate zero-outcome planning-omission fallback invoked the verified report
+loader once and planning loader once, with zero evaluation/input/result loads;
+it did not reconstruct stages through `get_stages()`.
+
+The one-pass location index performed exactly 1, 100, 500, and 1000 repository
+location extractions for the corresponding package counts, with no repeated
+full evidence scan. Observed dependency-read times were 0.052471, 0.138009,
+0.557641, and 1.110957 seconds respectively. These are deterministic local
+sanity observations, not product performance guarantees.
+
+### Semantic, integrity, and regression acceptance
+
+The 15-case PostgreSQL module validates complete-clean, complete-vulnerable,
+partial-with-advisories, failed, outside-scope not-applicable, multiple canonical
+advisories, nested and flat public serialization, reason codes, pagination,
+stable canonical output, read-only database and artifact state, confidentiality,
+network-free reads, the zero-outcome fallback, exact load counts, and four
+PostgreSQL corruption paths. Missing finalized priority, dependency-evaluation
+digest drift, impossible accepted-result selection, and an unknown failure reason
+all produce internal `SourceScanQueryPersistenceError` and public generic
+`QUERY_UNAVAILABLE` rather than a partial HTTP 200 response.
+
+The E2 projection suite passes 30 cases, including the final published generic
+partial reason, mixed complete/partial packages, legacy reason compatibility,
+missing accepted material, contradictory correlation, broken component/evidence
+relationships, duplicate advisory relationships, deterministic ordering,
+bounded loaders, and read-only behavior. The combined regression gate passes
+135 cases: E2 30, E3 API/OpenAPI 15, legacy UI 14, PC3B 44, and PC3C 32.
+Changed-file Ruff, compileall, and `git diff --check` pass. No migration, public
+schema change, UI change, scanner/execution change, orchestration change,
+assembly change, S4 producer change, or lifecycle change was made.
+
+E5 remains the fresh isolated real end-to-end acceptance for vulnerable, clean,
+and not-applicable repositories; API/UI and restart-persistence validation;
+final diff/release checks; and the final V1.1E freeze/tag. E4 performs none of
+that E5 work.

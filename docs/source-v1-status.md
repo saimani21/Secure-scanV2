@@ -185,7 +185,8 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1E0 | Dependency-semantics evidence-contract audit | COMPLETE - FROZEN |
 | V1.1E1 | Public dependency semantics contract | COMPLETE - FROZEN |
 | V1.1E2 | Advisory and dependency Product Core projection | COMPLETE - FROZEN |
-| V1.1E3 | Public dependency advisory API and legacy compatibility | COMPLETE - AWAITING REVIEW |
+| V1.1E3 | Public dependency advisory API and legacy compatibility | COMPLETE - FROZEN |
+| V1.1E4 | PostgreSQL parity, bounded reads, and integrity acceptance | COMPLETE - AWAITING REVIEW |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -245,7 +246,13 @@ schema, route serialization, OpenAPI, and UI compatibility work. V1.1E3 exposes
 that model additively through the existing dependencies route without semantic
 recomputation. The legacy console preserves unknown counts, distinguishes
 observed partial advisories from exact totals, and uses conservative fixed-version
-and SecureScan-priority wording. PostgreSQL/performance acceptance remains E4.
+and SecureScan-priority wording. V1.1E4 corrects Product Core's correlation with
+the established final `PARTIAL`/`DEPENDENCY_COVERAGE_LIMITED` publication reason
+without changing assembly or copying that generic reason to packages. Its fresh
+isolated PostgreSQL acceptance proves semantic/API parity, constant SQL and CAS
+loads through 1000 packages, one-pass location indexing, deterministic pagination,
+read-only and network-free queries, confidentiality, and fail-closed integrity.
+Only isolated real end-to-end and final freeze work remains for E5.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

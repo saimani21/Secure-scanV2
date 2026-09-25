@@ -73,6 +73,12 @@ _STAGE_REASONS = frozenset(
     }
 )
 _OSV_FAILURE_REASONS = frozenset(item.value for item in SourceOsvFailureCode)
+_ACCEPTED_PARTIAL_OSV_OUTCOME_REASONS = frozenset(
+    {
+        "DEPENDENCY_COVERAGE_LIMITED",
+        "PACKAGE_GAPS_PRESENT",
+    }
+)
 
 
 class DependencyProjectionError(RuntimeError):
@@ -728,10 +734,14 @@ def _validate_result(
         if result.analysis.findings
         else "COMPLETE"
     )
-    expected_reason = "PACKAGE_GAPS_PRESENT" if result.coverage_limited else None
+    expected_reasons = (
+        _ACCEPTED_PARTIAL_OSV_OUTCOME_REASONS
+        if result.coverage_limited
+        else frozenset({None})
+    )
     if (
         index.osv_outcome_state != expected_state
-        or index.osv_outcome_reason != expected_reason
+        or index.osv_outcome_reason not in expected_reasons
     ):
         raise DependencyProjectionError
     return result
