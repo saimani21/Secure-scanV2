@@ -5,7 +5,6 @@ import {
   breadcrumb,
   codeValue,
   createElement,
-  emptyState,
   errorState,
   loadingState,
   pageHeader,
@@ -25,57 +24,12 @@ import { renderScanPage } from "/assets/scan.js";
 import { renderScansPage } from "/assets/scans.js";
 import { beginRequest, beginRoute } from "/assets/state.js";
 
-const ROUTE_SHELLS = Object.freeze({
-  overview: {
-    eyebrow: "Overview",
-    title: "Repository security. Evidence first.",
-    description: "Project and recent-scan navigation will be implemented in V1.1C2.",
-  },
-  projects: {
-    eyebrow: "Projects",
-    title: "Durable project navigation",
-    description: "Project listing will be implemented in V1.1C2.",
-  },
-  project: {
-    eyebrow: "Project",
-    title: "Project workspace",
-    description: "Project detail and scan history will be implemented in V1.1C2.",
-  },
-  scans: {
-    eyebrow: "Scans",
-    title: "Source scan history",
-    description: "Global scan navigation will be implemented in V1.1C2.",
-  },
-  scan: {
-    eyebrow: "Current scan",
-    title: "Scan overview",
-    description: "Authoritative scan progress will be implemented in V1.1C3.",
-  },
-  findings: {
-    eyebrow: "Current scan",
-    title: "Findings",
-    description: "Finding navigation and evidence detail will be implemented in V1.1C4.",
-  },
-  dependencies: {
-    eyebrow: "Current scan",
-    title: "Dependencies",
-    description: "Dependency evaluation detail will be implemented in V1.1C5.",
-  },
-  coverage: {
-    eyebrow: "Current scan",
-    title: "Coverage",
-    description: "Capability coverage will be implemented in V1.1C6.",
-  },
-  gaps: {
-    eyebrow: "Current scan",
-    title: "Analysis gaps",
-    description: "Explicit analysis gaps will be implemented in V1.1C6.",
-  },
-  report: {
-    eyebrow: "Current scan",
-    title: "Verified report",
-    description: "The report workspace will be implemented in V1.1C6.",
-  },
+const ROUTE_TITLES = Object.freeze({
+  findings: "Findings",
+  dependencies: "Dependencies",
+  coverage: "Coverage",
+  gaps: "Analysis gaps",
+  report: "Verified report",
 });
 
 const GLOBAL_LINKS = Object.freeze([
@@ -184,34 +138,9 @@ function breadcrumbItems(route) {
     items.push({ label: "Scan" });
   } else {
     items.push({ label: "Scan", href: `/scans/${route.runId}` });
-    items.push({ label: ROUTE_SHELLS[route.name].title });
+    items.push({ label: ROUTE_TITLES[route.name] });
   }
   return items;
-}
-
-function renderCheckpointShell(route, region) {
-  const contract = ROUTE_SHELLS[route.name];
-  const content = createElement("div", { className: "route-stack" });
-  content.append(pageHeader(contract));
-  if (route.projectId || route.runId) {
-    const identity = createElement("dl", { className: "route-identity" });
-    const label = route.projectId ? "Project ID" : "Run ID";
-    const value = route.projectId || route.runId;
-    identity.append(
-      createElement("dt", { textContent: label }),
-      createElement("dd", {}, [codeValue(value)]),
-    );
-    content.append(identity);
-  }
-  content.append(
-    emptyState(
-      "Checkpoint shell",
-      contract.description,
-      "No product data is loaded by this C1 route.",
-    ),
-  );
-  region.replaceChildren(content);
-  region.setAttribute("aria-busy", "false");
 }
 
 function renderRoute(route, region, shellContext) {
@@ -231,7 +160,12 @@ function renderRoute(route, region, shellContext) {
   if (renderer) {
     return renderer({ region, route, ...shellContext });
   }
-  renderCheckpointShell(route, region);
+  region.replaceChildren(errorState(
+    "Route unavailable",
+    "This approved route does not have a registered renderer.",
+    "ROUTE_RENDERER_UNAVAILABLE",
+  ));
+  region.setAttribute("aria-busy", "false");
   return null;
 }
 

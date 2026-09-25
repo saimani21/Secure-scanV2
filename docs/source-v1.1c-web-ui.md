@@ -350,6 +350,37 @@ the browser and a restrained print stylesheet removes navigation and controls,
 uses black-on-white content, and preserves readable evidence sections. There
 are no external export services or PDF generators.
 
+## C7 complete-UI hardening
+
+Every approved route now has a registered product renderer; the checkpoint
+shell and all future-phase placeholder copy have been removed. History API
+navigation, direct deep links, refresh, modified clicks, new-tab links, and
+back/forward restoration are covered by an executable navigation contract.
+Route-generation cancellation and the per-workspace request guards continue to
+prevent late reads from overwriting the current route.
+
+The complete frontend remains GET-only, same-origin, framework-free, and free
+of HTML-injection or dynamic-code sinks. Error copy never exposes response
+bodies, and empty, filtered-empty, pending, unavailable, failed, unknown, and
+not-applicable states remain distinct. Long paths, package identifiers, aliases,
+Unicode and bidi-looking values wrap as isolated text. Security headers retain
+the strict self-only CSP with no inline script/style exceptions, framing,
+objects, referrers, or browser permissions.
+
+Accessibility hardening preserves the skip link, semantic landmarks and table
+captions, current-page navigation, native details and dialogs, focus trapping
+and restoration, Escape behavior, 40-pixel controls, visible focus, live status,
+and reduced-motion behavior. The muted text token was raised minimally to
+`#808881`, making every active normal-text token at least WCAG AA against every
+active graphite surface. No theme redesign was introduced.
+
+All ten routes were rendered and measured at 1920, 1366, 1280, 1024, 768, 767,
+and 390 CSS pixels. The 70-route/width matrix had no document-level horizontal
+overflow. Representative desktop, compact-sidebar, breakpoint, and true 390px
+captures were reviewed for hierarchy, wrapping, table transformation, spacing,
+and restrained accent use. No external assets, decorative dashboards, gradients,
+glass effects, or AI-style visual elements were added.
+
 ## Checkpoint plan
 
 ```text
@@ -359,7 +390,7 @@ C3  scan overview and progress
 C4  findings and detail
 C5  dependencies and detail
 C6  coverage, gaps, report (complete checkpoint)
-C7  responsive, accessibility, hostile-input hardening
+C7  responsive, accessibility, hostile-input hardening (complete checkpoint)
 C8  isolated E2E, visual acceptance, final freeze
 ```
 

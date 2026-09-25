@@ -266,7 +266,8 @@ def test_shell_uses_semantic_contextual_anchor_navigation() -> None:
     assert 'link.setAttribute("aria-current", "page")' in application
     assert "if (route.runId)" in application
     assert 'textContent: "Current scan"' in application
-    assert "No product data is loaded by this C1 route." in application
+    assert "renderCheckpointShell" not in application
+    assert "will be implemented" not in application
     assert "sample finding" not in application.lower()
 
 

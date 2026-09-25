@@ -196,6 +196,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1C4 | Findings workspace and evidence-backed finding detail | COMPLETE - CHECKPOINT |
 | V1.1C5 | Dependencies and canonical advisory detail | COMPLETE - CHECKPOINT |
 | V1.1C6 | Coverage, gaps, and verified report workspaces | COMPLETE - CHECKPOINT |
+| V1.1C7 | Complete UI hardening and polish | COMPLETE - CHECKPOINT |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -368,6 +369,20 @@ hostile-text, failure-isolation, and print-pipeline checks passed. No Product
 Core, API schema, scanner, dependency, orchestration, lifecycle, database, or
 migration behavior changed. V1.1C remains incomplete and unfrozen pending C7-C8.
 See `docs/source-v1.1c-web-ui.md`.
+
+V1.1C7 removes the obsolete checkpoint shell and hardens the complete UI without
+adding product capability. Executable navigation covers direct links, History
+API restoration, modified clicks, and new tabs; existing generation and abort
+guards cover the cross-route race matrix. Empty/error distinctions, hostile-text
+rendering, strict same-origin GET-only behavior, CSP/security headers,
+accessibility primitives, bounded report work, and package contents are all
+regression-tested. A minimal muted-text token change brings active normal text
+to WCAG AA across all graphite surfaces. All ten routes passed exact overflow
+measurement at seven prescribed widths, with representative screenshots reviewed
+at desktop, compact, breakpoint, and true 390px layouts. No Product Core, API
+schema, scanner, dependency, orchestration, lifecycle, database, or migration
+behavior changed. V1.1C remains incomplete and unfrozen pending C8. See
+`docs/source-v1.1c-web-ui.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,
