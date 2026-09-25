@@ -789,7 +789,7 @@ acceptance remain E4; isolated real end-to-end and final freeze/tag remain E5.
 
 ## E4 PostgreSQL parity, bounded reads, and integrity acceptance
 
-Status: `E4 COMPLETE - AWAITING REVIEW`
+Status: `E4 COMPLETE - FROZEN`
 
 E4 found one producer/consumer correlation defect and corrected it without
 changing assembly. The established publication path first forms an intermediate
@@ -851,7 +851,65 @@ Changed-file Ruff, compileall, and `git diff --check` pass. No migration, public
 schema change, UI change, scanner/execution change, orchestration change,
 assembly change, S4 producer change, or lifecycle change was made.
 
-E5 remains the fresh isolated real end-to-end acceptance for vulnerable, clean,
-and not-applicable repositories; API/UI and restart-persistence validation;
-final diff/release checks; and the final V1.1E freeze/tag. E4 performs none of
-that E5 work.
+## E5 real isolated end-to-end acceptance and final freeze
+
+Status: `V1.1E COMPLETE - FROZEN`
+
+E5 completed on 2026-09-25 in the isolated `securescan-v11e-e5` deployment on
+loopback API port 18003 and PostgreSQL port 55435. Its private profile and
+persistent data remain outside the repository. All three accepted runs reached
+`COMPLETED`, every required public project/scan/stage/finding/dependency/
+coverage/gap/report read returned HTTP 200, and the same-origin console and
+packaged JavaScript were served successfully.
+
+The vulnerable case retained the approved `pkg:pypi/pyyaml@5.3.1` observation
+and projected one canonical `CVE-2020-14343` advisory group: evaluation
+`COMPLETE`, count 1, fixed version 5.4, and SecureScan priority `CRITICAL`. Its
+durable request-permit evidence contains one OSV batch query and two advisory
+GETs. Aliases did not inflate the canonical count.
+
+The initial clean-corpus candidate included `pkg:npm/lodash@4.17.21`. Live OSV
+truth had changed and returned two applicable canonical groups,
+`CVE-2021-23337` and `CVE-2025-13465`; SecureScan correctly reported them. E5
+therefore rejected lodash as an acceptance-clean fixture without changing any
+production behavior. Third-party packages must not be treated as permanently
+clean fixtures when their expected result depends on mutable live vulnerability
+intelligence.
+
+The replacement private, unversioned corpus contains only static npm v3
+manifest/lockfile input for the already-approved synthetic coordinate
+`pkg:npm/securescan-syft-fixture@1.0.0`. The manifest SHA-256 is
+`450a291b78e89108c3efeddfe3d800011057b4be7157ea5934b60f9ca34143f0`,
+the lockfile SHA-256 is
+`9015836b7f0393c44f6e5d5ab05b440f92529f8bce7a7241f7b77e77140226ab`,
+and pinned offline Syft produced exactly that one PURL. The real run retained
+one OSV batch-query permit and no advisory GET permits, then projected
+`COMPLETE`, exact count 0, and empty advisory, alias, fixed-version, and priority
+arrays. No lodash or other unapproved package was queried.
+
+The not-applicable case retained
+`pkg:golang/golang.org/x/text@v0.18.0` as a visible package with evaluation
+`NOT_APPLICABLE`, null count, and no advisories. Its durable OSV request-permit
+count is exactly zero. Across the vulnerable, clean, and not-applicable runs,
+request-permit totals remained 3, 1, and 0 through repeated public reads and a
+supported stop/start of the same deployment. Three post-restart passes over all
+required public payloads reproduced their pre-restart canonical digests without
+rescanning. Canonical report-response SHA-256 values were respectively
+`2e2b0143d7878007a701c3ef99889059ba55b84ed0e411a40fb8b2dd7c99d3a2`,
+`6cf962c5e87d2d082fa23000865d7c50451947f4a75ecbe2c5981e71765c48cf`,
+and `5b3b04a8742861d5e78228760203587c2d7be96bceb59c399669781bfd18515b`.
+
+Representative public responses exposed none of the checked credentials,
+database URLs, absolute host/workspace paths, environment names, lease or
+attempt material, or raw scanner output. No transient scanner process or
+container remained after terminal execution. The final focused regression gate
+passed 203 tests with zero failures or skips: 30 E2 projection, 15 E3 API and
+OpenAPI, 14 legacy UI, 44 PC3B, 32 PC3C, 53 OSV/dependency/evidence, and 15 E4
+PostgreSQL integrity cases. No production, scanner, API, UI, orchestration,
+assembly, migration, or persistence code changed in E5.
+
+V1.1E still does not provide EPSS, CISA KEV, reachability, VEX, formal SBOM
+product export, NVD or GitHub Advisory enrichment, Trivy vulnerability
+scanning, Grype, Snyk, Dependabot, automatic upgrades or pull requests, package
+reputation, typosquatting or malicious-package analysis, container dependency
+scanning, or AI remediation/adjudication.

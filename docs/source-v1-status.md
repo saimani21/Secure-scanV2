@@ -186,7 +186,9 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1E1 | Public dependency semantics contract | COMPLETE - FROZEN |
 | V1.1E2 | Advisory and dependency Product Core projection | COMPLETE - FROZEN |
 | V1.1E3 | Public dependency advisory API and legacy compatibility | COMPLETE - FROZEN |
-| V1.1E4 | PostgreSQL parity, bounded reads, and integrity acceptance | COMPLETE - AWAITING REVIEW |
+| V1.1E4 | PostgreSQL parity, bounded reads, and integrity acceptance | COMPLETE - FROZEN |
+| V1.1E5 | Real isolated end-to-end acceptance and final freeze | COMPLETE - FROZEN |
+| V1.1E | Dependency Semantics v2 | COMPLETE - FROZEN |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -252,7 +254,25 @@ without changing assembly or copying that generic reason to packages. Its fresh
 isolated PostgreSQL acceptance proves semantic/API parity, constant SQL and CAS
 loads through 1000 packages, one-pass location indexing, deterministic pagination,
 read-only and network-free queries, confidentiality, and fail-closed integrity.
-Only isolated real end-to-end and final freeze work remains for E5.
+V1.1E5 completed the isolated real end-to-end gate. The preserved vulnerable
+run reports `pkg:pypi/pyyaml@5.3.1` as `COMPLETE` with one canonical
+`CVE-2020-14343` advisory group. The preserved not-applicable run keeps
+`pkg:golang/golang.org/x/text@v0.18.0` visible with a null count and exactly zero
+OSV request permits. The first clean candidate correctly ceased to be clean
+when live OSV reported two applicable lodash advisory groups; no production
+behavior was changed to hide that truth. The final clean case therefore uses
+only the already-approved controlled synthetic coordinate
+`pkg:npm/securescan-syft-fixture@1.0.0` and proves accepted OSV completion with
+an exact zero count and empty advisory summaries.
+
+All required public reads remained network-free, representative outputs passed
+the confidentiality review, and all three durable results survived a supported
+stop/start with identical canonical payload digests and report hashes. The E5
+focused gate passed 203 tests with zero failures or skips, including E2, E3,
+legacy UI, PC3B, PC3C, OSV/dependency/evidence, and PostgreSQL integrity
+coverage. V1.1E Dependency Semantics v2 is complete and frozen; later analyst,
+suppression, UI 2.0, CLI/SARIF, and release-integration work remains outside
+this checkpoint.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,
