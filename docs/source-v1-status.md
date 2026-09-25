@@ -182,6 +182,8 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1B | Integrated read-model API release | COMPLETE - FROZEN |
 | V1.1B1 | Project navigation and scan-history read model | COMPLETE |
 | V1.1B2 | Safe scan stage/progress read model | COMPLETE |
+| V1.1E0 | Dependency-semantics evidence-contract audit | COMPLETE - FROZEN |
+| V1.1E1 | Public dependency semantics contract | COMPLETE |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -227,6 +229,13 @@ proves `NOT_APPLICABLE` with empty published coverage and no contradictory OSV
 findings. Syft packages remain visible, and the known vulnerability count remains
 unknown (`null`) rather than being fabricated as zero. This edge case is regression
 tested and the V1.1B release is frozen.
+
+V1.1E0 proves that package-specific dependency semantics require the combined
+Syft, dependency-evaluation, accepted OSV input/result, S4, and Product Core
+chain. V1.1E1 freezes an additive nested advisory contract, conservative hybrid
+package-state algorithm, exact count/nullability rules, closed reason mapping,
+compatibility-summary derivation, and bounded artifact-loading invariant. It
+does not change production behavior; E2 implementation remains review-gated.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

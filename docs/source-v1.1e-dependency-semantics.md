@@ -243,3 +243,301 @@ E1 may proceed only to freeze a public semantic contract. It must decide:
    or must remain partial under the frozen coverage boundary.
 
 No V1.1E production implementation is authorized by this document.
+
+## E1 public dependency semantics contract
+
+Status: `E1 COMPLETE - AWAITING REVIEW`
+
+E1 freezes the additive contract for
+`GET /v1/scans/{run_id}/dependencies`. It does not authorize production, API,
+UI, persistence, scanner, migration, or orchestration changes. E2 must implement
+this contract without changing the frozen evidence producers.
+
+### Public models
+
+The proposed Product Core models use the existing naming style and add one
+nested tuple to the existing dependency summary:
+
+```python
+@dataclass(frozen=True, slots=True)
+class SourceDependencyAdvisorySummary:
+    canonical_advisory_id: str
+    finding_id: str
+    osv_record_ids: tuple[str, ...]
+    aliases: tuple[str, ...]
+    cve_aliases: tuple[str, ...]
+    ghsa_aliases: tuple[str, ...]
+    fixed_versions: tuple[str, ...]
+    priority_band: str
+
+
+@dataclass(frozen=True, slots=True)
+class SourceDependencySummary:
+    component_ref: str
+    name: str
+    version: str | None
+    package_type: str
+    purl: str | None
+    locations: tuple[Mapping[str, Any], ...]
+    vulnerability_evaluation: str
+    vulnerability_evaluation_reason: str | None
+    known_vulnerability_count: int | None
+    advisories: tuple[SourceDependencyAdvisorySummary, ...]
+    advisory_aliases: tuple[str, ...]
+    fixed_versions: tuple[str, ...]
+    priority_bands: tuple[str, ...]
+```
+
+The HTTP schema adds the corresponding strict `DependencyAdvisoryResponse` and
+the `advisories` field to `DependencySummaryResponse`. No `inventory_status` is
+added: every returned dependency is already an observed Syft `PACKAGE`
+component. The route and page envelope remain unchanged.
+
+The dependency fields retain their V1.1B authority. The new advisory fields have
+these exact authorities and meanings:
+
+| Field | Authority | Contract |
+|---|---|---|
+| `canonical_advisory_id` | `OSV_ADVISORY_GROUP` evidence | Existing display identity: first sorted CVE, else first sorted GHSA, else first sorted OSV record ID |
+| `finding_id` | S4 `SecureScanFinding.finding_id` | Existing public structural finding identity; it is not the native OSV finding digest in the evidence payload |
+| `osv_record_ids` | `OSV_ADVISORY_GROUP` evidence | Exact OSV records in the canonical package-bound group |
+| `aliases` | `OSV_ADVISORY_GROUP` evidence | Exact generic OSV aliases retained for the group |
+| `cve_aliases` | `OSV_ADVISORY_GROUP` evidence | CVE identities derived by the accepted producer from record IDs and aliases |
+| `ghsa_aliases` | `OSV_ADVISORY_GROUP` evidence | GHSA identities derived by the accepted producer from record IDs and aliases |
+| `fixed_versions` | `OSV_ADVISORY_GROUP` evidence | OSV `fixed` events retained from matching accepted affected ranges only |
+| `priority_band` | Product Core occurrence index | SecureScan Product Core priority for this exact public `finding_id` |
+
+`priority_band` is one of `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`, `INFO`, or
+`UNRANKED` and is non-null for every returned advisory. It is SecureScan Product
+Core priority, not OSV severity, a CVSS value, exploitability, reachability, or a
+risk score. E1 does not expose CVSS.
+
+`fixed_versions` is not an upgrade recommendation, minimum safe version,
+compatibility guarantee, or application-remediation guarantee. An empty tuple
+means only that no fixed event was retained in accepted evidence; it does not
+mean that no fix exists.
+
+The public `finding_id` is intended to support later finding-detail linking. It
+and the underlying advisory-group structural identity may legitimately change
+when the accepted OSV record/alias group changes. No synthetic `advisory_ref` is
+created.
+
+### Evaluation values and exact count contract
+
+`vulnerability_evaluation` remains the closed set `COMPLETE`, `PARTIAL`,
+`FAILED`, and `NOT_APPLICABLE`.
+
+| Package evaluation | `known_vulnerability_count` | Advisories |
+|---|---:|---|
+| `COMPLETE`, accepted zero-advisory candidate | `0` | empty |
+| `COMPLETE`, accepted candidate with N groups | `N` | exactly those N groups |
+| `PARTIAL` | `null` | accepted, package-bound observed subset allowed |
+| `FAILED` | `null` | forbidden |
+| `NOT_APPLICABLE` | `null` | forbidden |
+
+`N` is the number of distinct canonical package-bound S4 OSV findings, not the
+number of aliases, CVEs, GHSAs, OSV records, or evidence objects. Only
+`COMPLETE` may expose an exact count. In particular, `PARTIAL` plus two trusted
+advisories means that two were observed, not that the complete count is two.
+
+### Required correlation and integrity checks
+
+Before choosing a package state, E2 must validate the complete evidence chain:
+
+1. load and verify the published S4 report and its frozen run/scope identity;
+2. correlate all Syft observation evidence for the `PACKAGE` component, require
+   one shared `package_key`, and recompute that the `PACKAGE` component reference
+   is the digest of that key; the hash-derived component reference is not
+   reversible;
+3. when an OSV node exists, load and verify its dependency-evaluation artifact;
+4. verify the accepted OSV input binds the same dependency-evaluation digest,
+   Syft result, run, node, scope, repository, profile, and plan;
+5. verify the accepted OSV result binds that input and that its candidate IDs and
+   completed candidate IDs equal the full sorted candidate set;
+6. correlate candidate -> package key -> exact observation IDs -> component;
+7. correlate every nested advisory through one S4 OSV finding, one
+   `OSV_ADVISORY_GROUP` evidence object, the same component, and one Product Core
+   priority row for the public finding ID; and
+8. prove that the S4 package advisory set equals the accepted result's canonical
+   package advisory-group set.
+
+For one package, two advisory projections must not repeat a public finding ID,
+native advisory-group key, canonical group relationship, or an identity-connected
+OSV record/alias group. If two same-package groups share any member of
+`osv_record_ids union aliases`, the producer should have merged them; projection
+must reject the duplicate relationship rather than double count it.
+
+Any broken binding, missing required object, unknown enum/code, duplicate
+relationship, accepted-result/S4 disagreement, missing priority, or impossible
+state is a whole-query integrity failure. The endpoint returns its existing
+`QUERY_UNAVAILABLE` error path and no dependency page. It must not omit the bad
+package, fabricate a default, or return a partially trusted page.
+
+### Deterministic package-state algorithm
+
+The algorithm first distinguishes whether package-specific artifacts can
+legitimately exist, then applies conservative package aggregation. Rules appear
+in precedence order; an integrity failure always precedes all semantic rows.
+
+| Precedence and evidence | Evaluation | Reason source | Count | Advisories | Failure behavior |
+|---|---|---|---:|---|---|
+| Contradictory evidence, invalid binding, unknown code, missing object required by an existing binding, or duplicate advisory relationship | none | none | none | none | Fail the whole query |
+| No package-specific artifacts because there is no OSV node/outcome/finding, and the unique authoritative OSV stage proves `authority=osv.dev`, `capability=dependency_advisory_matching`, `NOT_APPLICABLE`, and `coverage_states=()` | `NOT_APPLICABLE` | Safe nullable stage reason | `null` | forbidden | Any missing proof or OSV finding fails the whole query |
+| No dependency-evaluation artifact exists, and the authoritative OSV capability/node is terminal failed or blocked by a failed dependency | `FAILED` | Safe nullable capability/stage reason | `null` | forbidden | Findings or an alleged completion fail the whole query |
+| No dependency-evaluation artifact exists and neither preceding fallback is proved | none | none | none | none | Fail the whole query; absence has no meaning |
+| Dependency evaluation exists but has no observation for the component's package key | none | none | none | none | Fail the whole query |
+| All package observations are `OUTSIDE_SCOPE` | `NOT_APPLICABLE` | `OUTSIDE_SCOPE` | `null` | forbidden | Candidate or advisory for the package fails the whole query |
+| No supported candidate exists because the package has mixed scope, heterogeneous scope without an eligible observation, an authoritative coordinate gap, or an incomplete prerequisite with no candidate | `PARTIAL` | Package limitation set | `null` | forbidden | A candidate or advisory that contradicts the evaluation artifact fails the whole query |
+| A supported candidate exists, no accepted result exists, and an authoritative direct OSV or prerequisite failure is proved | `FAILED` | Safe nullable failure/stage reason | `null` | forbidden | Failure takes precedence over recorded package limitations because no advisory result was accepted |
+| A supported candidate exists but input/result/completion is missing and no authoritative failure is proved | none | none | none | none | Fail the whole query |
+| An accepted candidate completed and any package observation is `MIXED_SCOPE`, observation classes are heterogeneous, the prerequisite is incomplete, or another package-local limitation exists | `PARTIAL` | Package limitation set | `null` | Trusted accepted advisories allowed | Never select the favorable observation or promote candidate completion past its prerequisite |
+| Accepted candidate completed with zero advisory groups, every package observation is `IN_SCOPE`, prerequisite is complete, and no package-local limitation exists | `COMPLETE` | `null` | `0` | empty | Any advisory contradicts the zero result |
+| Accepted candidate completed with N canonical advisory groups under the same complete conditions | `COMPLETE` | `null` | `N` | exactly N | Any set/count mismatch fails the whole query |
+| The published S4 OSV outcome for an accepted result is globally `PARTIAL` only because another package has a limitation, while this package proves every complete condition | `COMPLETE` | `null` | `0` or `N` | exact accepted set | Do not copy run-level partial state onto this package |
+| `FAILED` or `NOT_APPLICABLE` package with any advisory | none | none | none | none | Fail the whole query |
+
+The package limitation set is constructed from authoritative facts only:
+
+- incomplete prerequisite contributes `SYFT_PREREQUISITE_PARTIAL`;
+- a mixed observation contributes `MIXED_SCOPE_PACKAGE_OBSERVATION`;
+- a coordinate gap contributes its exact `OsvGapReason` value; and
+- heterogeneous observation classes contribute no invented code.
+
+If exactly one code is in the set, it is the public reason. If more than one
+exact limitation applies, the nullable reason is `null` rather than falsely
+presenting one limitation as exhaustive. Heterogeneity likewise leaves the
+reason null unless one other exact limitation is the sole reason. State remains
+conservatively `PARTIAL` whenever no candidate failed. If a supported candidate
+has no accepted result because of an authoritative failure, `FAILED` and its
+failure reason take precedence; package limitations never turn that failure into
+an apparently accepted partial result.
+
+An accepted result's run-level `PARTIAL`/`PACKAGE_GAPS_PRESENT` state is a signal
+to perform package aggregation, not a state to copy. Conversely, incomplete
+Syft prerequisite evidence is global to the dependency-evaluation boundary and
+keeps every otherwise eligible candidate package `PARTIAL`.
+
+### Closed public reason mapping
+
+E2 must implement a closed mapping, not pass through arbitrary strings.
+Recognized values outside these tables fail the query.
+
+Artifact-backed package reasons preserve these exact frozen producer values:
+
+| Authoritative source | Public reason |
+|---|---|
+| `PackageScopeClassification.OUTSIDE_SCOPE` | `OUTSIDE_SCOPE` |
+| mixed-scope gap `MIXED_SCOPE_PACKAGE_OBSERVATION` | `MIXED_SCOPE_PACKAGE_OBSERVATION` |
+| `OsvGapReason.PACKAGE_VERSION_UNRESOLVED` | `OSV_PACKAGE_VERSION_UNRESOLVED` |
+| `OsvGapReason.PACKAGE_PURL_UNRESOLVED` | `OSV_PACKAGE_PURL_UNRESOLVED` |
+| `OsvGapReason.UNSUPPORTED_PURL_TYPE` | `OSV_UNSUPPORTED_PURL_TYPE` |
+| `OsvGapReason.PURL_VERSION_MISMATCH` | `OSV_PURL_VERSION_MISMATCH` |
+| `OsvGapReason.PURL_PACKAGE_MISMATCH` | `OSV_PURL_PACKAGE_MISMATCH` |
+| incomplete Syft prerequisite | `SYFT_PREREQUISITE_PARTIAL` |
+
+The legitimate no-artifact fallback accepts only the already-public normalized
+stage values `NO_PACKAGES_OBSERVED`, `NO_PACKAGES_IN_ADVISORY_SCOPE`,
+`NO_SUPPORTED_COORDINATES`, `DEPENDENCY_INCOMPLETE`, `DEPENDENCY_FAILED`,
+`EXECUTION_FAILED`, and `CANCELLED`, or `null`. The value is copied only when its
+stage state is compatible with it.
+
+An OSV node blocked by a failed Syft prerequisite uses the existing normalized
+stage reason `DEPENDENCY_FAILED`; it never exposes the constructed internal
+`SYFT_*` terminal string. `DEPENDENCY_EVALUATION_FAILED` likewise maps through
+the existing stage policy to `DEPENDENCY_FAILED`.
+
+For a genuine direct OSV execution failure, the failed S4 terminal fragment's
+closed safe producer set is the frozen `SourceOsvFailureCode` values:
+`NETWORK_FAILURE`, `CONNECT_TIMEOUT`,
+`READ_WRITE_TIMEOUT`, `HTTP_RATE_LIMIT`, `HTTP_RETRYABLE_SERVER_ERROR`,
+`HTTP_PERMANENT_ERROR`, `INVALID_OSV_SCHEMA`, `PAGINATION_INTEGRITY_FAILURE`,
+`OSV_DATA_CHANGED_DURING_QUERY`, `DEPENDENCY_INPUT_INTEGRITY_FAILURE`,
+`RESULT_CANONICALIZATION_FAILURE`, `ARTIFACT_PERSISTENCE_FAILURE`,
+`HELPER_EXECUTION_FAILURE`, `ATTEMPT_CONTAINMENT_FAILURE`, `CANCELLED`, and
+`DEADLINE_EXCEEDED`. These map to the identical public string to preserve the
+existing coverage-reason meaning. No other internal reason is public through
+this endpoint.
+
+### Advisory and compatibility projection
+
+For every accepted package-bound S4 finding, create exactly one nested advisory.
+All nested list fields are copied from its single correlated
+`OSV_ADVISORY_GROUP` evidence object. Its `priority_band` comes from the bulk
+Product Core priority index for the S4 public `finding_id`.
+
+The nested model is authoritative. Existing fields remain additive compatibility
+summaries derived from `advisories` in the same projection pass:
+
+```text
+advisory_aliases = sorted unique union of
+    advisory.aliases
+    + advisory.cve_aliases
+    + advisory.ghsa_aliases
+
+fixed_versions = sorted unique union of advisory.fixed_versions
+
+priority_bands = sorted unique union of advisory.priority_band
+```
+
+This preserves V1.1B compatibility semantics: `advisory_aliases` does not add
+all OSV record IDs merely because the nested model now exposes them. There is no
+second independent flat-field algorithm.
+
+### Deterministic ordering
+
+- dependencies are unique and sorted ascending by `component_ref`; pagination is
+  applied after that full ordering;
+- advisories are unique and sorted ascending by public `finding_id`;
+- `osv_record_ids`, `aliases`, `cve_aliases`, `ghsa_aliases`, and
+  `fixed_versions` are each unique and sorted by Unicode code-point order, which
+  matches their frozen ASCII identifier/version representation;
+- compatibility `advisory_aliases`, `fixed_versions`, and `priority_bands` are
+  unique and sorted by the same ordinary string order, preserving V1.1B output;
+  priority bands are not reordered by severity rank;
+- Syft dependency locations are unique `REPOSITORY_PATH` mappings sorted
+  ascending by normalized repository-relative `path`; and
+- input order, database row order, CAS load order, and advisory response order
+  never affect output.
+
+### Bounded artifact-loading and performance invariant
+
+One dependency-page projection may perform only bounded run-level acquisition:
+
+1. load and verify the published S4 report once;
+2. load and verify the dependency-evaluation artifact at most once;
+3. load and verify the accepted OSV input at most once;
+4. load and verify the accepted OSV result at most once;
+5. load the Product Core finding-priority mapping in one bulk query; and
+6. when the legitimate no-artifact fallback is needed, load its authoritative
+   planning/stage material once without reconstructing or reloading S4.
+
+E2 must then build in-memory indexes once for component/package identity, Syft
+observations and locations, scope classifications, package gaps, candidates,
+candidate completion/zero results, package advisory findings/evidence, and
+finding priorities. It must project every dependency only from those indexes.
+
+There may be no per-component database query, per-component CAS load,
+per-advisory CAS load, or external request. The current
+`O(components * evidence)` Syft-location rescan must be replaced by one evidence
+pass and a component-to-locations index. Projection work must be linear in the
+loaded report/artifact relationships plus deterministic sort costs, not their
+Cartesian product.
+
+### Backward compatibility and E2 boundary
+
+- `GET /v1/scans/{run_id}/dependencies` and its page envelope remain unchanged;
+- no `/dependencies-v2` route is introduced;
+- no existing dependency field is removed or made less nullable;
+- `advisories` is the only new dependency field and is always an array;
+- the three existing flat fields remain arrays and preserve their prior union
+  semantics, but are now derived solely from `advisories`;
+- zero OSV outcomes retain the frozen V1.1B proof rule; absence alone never
+  becomes `NOT_APPLICABLE`; and
+- security failures remain fail-closed `QUERY_UNAVAILABLE` responses without
+  leaking artifact paths, commands, raw scanner payloads, credentials, or
+  arbitrary internal reasons.
+
+E1 requires no migration, new persistence field, scanner change, external data
+source, or orchestration change. E2 is authorized only after E1 review and must
+implement this contract with adversarial unit/integration coverage before any UI
+change or release acceptance work.
