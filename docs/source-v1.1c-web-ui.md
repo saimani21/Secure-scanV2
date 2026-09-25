@@ -6,9 +6,10 @@ V1.1C0 is the approved UI/API architecture and design contract. V1.1C1
 established design tokens, the application shell, explicit browser routing,
 readiness presentation, and accessibility foundations. V1.1C2 added real
 Overview, Projects, Project Detail, and Global Scans navigation while preserving
-the frozen read API and Product Core contracts. V1.1C3 adds the real Scan
-Overview and authoritative Analysis stage progress. Findings, dependencies,
-coverage detail, gaps, and reports remain later checkpoints.
+the frozen read API and Product Core contracts. V1.1C3 added the real Scan
+Overview and authoritative Analysis stage progress. V1.1C4 adds the real
+Findings workspace and evidence-backed finding detail. Dependencies, coverage
+detail, gaps, and reports remain later checkpoints.
 
 V1.1C is not frozen or complete.
 
@@ -181,6 +182,97 @@ restrained safe warning. Raw API bodies are never rendered.
 | Manual refresh | 2, plus one project lookup only while project context is unresolved |
 
 No C4-C6 resource is preloaded.
+
+## C4 findings workspace and detail
+
+`/scans/{run UUID}/findings` is an evidence workspace, not a second Scan
+Overview. It loads one authoritative, server-paginated findings page and keeps
+the list usable while an optional detail is selected. The desktop layout uses a
+42/58 split between the dense finding list and detail. At 768–1199 pixels the
+detail is a native modal dialog with browser focus containment, Escape support,
+and focus restoration. Below 768 pixels selection switches to a dedicated
+detail view with a native Back to findings control.
+
+Priority, category, lifecycle, and authority are exact allowlisted server
+filters. Changing a server filter resets the offset and selection, preserves
+the other valid filters, updates bounded query state, aborts the older request,
+and issues exactly one new findings-page request. Pagination is also
+authoritative and clears a stale selection. The optional Search this page field
+is explicitly local to the currently loaded page; it searches only safe
+rendered title, authority, category, location, and narrow subject candidates.
+It makes no API call and never presents its match count as a global filtered
+total.
+
+Finding IDs are canonical 64-character lowercase hexadecimal identities.
+Selection uses durable native links of this form:
+
+```text
+/scans/{run UUID}/findings?finding={finding ID}
+```
+
+Back/forward navigation therefore restores filters, offset, and selection. If
+an exact selected ID is not in the current page, the UI says so and does not
+crawl other pages or pretend the finding is loaded.
+
+### Authority-specific presentation
+
+Summary rows derive a narrow safe identity only from the public finding
+summary. Detail titles are upgraded only after strict report correlation:
+
+| Authority | Evidence-backed detail title | Additional exact fields |
+| --- | --- | --- |
+| Semgrep | rule-match `message` | rule ID and CWE identifiers |
+| Gitleaks | secret-observation `rule_id` | rule ID and detection kind |
+| Checkov | policy-observation `check_name` | check ID and resource |
+| OSV | advisory-group `canonical_advisory_id` | package name/version and PURL |
+
+Unknown or malformed subjects use fixed category fallbacks; structured values
+are never stringified into the page. Repository paths, messages, rule names,
+resources, package values, advisory strings, and reason codes remain untrusted
+text. Long and bidi-looking values are isolated and wrapped. Gitleaks detail
+does not expose a secret value or raw scanner artifact.
+
+SecureScan priority and scanner severity remain separate labeled facts.
+`UNRANKED` is rendered as `Priority not assigned`, not as a low severity.
+Lifecycle is the exact current `NEW`, `EXISTING`, `RESOLVED`, or `REOPENED`
+state. C4 does not fabricate a lifecycle timeline, remediation, CVSS score,
+exploitability, confidence, reachability, business impact, or analyst
+disposition.
+
+### Lazy report and exact evidence correlation
+
+The verified report is not requested when the findings page loads. The first
+selection of a finding present in the current page triggers one report request;
+concurrent selections share that request, and later selections reuse the same
+object for the current run and route generation. Navigating away aborts and
+invalidates the cache.
+
+Detail correlation requires exactly one report finding with the selected
+`finding_id`, the same authority and category, and a nonempty set of primary
+evidence references. Every reference must resolve exactly and have the same
+authority. Package detail additionally requires one exact component reference.
+There is no path, title, similarity, or fuzzy fallback. A mismatch degrades only
+the detail to `Technical evidence unavailable`; it does not destroy the summary
+list.
+
+### Findings API bounds and failure states
+
+| Interaction | Maximum requests |
+| --- | ---: |
+| Initial findings load without a selection | 1 findings-page request; 0 report requests |
+| First valid selection | 1 lazy report request |
+| Later selection in the same route generation | 0 report requests |
+| Server filter or pagination action | 1 findings-page request |
+| Current-page search | 0 requests |
+| Selected ID absent from the loaded page | 0 report or page-crawl requests |
+
+A global empty response says only that completed analyses reported no findings
+and directs the operator to Coverage before interpreting it as clean. A
+filter-empty response is a distinct `No matching findings` state. A 404 is
+`Scan not found`; a 409 is `Findings not ready` with its safe allowlisted code
+and a Scan Overview link; a 503 is a fail-closed `Findings unavailable` state,
+never zero. Report failure leaves the list and selected summary functional.
+Raw API errors are not rendered.
 
 ## Checkpoint plan
 

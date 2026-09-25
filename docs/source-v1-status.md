@@ -193,6 +193,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1C1 | Web UI 2.0 design system, shell, and routing | COMPLETE - CHECKPOINT |
 | V1.1C2 | Overview, projects, project detail, and global scans | COMPLETE - CHECKPOINT |
 | V1.1C3 | Scan overview and authoritative analysis progress | COMPLETE - CHECKPOINT |
+| V1.1C4 | Findings workspace and evidence-backed finding detail | COMPLETE - CHECKPOINT |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -322,6 +323,22 @@ No finding, dependency, coverage-detail, gap, report, Product Core, API schema,
 scanner, orchestration, lifecycle, database, or migration behavior changed.
 V1.1C remains incomplete and unfrozen pending C4-C8. See
 `docs/source-v1.1c-web-ui.md`.
+
+V1.1C4 replaces the findings shell with a server-filtered, server-paginated
+workspace over the frozen findings API. Current-page search is explicitly local.
+Selection is durable query state, and a selected ID outside the loaded page does
+not trigger crawling. The verified report loads only after the first valid
+selection, is shared and cached for the current route generation, and is joined
+only through exact finding, authority, category, evidence-reference, and package
+component identities. Priority remains distinct from scanner severity,
+lifecycle is the exact current state rather than a fabricated timeline, and
+authority-specific titles and facts come only from correlated evidence. A
+report failure preserves the summary list; empty, 404, 409, and 503 states do
+not become false zero or security claims. Desktop split, tablet modal drawer,
+and mobile dedicated-detail layouts passed hostile-content and long-path browser
+review. No Product Core, API schema, scanner, dependency, orchestration,
+lifecycle, database, or migration behavior changed. V1.1C remains incomplete
+and unfrozen pending C5-C8. See `docs/source-v1.1c-web-ui.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

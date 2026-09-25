@@ -105,6 +105,51 @@ export function priorityLabel(value) {
   return priorities[value] || "Unknown priority";
 }
 
+export function priorityPresentation(value) {
+  const tones = {
+    CRITICAL: "failure",
+    HIGH: "failure",
+    MEDIUM: "warning",
+    LOW: "warning",
+    INFO: "neutral",
+    UNRANKED: "neutral",
+  };
+  return {
+    label: priorityLabel(value),
+    tone: tones[value] || "neutral",
+  };
+}
+
+export function lifecycleState(value) {
+  const states = {
+    NEW: "New",
+    EXISTING: "Existing",
+    RESOLVED: "Resolved",
+    REOPENED: "Reopened",
+  };
+  return states[value] || "Unknown lifecycle";
+}
+
+export function authorityLabel(value) {
+  const authorities = {
+    "semgrep-ce": "Semgrep",
+    gitleaks: "Gitleaks",
+    "osv.dev": "OSV",
+    checkov: "Checkov",
+  };
+  return authorities[value] || "Unknown authority";
+}
+
+export function findingCategory(value) {
+  const categories = {
+    CODE_SECURITY: "Code security",
+    SECRET_EXPOSURE: "Secret exposure",
+    DEPENDENCY_VULNERABILITY: "Dependency vulnerability",
+    CONFIGURATION_SECURITY: "Configuration security",
+  };
+  return categories[value] || "Unknown category";
+}
+
 export function paginationLabel({ total, limit, offset }) {
   if (!total) {
     return "Showing 0 of 0";

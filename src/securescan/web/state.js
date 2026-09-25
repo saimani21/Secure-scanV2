@@ -53,6 +53,10 @@ export function beginRequest() {
     finish() {
       state.controllers.delete(controller);
     },
+    cancel() {
+      controller.abort();
+      state.controllers.delete(controller);
+    },
   };
 }
 

@@ -28,6 +28,16 @@ function pageQuery(limit, offset) {
   return new URLSearchParams({ limit: String(limit), offset: String(offset) }).toString();
 }
 
+function optionalExactFilter(query, name, value, allowed) {
+  if (value === null || value === undefined || value === "") {
+    return;
+  }
+  if (typeof value !== "string" || !allowed.has(value)) {
+    throw new TypeError(`SecureScan ${name} filter is invalid.`);
+  }
+  query.set(name, value);
+}
+
 function uuidSegment(value, label) {
   if (!isCanonicalUuid(value)) {
     throw new TypeError(`${label} must be a canonical UUID.`);
@@ -145,5 +155,60 @@ export async function getScanSummary(runId, { signal } = {}) {
 export async function getScanStages(runId, { signal } = {}) {
   const segment = uuidSegment(runId, "Run ID");
   const result = await getJson(`/v1/scans/${segment}/stages`, { signal });
+  return result.payload;
+}
+
+export async function getFindings(
+  runId,
+  {
+    authority = null,
+    category = null,
+    priority = null,
+    lifecycleState = null,
+    limit = 50,
+    offset = 0,
+    signal,
+  } = {},
+) {
+  const segment = uuidSegment(runId, "Run ID");
+  const query = new URLSearchParams(pageQuery(limit, offset));
+  optionalExactFilter(
+    query,
+    "authority",
+    authority,
+    new Set(["semgrep-ce", "gitleaks", "osv.dev", "checkov"]),
+  );
+  optionalExactFilter(
+    query,
+    "category",
+    category,
+    new Set([
+      "CODE_SECURITY",
+      "SECRET_EXPOSURE",
+      "DEPENDENCY_VULNERABILITY",
+      "CONFIGURATION_SECURITY",
+    ]),
+  );
+  optionalExactFilter(
+    query,
+    "priority",
+    priority,
+    new Set(["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "UNRANKED"]),
+  );
+  optionalExactFilter(
+    query,
+    "lifecycle_state",
+    lifecycleState,
+    new Set(["NEW", "EXISTING", "RESOLVED", "REOPENED"]),
+  );
+  const result = await getJson(`/v1/scans/${segment}/findings?${query.toString()}`, {
+    signal,
+  });
+  return validatedPage(result.payload, result.status);
+}
+
+export async function getScanReport(runId, { signal } = {}) {
+  const segment = uuidSegment(runId, "Run ID");
+  const result = await getJson(`/v1/scans/${segment}/report`, { signal });
   return result.payload;
 }

@@ -12,6 +12,7 @@ import {
   statusIndicator,
 } from "/assets/components.js";
 import { formatDateTime, statusLabel, truncateMiddle } from "/assets/format.js";
+import { renderFindingsPage } from "/assets/findings.js";
 import { renderOverviewPage } from "/assets/overview.js";
 import { renderProjectPage } from "/assets/project.js";
 import { renderProjectsPage } from "/assets/projects.js";
@@ -216,6 +217,7 @@ function renderRoute(route, region, shellContext) {
     project: renderProjectPage,
     scan: renderScanPage,
     scans: renderScansPage,
+    findings: renderFindingsPage,
   };
   const renderer = renderers[route.name];
   if (renderer) {

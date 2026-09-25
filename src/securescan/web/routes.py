@@ -30,6 +30,7 @@ _ASSETS = {
     "api.js": "text/javascript; charset=utf-8",
     "components.js": "text/javascript; charset=utf-8",
     "format.js": "text/javascript; charset=utf-8",
+    "findings.js": "text/javascript; charset=utf-8",
     "overview.js": "text/javascript; charset=utf-8",
     "project.js": "text/javascript; charset=utf-8",
     "projects.js": "text/javascript; charset=utf-8",
