@@ -727,7 +727,11 @@ def _finish_existing_syft(
         execution_outcome=(
             ExecutionOutcome.PARTIAL_ANALYSIS
             if partial
-            else ExecutionOutcome.SUCCEEDED_WITH_OBSERVATIONS
+            else (
+                ExecutionOutcome.SUCCEEDED_WITH_OBSERVATIONS
+                if observations
+                else ExecutionOutcome.SUCCEEDED_NO_OBSERVATIONS
+            )
         ),
         return_code=0,
         duration_ms=1,

@@ -164,6 +164,9 @@ class _Environment:
         database_url: str | None = None,
         app_source: bytes = _PRIVATE_SOURCE,
         infra_source: bytes = b'resource "x" "y" {}\n',
+        profile=None,
+        plan=None,
+        source_files: dict[str, bytes] | None = None,
     ) -> None:
         settings = Settings(
             database_url=database_url or f"sqlite:///{tmp_path / 's6b.db'}",
@@ -172,41 +175,48 @@ class _Environment:
         initialize_database(settings)
         self.engine, self.factory = create_session_factory(settings)
         self.store = ContentAddressedArtifactStore(settings.artifact_root)
-        profile = _fixture_profile()
-        fixture_sources = {
-            "app.py": app_source,
-            "infra/main.tf": infra_source,
-            "requirements.lock": b"requests==2.31.0\n",
-        }
-        if app_source != _PRIVATE_SOURCE or infra_source != b'resource "x" "y" {}\n':
-            files = tuple(
-                replace(
-                    item,
-                    entry=replace(
-                        item.entry,
-                        size_bytes=len(fixture_sources[item.relative_path]),
-                        sha256=hashlib.sha256(
-                            fixture_sources[item.relative_path]
-                        ).hexdigest(),
-                    ),
+        custom_fixture = any(value is not None for value in (profile, plan, source_files))
+        if custom_fixture:
+            if profile is None or plan is None or source_files is None:
+                raise ValueError("Custom Source orchestration fixture is incomplete")
+            fixture_sources = source_files
+        else:
+            profile = _fixture_profile()
+            fixture_sources = {
+                "app.py": app_source,
+                "infra/main.tf": infra_source,
+                "requirements.lock": b"requests==2.31.0\n",
+            }
+            if app_source != _PRIVATE_SOURCE or infra_source != b'resource "x" "y" {}\n':
+                files = tuple(
+                    replace(
+                        item,
+                        entry=replace(
+                            item.entry,
+                            size_bytes=len(fixture_sources[item.relative_path]),
+                            sha256=hashlib.sha256(
+                                fixture_sources[item.relative_path]
+                            ).hexdigest(),
+                        ),
+                    )
+                    for item in profile.files
                 )
-                for item in profile.files
-            )
-            profile = replace(
-                profile,
-                repository_digest=repository_content_digest(
-                    tuple(item.entry for item in files)
-                ),
-                files=files,
-            )
+                profile = replace(
+                    profile,
+                    repository_digest=repository_content_digest(
+                        tuple(item.entry for item in files)
+                    ),
+                    files=files,
+                )
+            plan = _fixture_plan(profile)
         self.profile = profile
-        self.plan = _fixture_plan(self.profile)
+        self.plan = plan
         source = tmp_path / "source"
         source.mkdir()
-        (source / "app.py").write_bytes(app_source)
-        (source / "infra").mkdir()
-        (source / "infra" / "main.tf").write_bytes(infra_source)
-        (source / "requirements.lock").write_bytes(b"requests==2.31.0\n")
+        for relative_path, content in fixture_sources.items():
+            path = source / relative_path
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
         self.workspace_manager = RepositoryWorkspaceManager(tmp_path / "workspaces")
         self.workspace = self.workspace_manager.prepare_repository(source)
         self.projections = SourceProjectionManager.initialize_base_directory(

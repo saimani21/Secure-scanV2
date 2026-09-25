@@ -199,6 +199,77 @@ def test_inventory_classifies_repository_files(
         manager.cleanup_workspace(workspace)
 
 
+def test_requirements_family_alone_extends_manifest_advisory_eligibility(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "repository"
+    source.mkdir()
+    contents = {
+        "requirements.txt": b"PyYAML==5.3.1\n",
+        "requirements-dev.txt": b"requests==2.31.0\n",
+        "package.json": b'{"name":"demo","version":"1.0.0"}\n',
+        "pyproject.toml": b"[project]\nname = 'demo'\n",
+        "Pipfile": b"[packages]\nrequests = '==2.31.0'\n",
+        "setup.cfg": b"[metadata]\nname = demo\n",
+        "go.mod": b"module example.test/demo\n\ngo 1.23\n",
+        "go.sum": b"example.test/dependency v1.0.0 h1:controlled\n",
+        "package-lock.json": b"{}\n",
+        "Pipfile.lock": b"{}\n",
+        "pnpm-lock.yaml": b"lockfileVersion: '9.0'\n",
+        "poetry.lock": b"package = []\n",
+        "uv.lock": b"version = 1\n",
+        "yarn.lock": b"# controlled\n",
+    }
+    for name, content in contents.items():
+        (source / name).write_bytes(content)
+    manager = _manager(tmp_path)
+    workspace = manager.prepare_repository(source)
+
+    try:
+        inventory = build_repository_inventory(workspace)
+        files = {item.relative_path: item for item in inventory.files}
+        for name in ("requirements.txt", "requirements-dev.txt"):
+            assert files[name].role is SourceFileRole.MANIFEST
+            assert AnalysisCapability.PACKAGE_INVENTORY in files[name].eligible_capabilities
+            assert (
+                AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING
+                in files[name].eligible_capabilities
+            )
+
+        for name in ("package.json", "pyproject.toml", "Pipfile", "setup.cfg"):
+            assert files[name].role is SourceFileRole.MANIFEST
+            assert AnalysisCapability.PACKAGE_INVENTORY in files[name].eligible_capabilities
+            assert (
+                AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING
+                not in files[name].eligible_capabilities
+            )
+
+        for name in ("go.mod", "go.sum"):
+            assert files[name].role is SourceFileRole.OTHER
+            assert AnalysisCapability.PACKAGE_INVENTORY not in files[name].eligible_capabilities
+            assert (
+                AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING
+                not in files[name].eligible_capabilities
+            )
+
+        for name in (
+            "package-lock.json",
+            "Pipfile.lock",
+            "pnpm-lock.yaml",
+            "poetry.lock",
+            "uv.lock",
+            "yarn.lock",
+        ):
+            assert files[name].role is SourceFileRole.LOCKFILE
+            assert AnalysisCapability.PACKAGE_INVENTORY in files[name].eligible_capabilities
+            assert (
+                AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING
+                in files[name].eligible_capabilities
+            )
+    finally:
+        manager.cleanup_workspace(workspace)
+
+
 def test_inventory_is_deterministic_across_locations(
     tmp_path: Path,
 ) -> None:

@@ -1,0 +1,5 @@
+PyYAML>=5.3
+requests~=2.31
+Flask
+git+https://example.invalid/example.git
+./local-package

@@ -189,6 +189,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1E4 | PostgreSQL parity, bounded reads, and integrity acceptance | COMPLETE - FROZEN |
 | V1.1E5 | Real isolated end-to-end acceptance and final freeze | COMPLETE - FROZEN |
 | V1.1E | Dependency Semantics v2 | COMPLETE - FROZEN |
+| V1.1P | Exact-pinned `requirements*.txt` advisory scope | COMPLETE - FROZEN |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -273,6 +274,16 @@ legacy UI, PC3B, PC3C, OSV/dependency/evidence, and PostgreSQL integrity
 coverage. V1.1E Dependency Semantics v2 is complete and frozen; later analyst,
 suppression, UI 2.0, CLI/SARIF, and release-integration work remains outside
 this checkpoint.
+
+V1.1P preserves V1.1E dependency semantics and adds only the missing
+applicability edge for the existing `requirements*.txt` manifest family. A
+requirements file may establish dependency-advisory scope, while actual
+candidate creation still requires a concrete normalized PackageObservation from
+the frozen Syft binding. The supported claim is limited to plain
+`package==version` Python pins. Ranges, unpinned names, VCS/local references,
+extras, markers, include trees, and dependency resolution remain unsupported.
+Other manifest families do not gain advisory eligibility. See
+`docs/source-v1.1p-exact-pinned-requirements.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

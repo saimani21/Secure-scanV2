@@ -23,7 +23,11 @@ from securescan.cli.source import (
     submit_local_scan,
 )
 from securescan.config import Settings
-from securescan.orchestration.models import frozen_source_v1_authority_roster
+from securescan.orchestration.models import (
+    SourceAuthority,
+    SourcePlanningSnapshot,
+    frozen_source_v1_authority_roster,
+)
 from securescan.persistence.database import (
     ProjectRow,
     TargetRow,
@@ -422,6 +426,99 @@ def test_profile_planner_uses_frozen_repository_wide_syft_scope_without_scanning
         AnalysisCapability.SECRET_DETECTION: "gitleaks-source-v1",
     }
     assert registry_calls == 1
+
+
+def test_exact_pinned_requirements_create_production_osv_topology(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "repository"
+    source.mkdir()
+    (source / "requirements.txt").write_text(
+        "PyYAML==5.3.1\nrequests>=2.31\nFlask\n",
+        encoding="utf-8",
+    )
+    manager = RepositoryWorkspaceManager((tmp_path / "managed").resolve())
+    workspace = manager.prepare_repository(source)
+
+    class Enry:
+        configuration = TrustedEnryHelper(
+            helper_path=Path("/trusted/enry-helper"), expected_sha256="e" * 64
+        )
+
+        def classify(self, files: tuple[EnryFileInput, ...]) -> EnryBatchResult:
+            return EnryBatchResult(
+                classifications=tuple(
+                    EnryClassification(
+                        relative_path=item.relative_path,
+                        language=None,
+                        candidate_languages=(),
+                        is_binary=False,
+                        is_vendor=False,
+                        is_generated=False,
+                        is_test=False,
+                        is_configuration=False,
+                        is_documentation=False,
+                        is_dot_file=False,
+                        is_image=False,
+                    )
+                    for item in files
+                ),
+                helper_sha256="e" * 64,
+                helper_version="0.2.3",
+                enry_version="v2.9.6",
+                duration_ms=1,
+            )
+
+    roster = frozen_source_v1_authority_roster()
+
+    def registry() -> TrustedSourceAnalyzerRegistry:
+        return TrustedSourceAnalyzerRegistry(
+            analyzers=tuple(
+                sorted(
+                    (
+                        TrustedSourceAnalyzer(
+                            authority.analyzer_id,
+                            (authority.capability,),
+                            True,
+                        )
+                        for authority in roster.authorities
+                    ),
+                    key=lambda analyzer: analyzer.analyzer_id,
+                )
+            )
+        )
+
+    try:
+        profile, plan = SourceRepositoryProfilePlanner(
+            lambda: Enry(),  # type: ignore[return-value]
+            registry,
+        ).build(workspace)
+        snapshot = SourcePlanningSnapshot.create(_RUN_ID, profile, plan, roster)
+    finally:
+        manager.cleanup_workspace(workspace)
+
+    requirements = next(
+        item for item in profile.files if item.relative_path == "requirements.txt"
+    )
+    assert requirements.role.value == "manifest"
+    assert AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING in (
+        requirements.eligible_capabilities
+    )
+    advisory = next(
+        entry
+        for entry in plan.entries
+        if entry.capability is AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING
+    )
+    assert advisory.action is SourcePlanAction.RUN
+    assert advisory.selected_paths == ("requirements.txt",)
+
+    syft = next(item for item in snapshot.nodes if item.authority is SourceAuthority.SYFT)
+    osv = next(item for item in snapshot.nodes if item.authority is SourceAuthority.OSV)
+    assert syft.selected_paths == ("requirements.txt",)
+    assert osv.selected_paths == ("requirements.txt",)
+    assert len(snapshot.dependencies) == 1
+    assert snapshot.dependencies[0].node_id == osv.node_id
+    assert snapshot.dependencies[0].prerequisite_node_id == syft.node_id
 
 
 def test_pc3d_registry_uses_available_canonical_production_semgrep_binding(

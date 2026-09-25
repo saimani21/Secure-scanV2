@@ -493,6 +493,12 @@ def _base_documentation_name(
     return name.split(".", maxsplit=1)[0].casefold()
 
 
+def _is_requirements_manifest(name: str) -> bool:
+    lower_name = name.casefold()
+
+    return lower_name.startswith("requirements") and lower_name.endswith(".txt")
+
+
 def _is_manifest(
     name: str,
 ) -> bool:
@@ -500,10 +506,7 @@ def _is_manifest(
 
     return (
         lower_name in _MANIFEST_NAMES
-        or (
-            lower_name.startswith("requirements")
-            and lower_name.endswith(".txt")
-        )
+        or _is_requirements_manifest(name)
     )
 
 
@@ -575,6 +578,7 @@ def _file_flags(
 def _eligible_capabilities(
     content_kind: FileContentKind,
     role: SourceFileRole,
+    name: str,
 ) -> tuple[AnalysisCapability, ...]:
     capabilities = {
         AnalysisCapability.REPOSITORY_PROFILING,
@@ -597,6 +601,10 @@ def _eligible_capabilities(
         capabilities.add(
             AnalysisCapability.PACKAGE_INVENTORY
         )
+        if _is_requirements_manifest(name):
+            capabilities.add(
+                AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING
+            )
 
     if role is SourceFileRole.TERRAFORM:
         capabilities.add(
@@ -666,6 +674,7 @@ def build_repository_inventory(
                 eligible_capabilities=_eligible_capabilities(
                     content_kind,
                     role,
+                    Path(entry.relative_path).name,
                 ),
             )
         )
