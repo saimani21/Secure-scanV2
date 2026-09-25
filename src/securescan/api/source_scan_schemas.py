@@ -127,6 +127,17 @@ class ComponentPageResponse(_StrictModel):
     offset: int
 
 
+class DependencyAdvisoryResponse(_StrictModel):
+    canonical_advisory_id: str
+    finding_id: str
+    osv_record_ids: tuple[str, ...]
+    aliases: tuple[str, ...]
+    cve_aliases: tuple[str, ...]
+    ghsa_aliases: tuple[str, ...]
+    fixed_versions: tuple[str, ...]
+    priority_band: str
+
+
 class DependencySummaryResponse(_StrictModel):
     component_ref: str
     name: str
@@ -137,6 +148,7 @@ class DependencySummaryResponse(_StrictModel):
     vulnerability_evaluation: str
     vulnerability_evaluation_reason: str | None
     known_vulnerability_count: int | None
+    advisories: tuple[DependencyAdvisoryResponse, ...]
     advisory_aliases: tuple[str, ...]
     fixed_versions: tuple[str, ...]
     priority_bands: tuple[str, ...]

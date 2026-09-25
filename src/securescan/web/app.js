@@ -473,6 +473,46 @@ function joinValues(values) {
   return Array.isArray(values) && values.length ? values.join(", ") : "Not provided";
 }
 
+function dependencyKnownVulnerabilityLabel(dependency) {
+  if (dependency.known_vulnerability_count !== null) {
+    return String(dependency.known_vulnerability_count);
+  }
+  return dependency.vulnerability_evaluation === "NOT_APPLICABLE" ? "N/A" : "Unknown";
+}
+
+function appendDependencyAdvisories(cell, dependency) {
+  const advisories = Array.isArray(dependency.advisories) ? dependency.advisories : [];
+  if (!advisories.length) {
+    cell.append(text("span", "Advisories: none", "table-subvalue"));
+    return;
+  }
+
+  const heading = dependency.vulnerability_evaluation === "PARTIAL"
+    ? `Observed advisories: ${advisories.length}`
+    : `Advisories: ${advisories.length}`;
+  cell.append(text("span", heading, "table-subvalue"));
+  for (const advisory of advisories) {
+    const detail = document.createElement("div");
+    detail.className = "table-subvalue";
+    detail.append(text("strong", advisory.canonical_advisory_id));
+    if (advisory.cve_aliases.length) {
+      detail.append(text("span", `CVE aliases: ${advisory.cve_aliases.join(", ")}`, "table-subvalue"));
+    }
+    if (advisory.ghsa_aliases.length) {
+      detail.append(text("span", `GHSA aliases: ${advisory.ghsa_aliases.join(", ")}`, "table-subvalue"));
+    }
+    if (advisory.aliases.length) {
+      detail.append(text("span", `Aliases: ${advisory.aliases.join(", ")}`, "table-subvalue"));
+    }
+    const fixed = advisory.fixed_versions.length
+      ? advisory.fixed_versions.join(", ")
+      : "No fixed version reported";
+    detail.append(text("span", `Fixed versions reported by advisory: ${fixed}`, "table-subvalue"));
+    detail.append(text("span", `SecureScan priority: ${advisory.priority_band}`, "table-subvalue"));
+    cell.append(detail);
+  }
+}
+
 function renderDependencies() {
   const rows = element("dependency-rows");
   clear(rows);
@@ -489,23 +529,27 @@ function renderDependencies() {
     row.append(tableCell((dependency.locations || []).map(locationLabel).join(", ") || "Not provided", "monospace"));
 
     const advisoryCell = document.createElement("td");
-    const vulnerabilityCount = dependency.known_vulnerability_count === null
-      ? "Unknown"
-      : dependency.known_vulnerability_count;
-    advisoryCell.append(text("strong", vulnerabilityCount));
-    advisoryCell.append(text("span", dependency.vulnerability_evaluation, "table-subvalue"));
+    advisoryCell.append(text("strong", `Known vulnerabilities: ${dependencyKnownVulnerabilityLabel(dependency)}`));
+    advisoryCell.append(text("span", `Evaluation: ${dependency.vulnerability_evaluation}`, "table-subvalue"));
     if (dependency.vulnerability_evaluation_reason) {
       advisoryCell.append(text("code", dependency.vulnerability_evaluation_reason, "table-subvalue"));
     }
-    advisoryCell.append(text("span", joinValues(dependency.advisory_aliases), "table-subvalue"));
-    const bands = document.createElement("div");
-    bands.className = "badge-row";
-    for (const band of dependency.priority_bands || []) {
-      bands.append(makeBadge(band));
+    appendDependencyAdvisories(advisoryCell, dependency);
+    if (dependency.priority_bands.length) {
+      advisoryCell.append(text("span", "SecureScan priority summary", "table-subvalue"));
+      const bands = document.createElement("div");
+      bands.className = "badge-row";
+      for (const band of dependency.priority_bands) {
+        bands.append(makeBadge(band));
+      }
+      advisoryCell.append(bands);
     }
-    advisoryCell.append(bands);
     row.append(advisoryCell);
-    row.append(tableCell(joinValues(dependency.fixed_versions)));
+    row.append(tableCell(
+      dependency.fixed_versions.length
+        ? dependency.fixed_versions.join(", ")
+        : "No fixed version reported",
+    ));
     rows.append(row);
   }
 

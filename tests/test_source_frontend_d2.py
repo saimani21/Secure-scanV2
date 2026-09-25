@@ -141,6 +141,11 @@ def test_frontend_displays_exact_product_core_and_s4_fields() -> None:
         "lifecycle_state",
         "subject",
         "primary_location",
+        "advisories",
+        "canonical_advisory_id",
+        "cve_aliases",
+        "ghsa_aliases",
+        "fixed_versions",
         "priority_bands",
         "selected_scope",
         "counts_by_state",
@@ -149,6 +154,45 @@ def test_frontend_displays_exact_product_core_and_s4_fields() -> None:
         assert field in _JAVASCRIPT
     assert "item.finding_id === finding.finding_id" in _JAVASCRIPT
     assert "Runtime reachability is not claimed." in _HTML
+
+
+def test_dependency_renderer_preserves_unknown_and_observed_advisory_semantics() -> None:
+    renderer = _JAVASCRIPT[
+        _JAVASCRIPT.index("function dependencyKnownVulnerabilityLabel") :
+        _JAVASCRIPT.index("async function loadCoverage")
+    ]
+    for required in (
+        'dependency.known_vulnerability_count !== null',
+        'dependency.vulnerability_evaluation === "NOT_APPLICABLE" ? "N/A" : "Unknown"',
+        "Known vulnerabilities:",
+        "Evaluation:",
+        "Observed advisories:",
+        "Advisories: none",
+        "advisory.canonical_advisory_id",
+        "CVE aliases:",
+        "GHSA aliases:",
+        "Fixed versions reported by advisory:",
+        "No fixed version reported",
+        "SecureScan priority:",
+    ):
+        assert required in renderer
+    for misleading in (
+        "0 vulnerabilities",
+        "Recommended upgrade",
+        "Safe version",
+        "No fix exists",
+        "OSV severity",
+        "CVSS score",
+        "risk score",
+        "exploitability",
+    ):
+        assert misleading not in renderer
+
+
+def test_dependency_table_uses_conservative_fixed_version_wording() -> None:
+    assert "Fixed versions reported by advisory" in _HTML
+    assert "Recommended upgrade" not in _HTML
+    assert "Safe version" not in _HTML
 
 
 def test_incomplete_coverage_takes_precedence_over_zero_findings() -> None:

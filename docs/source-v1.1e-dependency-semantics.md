@@ -651,3 +651,124 @@ does not expose the nested advisory tuple over HTTP; strict public response
 models, route serialization, OpenAPI, and legacy UI compatibility remain E3.
 No CVSS, reachability, exploitability, upgrade recommendation, or external
 vulnerability enrichment is added.
+
+## E3 public API and backward compatibility
+
+Status: `E3 COMPLETE - AWAITING REVIEW`
+
+E3 exposes the accepted E2 projection through the existing
+`GET /v1/scans/{run_id}/dependencies` route. The route, HTTP method, `limit` and
+`offset` parameters, page envelope, error mapping, and every V1.1B dependency
+field remain unchanged. No alternate versioned dependency route was added.
+
+### Public schema and serialization
+
+The strict public `DependencyAdvisoryResponse` has exactly these required fields:
+
+```text
+canonical_advisory_id: string
+finding_id: string
+osv_record_ids: array[string]
+aliases: array[string]
+cve_aliases: array[string]
+ghsa_aliases: array[string]
+fixed_versions: array[string]
+priority_band: string
+```
+
+`DependencySummaryResponse` adds only the required
+`advisories: array[DependencyAdvisoryResponse]` field. Existing `version`, `purl`,
+`vulnerability_evaluation_reason`, and `known_vulnerability_count` nullability is
+unchanged. `inventory_status` and synthetic advisory identifiers are not added.
+
+Serialization remains a glass layer over Product Core:
+
+```text
+HTTP dependency request
+  -> SourceScanQueryService.list_dependencies()
+  -> E2 SourceDependencySummary
+  -> strict DependencyPageResponse.model_validate(from_attributes=True)
+  -> JSON
+```
+
+The route and schema do not inspect S4, load artifacts, regroup aliases, sort or
+recount advisories, derive flat fields, infer fixed versions, or calculate
+priority. They serialize the E2 values and ordering directly. Strict response
+validation rejects missing required advisory fields, wrong scalar/collection
+types, non-string aliases, and unexpected fields.
+
+### Null, empty, ordering, and error behavior
+
+`COMPLETE` serializes the E2 integer count, including zero. `PARTIAL`, `FAILED`,
+and `NOT_APPLICABLE` serialize a null count. A `PARTIAL` dependency may retain
+its accepted observed advisory array while its count remains null. Empty
+advisories and all empty nested tuple fields serialize as JSON arrays, never as
+null or presentation strings.
+
+Dependency, advisory, identity, version, location, and priority ordering is
+preserved exactly as E2 supplies it; the API introduces no set conversion or
+secondary ordering. The E2 flat `advisory_aliases`, `fixed_versions`, and
+`priority_bands` values are also serialized directly. A Product Core integrity
+failure remains the existing safe HTTP 503 `QUERY_UNAVAILABLE` response and
+never becomes a partial 200 response.
+
+Generated OpenAPI retains the existing dependency operation and page schema,
+adds one reusable `DependencyAdvisoryResponse` component, and shows
+`items[].advisories[]` with the eight exact required fields. It continues to
+describe `known_vulnerability_count`, `version`, `purl`, and
+`vulnerability_evaluation_reason` as nullable.
+
+### Legacy UI compatibility
+
+The packaged HTML/JavaScript console remains the existing dependency table; no
+frontend framework or toolchain was added. It now renders explicit evaluation
+and count labels, nested advisory display identity, CVE/GHSA/generic aliases,
+advisory-reported fixed versions, and `SecureScan priority`. The existing flat
+priority-band badges remain as an explicitly labeled E2-provided compatibility
+summary.
+
+Presentation preserves semantic uncertainty:
+
+- a complete clean package shows `Known vulnerabilities: 0` and
+  `Advisories: none`;
+- a partial package shows `Known vulnerabilities: Unknown` and labels retained
+  entries as `Observed advisories`;
+- a failed package shows `Unknown`, never zero; and
+- a not-applicable package shows `N/A`, never zero.
+
+Fixed-version text is `Fixed versions reported by advisory`; an empty value is
+`No fixed version reported`. The UI does not call it a recommended upgrade,
+safe version, or proof that no fix exists. Priority is never labeled OSV
+severity, CVSS, risk, exploitability, or reachability.
+
+### Security, tests, files, and limitations
+
+Focused E3 validation passes 15 API/schema/OpenAPI cases, including exact nested
+serialization, all four evaluation/count states, partial advisories, direct flat
+compatibility values, pagination, stable ordering, strict malformed-model
+rejection, safe errors, and confidentiality. The 14-test legacy frontend suite
+and JavaScript syntax check pass. The unchanged 32-test PC3C API suite passes,
+and all 27 E2 projection plus 44 PC3B read-model tests pass unchanged.
+
+Serialized advisory output contains only the eight E1/E2-approved fields. It
+does not expose native finding or advisory-group digests, CAS/artifact paths,
+workspace or host paths, database/orchestration identifiers, commands,
+stdout/stderr, raw errors or HTTP responses, credentials, operator settings, or
+internal exception text.
+
+E3 changes only:
+
+- `src/securescan/api/source_scan_schemas.py`;
+- `src/securescan/web/app.js`;
+- `src/securescan/web/index.html`;
+- `tests/test_source_dependency_api_v11e3.py`;
+- `tests/test_source_frontend_d2.py`;
+- this design checkpoint; and
+- `docs/source-v1-status.md`.
+
+No route implementation, Product Core projection, evidence producer, scanner,
+orchestration, assembly, lifecycle, persistence schema, or migration changes.
+No external integration or dependency-read network call was introduced. E3 does
+not add finding-detail navigation or a large reason-message mapping. PostgreSQL
+parity, bounded-query/load measurement at scale, and performance/confidentiality
+acceptance remain E4; isolated real end-to-end and final freeze/tag remain E5.
