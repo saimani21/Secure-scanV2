@@ -190,6 +190,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1E5 | Real isolated end-to-end acceptance and final freeze | COMPLETE - FROZEN |
 | V1.1E | Dependency Semantics v2 | COMPLETE - FROZEN |
 | V1.1P | Exact-pinned `requirements*.txt` advisory scope | COMPLETE - FROZEN |
+| V1.1C1 | Web UI 2.0 design system, shell, and routing | COMPLETE - CHECKPOINT |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -284,6 +285,17 @@ the frozen Syft binding. The supported claim is limited to plain
 extras, markers, include trees, and dependency resolution remain unsupported.
 Other manifest families do not gain advisory eligibility. See
 `docs/source-v1.1p-exact-pinned-requirements.md`.
+
+V1.1C0 approved the Web UI 2.0 architecture and design contract. V1.1C1
+implements only the framework-free application foundation: centralized graphite
+design tokens, a semantic responsive shell, explicit History API navigation,
+allowlisted deep-link and static-asset routes, truthful readiness status, strict
+CSP, no-cache upgrade behavior, request-generation containment, and accessible
+mobile navigation. Its route pages are deliberately truthful checkpoint shells;
+Overview, project and scan navigation, findings, dependencies, coverage, gaps,
+and reports remain later C2-C6 work. No Product Core, API schema, scanner,
+dependency, lifecycle, orchestration, database, or migration semantic changed.
+See `docs/source-v1.1c-web-ui.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

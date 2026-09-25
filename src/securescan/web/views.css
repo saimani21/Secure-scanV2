@@ -1,0 +1,200 @@
+.route-stack {
+  display: grid;
+  gap: var(--space-7);
+}
+
+.page-header {
+  max-width: 760px;
+}
+
+.page-description {
+  max-width: 680px;
+  margin-bottom: 0;
+  color: var(--color-text-secondary);
+}
+
+.route-identity {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-3) var(--space-5);
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-4) 0;
+}
+
+.route-identity dt {
+  color: var(--color-text-muted);
+  font-size: var(--font-metadata);
+  line-height: var(--line-metadata);
+}
+
+.route-identity dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.state-message {
+  max-width: 760px;
+  border-left: 2px solid var(--color-border-strong);
+  padding: var(--space-5) var(--space-6);
+}
+
+.state-message h2 {
+  font-size: var(--font-item);
+  line-height: var(--line-item);
+}
+
+.state-message p:last-child {
+  margin-bottom: 0;
+}
+
+.state-empty {
+  border-top: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  border-left-color: var(--color-neutral);
+  background: var(--color-surface);
+}
+
+.state-note {
+  color: var(--color-text-muted);
+  font-size: var(--font-metadata);
+  line-height: var(--line-metadata);
+}
+
+.state-error {
+  border-left-color: var(--color-failure);
+  background: var(--color-surface);
+}
+
+.state-loading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 40px;
+  border-left-color: var(--color-neutral);
+  color: var(--color-text-secondary);
+  font-size: var(--font-metadata);
+  line-height: var(--line-metadata);
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
+.loading-mark,
+.status-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentcolor;
+  border-radius: 50%;
+}
+
+.loading-mark {
+  background: transparent;
+  color: var(--color-neutral);
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-metadata);
+  font-weight: 700;
+  line-height: var(--line-metadata);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.status-success .status-dot {
+  background: var(--color-success);
+  color: var(--color-success);
+}
+
+.status-warning .status-dot {
+  background: var(--color-warning);
+  color: var(--color-warning);
+}
+
+.status-failure .status-dot {
+  background: var(--color-failure);
+  color: var(--color-failure);
+}
+
+.status-neutral .status-dot {
+  background: var(--color-neutral);
+  color: var(--color-neutral);
+}
+
+.system-details {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+}
+
+.system-details summary {
+  min-height: 40px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-size: var(--font-metadata);
+  line-height: 40px;
+}
+
+.system-detail-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--font-metadata);
+  line-height: var(--line-metadata);
+}
+
+.system-detail-list dt {
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.system-detail-list dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.system-error {
+  margin: var(--space-3) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-metadata);
+  line-height: var(--line-metadata);
+  overflow-wrap: anywhere;
+}
+
+.standalone-error {
+  width: min(100% - 32px, 760px);
+  margin: 0 auto;
+  padding: var(--space-8) 0;
+}
+
+.standalone-error .text-link {
+  display: inline-block;
+  min-height: 40px;
+  margin-top: var(--space-5);
+  line-height: 40px;
+}
+
+@media (max-width: 767px) {
+  h1 {
+    font-size: 28px;
+    line-height: 34px;
+  }
+
+  .route-identity {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+
+  .state-message {
+    padding-right: var(--space-5);
+    padding-left: var(--space-5);
+  }
+}
