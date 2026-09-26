@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from pathlib import Path
 from typing import Annotated, Any
 
 import typer
@@ -18,7 +19,9 @@ from .developer import (
     scan_page_data,
     stages_data,
 )
+from .output import write_private_atomic
 from .presentation import terminal_text
+from .sarif import build_sarif_bytes
 from .source import SourceCliError, SourceCliServices, canonical_json
 
 _CAPABILITY_LABELS = {
@@ -219,6 +222,33 @@ def register_developer_commands(
             fail(exc, json_output=json_output)
         except Exception:
             fail(_query_unavailable(), json_output=json_output)
+
+    @app.command("sarif")
+    def sarif(
+        run_id: Annotated[str, typer.Argument()],
+        output: Annotated[str, typer.Option("--output")],
+        overwrite: Annotated[bool, typer.Option("--overwrite")] = False,
+    ) -> None:
+        """Export deterministic SARIF from verified Product Core evidence."""
+
+        try:
+            if output == "-" and overwrite:
+                raise SourceCliError(
+                    "INVALID_OUTPUT", "--overwrite cannot be used with stdout", 2
+                )
+            with services_factory() as services:
+                payload = build_sarif_bytes(services, run_id)
+            if output == "-":
+                typer.echo(payload.decode("utf-8"), nl=False)
+                return
+            write_private_atomic(Path(output), payload, overwrite=overwrite)
+        except SourceCliError as exc:
+            fail(exc, json_output=True)
+        except Exception:
+            fail(
+                SourceCliError("EXPORT_FAILED", "SARIF export is unavailable", 5),
+                json_output=True,
+            )
 
 
 def _showing(offset: int, count: int, total: int) -> None:
