@@ -199,6 +199,10 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1C7 | Complete UI hardening and polish | COMPLETE - CHECKPOINT |
 | V1.1C8 | Isolated E2E, visual acceptance, and persistence | COMPLETE - FINAL GATE |
 | V1.1C | Web UI 2.0 | COMPLETE - FROZEN |
+| V1.1D1 | CLI normalization, hardening, and bounded waiting | COMPLETE - CHECKPOINT |
+| V1.1D2 | Deterministic fail-closed SARIF 2.1.0 | COMPLETE - CHECKPOINT |
+| V1.1D3 | Pinned GitHub Actions example and integration docs | COMPLETE - CHECKPOINT |
+| V1.1D | CLI, SARIF, and CI developer integration | IN PROGRESS - D4 PENDING |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one

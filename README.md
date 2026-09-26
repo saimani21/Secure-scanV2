@@ -359,8 +359,12 @@ result in the console. Normal browser navigation does not require pasting a run
 ID. The browser does not accept repository paths or upload source trees.
 
 The host CLI also provides `securescan project create` and `securescan project
-list`, so a supported local scan never requires direct SQL or knowledge of the
-internal persistence model.
+list`, authoritative paginated scan/stage/dependency/coverage/gap views, and a
+bounded `scan --wait` mode, so a supported local scan never requires direct SQL
+or knowledge of the internal persistence model. A completed run can be exported
+deterministically with `securescan sarif RUN_ID --output PATH`; findings never
+become a policy exit failure in V1.1. See the
+[V1.1D CLI, SARIF, and CI guide](docs/source-v1.1d-cli-sarif-ci.md).
 
 The read-only navigation API exposes bounded `GET /v1/projects`,
 `GET /v1/projects/{project_id}`, `GET /v1/projects/{project_id}/scans`, and
@@ -368,6 +372,13 @@ The read-only navigation API exposes bounded `GET /v1/projects`,
 pasting a previously known UUID. Repository submission remains the trusted-host
 CLI workflow; the browser/API cannot submit arbitrary host filesystem paths. See
 the [V1.1B1 navigation contract](docs/source-v1.1b1-product-navigation.md).
+
+The repository includes an inert, immutable-action-pinned
+[GitHub Actions example](examples/github-actions/securescan.yml). It requires an
+ephemeral pre-provisioned runner with the frozen scanner toolchain; it is not an
+active workflow and does not claim universal GitHub-hosted-runner portability.
+SecureScan findings remain authoritative and GitHub Code Scanning is a one-way
+presentation surface.
 
 The [Source v1 release-acceptance runbook](docs/source-v1-release-acceptance.md)
 defines the final four-run, five-authority acceptance path and its sanitized evidence

@@ -1,0 +1,146 @@
+# Example only: copy deliberately after reading docs/source-v1.1d-cli-sarif-ci.md.
+# V1.1 requires an ephemeral, pre-provisioned runner with the frozen SecureScan
+# scanner/toolchain. It is not universally portable to GitHub-hosted runners.
+name: SecureScan example
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  scan:
+    runs-on: [self-hosted, linux, x64, securescan-v11]
+    permissions:
+      contents: read
+    env:
+      SECURESCAN_OPERATOR_PROFILE: ${{ runner.temp }}/securescan-profile/operator.json
+    steps:
+      - name: Check out the source snapshot
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Select Python 3.12
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: ""
+
+      - name: Install SecureScan from this checkout
+        run: python -m pip install '.[postgres]'
+
+      - name: Create an ephemeral private operator profile
+        env:
+          ENRY_PATH: ${{ vars.SECURESCAN_SOURCE_ENRY_HELPER_PATH }}
+          ENRY_SHA256: ${{ vars.SECURESCAN_SOURCE_ENRY_HELPER_SHA256 }}
+          GITLEAKS_PATH: ${{ vars.SECURESCAN_SOURCE_GITLEAKS_EXECUTABLE_PATH }}
+          SYFT_PATH: ${{ vars.SECURESCAN_SOURCE_SYFT_EXECUTABLE_PATH }}
+          CHECKOV_PATH: ${{ vars.SECURESCAN_SOURCE_CHECKOV_EXECUTABLE_PATH }}
+          SECURESCAN_CI_API_PORT: ${{ vars.SECURESCAN_CI_API_PORT }}
+          SECURESCAN_CI_POSTGRES_PORT: ${{ vars.SECURESCAN_CI_POSTGRES_PORT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          : "${ENRY_PATH:?configure the trusted Enry path as a repository variable}"
+          : "${ENRY_SHA256:?configure the independently trusted Enry SHA-256}"
+          : "${GITLEAKS_PATH:?configure the frozen Gitleaks path}"
+          : "${SYFT_PATH:?configure the frozen Syft path}"
+          : "${CHECKOV_PATH:?configure the frozen Checkov path}"
+          api_port="${SECURESCAN_CI_API_PORT:-18000}"
+          postgres_port="${SECURESCAN_CI_POSTGRES_PORT:-55432}"
+          database_password="$(openssl rand -hex 32)"
+          hmac_key="$(openssl rand -hex 32)"
+          profile_input="$RUNNER_TEMP/securescan-operator.env"
+          deploy_root="$RUNNER_TEMP/securescan-data"
+          mkdir -m 0700 -p "$(dirname "$SECURESCAN_OPERATOR_PROFILE")"
+          {
+            printf 'SECURESCAN_HMAC_KEY=%s\n' "$hmac_key"
+            printf 'SECURESCAN_POSTGRES_DB=securescan\n'
+            printf 'SECURESCAN_POSTGRES_USER=securescan\n'
+            printf 'SECURESCAN_POSTGRES_PASSWORD=%s\n' "$database_password"
+            printf 'SECURESCAN_POSTGRES_PORT=%s\n' "$postgres_port"
+            printf 'SECURESCAN_API_PORT=%s\n' "$api_port"
+            printf 'SECURESCAN_DATABASE_URL=postgresql+psycopg://securescan:%s@127.0.0.1:%s/securescan\n' "$database_password" "$postgres_port"
+            printf 'SECURESCAN_ALLOW_SQLITE_SCHEMA_BOOTSTRAP=false\n'
+            printf 'SECURESCAN_DEPLOY_DATA_ROOT=%s\n' "$deploy_root"
+            printf 'SECURESCAN_ARTIFACT_ROOT=%s/artifacts\n' "$deploy_root"
+            printf 'SECURESCAN_SOURCE_WORKSPACE_ROOT=%s/source-workspaces\n' "$deploy_root"
+            printf 'SECURESCAN_SOURCE_PROJECTION_ROOT=%s/source-projections\n' "$deploy_root"
+            printf 'SECURESCAN_SOURCE_RUNTIME_RECEIPT_ROOT=%s/source-runtime-receipts\n' "$deploy_root"
+            printf 'SECURESCAN_RUNTIME_UID=%s\n' "$(id -u)"
+            printf 'SECURESCAN_RUNTIME_GID=%s\n' "$(id -g)"
+            printf 'SECURESCAN_OPERATOR_COMPOSE_PROJECT=securescan-ci-%s-%s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            printf 'SECURESCAN_OPERATOR_COMPOSE_FILE=%s/compose.yaml\n' "$GITHUB_WORKSPACE"
+            printf 'SECURESCAN_SOURCE_ENRY_HELPER_PATH=%s\n' "$ENRY_PATH"
+            printf 'SECURESCAN_SOURCE_ENRY_HELPER_SHA256=%s\n' "$ENRY_SHA256"
+            printf 'SECURESCAN_SOURCE_GITLEAKS_EXECUTABLE_PATH=%s\n' "$GITLEAKS_PATH"
+            printf 'SECURESCAN_SOURCE_SYFT_EXECUTABLE_PATH=%s\n' "$SYFT_PATH"
+            printf 'SECURESCAN_SOURCE_CHECKOV_EXECUTABLE_PATH=%s\n' "$CHECKOV_PATH"
+          } > "$profile_input"
+          securescan system configure --from-env-file "$profile_input"
+          rm -f -- "$profile_input"
+
+      - name: Verify the pre-provisioned scanner toolchain
+        run: securescan doctor
+
+      - name: Start SecureScan
+        run: securescan system up
+
+      - name: Create the durable project
+        id: project
+        shell: bash
+        run: |
+          set -euo pipefail
+          project_json="$RUNNER_TEMP/securescan-project.json"
+          securescan project create "github-$GITHUB_RUN_ID" --json > "$project_json"
+          project_id="$(python -c 'import json,sys,uuid; value=json.load(open(sys.argv[1], encoding="utf-8"))["project_id"]; parsed=str(uuid.UUID(value)); assert parsed == value; print(value)' "$project_json")"
+          printf 'project_id=%s\n' "$project_id" >> "$GITHUB_OUTPUT"
+
+      - name: Scan and wait for durable completion
+        id: scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          scan_json="$RUNNER_TEMP/securescan-scan.json"
+          securescan scan "$GITHUB_WORKSPACE" --project-id "${{ steps.project.outputs.project_id }}" --wait --json > "$scan_json"
+          run_id="$(python -c 'import json,sys,uuid; value=json.load(open(sys.argv[1], encoding="utf-8"))["run_id"]; parsed=str(uuid.UUID(value)); assert parsed == value; print(value)' "$scan_json")"
+          printf 'run_id=%s\n' "$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Export authoritative SARIF
+        run: securescan sarif "${{ steps.scan.outputs.run_id }}" --output "$RUNNER_TEMP/securescan.sarif"
+
+      - name: Upload the SARIF artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: securescan-sarif
+          path: ${{ runner.temp }}/securescan.sarif
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Stop the isolated SecureScan system
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$SECURESCAN_OPERATOR_PROFILE" ]]; then
+            securescan system down
+          fi
+
+  upload-sarif:
+    needs: scan
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Download only the generated SARIF artifact
+        uses: actions/download-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: securescan-sarif
+          path: ${{ runner.temp }}/securescan-upload
+
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: ${{ runner.temp }}/securescan-upload/securescan.sarif

@@ -222,11 +222,17 @@ does not require direct database access:
 
 ```bash
 ./.venv/bin/securescan project create "My project"
-./.venv/bin/securescan project list
-./.venv/bin/securescan scan /absolute/repository/path --project-id <project-uuid>
+./.venv/bin/securescan project list --limit 50 --offset 0
+./.venv/bin/securescan scan /absolute/repository/path --project-id <project-uuid> --wait
 ./.venv/bin/securescan status <run-id>
+./.venv/bin/securescan scans --project-id <project-uuid>
+./.venv/bin/securescan stages <run-id>
 ./.venv/bin/securescan findings <run-id>
+./.venv/bin/securescan dependencies <run-id>
+./.venv/bin/securescan coverage <run-id>
+./.venv/bin/securescan gaps <run-id>
 ./.venv/bin/securescan report <run-id>
+./.venv/bin/securescan sarif <run-id> --output ./securescan.sarif
 ```
 
 The same-origin console provides the bounded component, dependency, coverage,
@@ -234,6 +240,25 @@ and gap views backed by the public `/v1/scans/{run_id}` read endpoints. A
 dependency row reports OSV evaluation status explicitly; its known-vulnerability
 count is unknown rather than zero when advisory evaluation was partial, failed,
 or not applicable.
+
+`scan --wait` returning zero means the durable analysis completed; it does not
+mean the repository has no findings. High or critical findings remain data, not
+a V1.1 policy failure. Machine consumers should use `--json`, validate the one
+JSON document on stdout, and treat nonzero status as an operational failure.
+
+SARIF export is fail-closed over the complete Product Core finding set and the
+verified published report. Export only to a trusted directory: the writer
+rejects symlinks, directories, special files, missing parents, and existing
+regular files unless `--overwrite` is explicit. See the
+[V1.1D developer integration guide](source-v1.1d-cli-sarif-ci.md).
+
+The example under `examples/github-actions/` is not an active workflow. It
+requires an ephemeral pre-provisioned runner containing the frozen scanner
+toolchain and a locally available immutable Semgrep image. The example creates
+private per-run credentials and deployment state, grants only `contents: read`
+to scanning, isolates `security-events: write` in a separate upload job, and
+always uses the SecureScan operator shutdown command. It does not install or
+cache scanner tools, database data, runtime state, or credentials.
 
 ## Status, diagnosis, and shutdown
 
