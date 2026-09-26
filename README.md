@@ -13,6 +13,12 @@ Core v0.1 supports local directories only. It does not clone repositories, authe
 users, provide multi-tenant isolation, cover multiple languages, or represent a complete
 Semgrep ruleset. See [limitations](docs/core-v0.1-limitations.md).
 
+SecureScan Source v1.1.0 is the assembled local product release built on this frozen
+Core. The Python distribution and API retain their independent Core version `0.1.0`;
+the annotated Git tag `source-v1.1.0` identifies the Source product release. See the
+[Source v1.1 release notes](docs/source-v1.1-release.md) for supported workflows,
+security boundaries, validation evidence, and limitations.
+
 ## Local setup
 
 Python 3.12+, Docker Desktop or a compatible local Docker daemon, and PostgreSQL 16 are
@@ -387,6 +393,7 @@ acceptance. Vulnerability findings—including `HIGH` and `CRITICAL`—remain
 successful analysis results rather than a policy exit condition.
 
 The [Source v1 release-acceptance runbook](docs/source-v1-release-acceptance.md)
-defines the final four-run, five-authority acceptance path and its sanitized evidence
-summary. Its committed RA1 fixtures and offline verifier do not themselves constitute a
-completed release-acceptance run.
+defines the four-run, five-authority acceptance path and its sanitized evidence
+summary. The committed RA1 fixtures and offline verifier do not themselves constitute
+acceptance; the completed V1.1R product gate is recorded in the
+[Source v1.1 release notes](docs/source-v1.1-release.md).

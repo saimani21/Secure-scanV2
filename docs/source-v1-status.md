@@ -204,6 +204,8 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1D3 | Pinned GitHub Actions example and integration docs | COMPLETE - CHECKPOINT |
 | V1.1D4 | Isolated CLI, SARIF, persistence, and package acceptance | COMPLETE - FINAL GATE |
 | V1.1D | CLI, SARIF, and CI developer integration | COMPLETE - FROZEN |
+| V1.1R | Final whole-product release acceptance | COMPLETE - FROZEN |
+| V1.1 | SecureScan Source v1.1.0 | COMPLETE - FROZEN |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -285,9 +287,9 @@ the confidentiality review, and all three durable results survived a supported
 stop/start with identical canonical payload digests and report hashes. The E5
 focused gate passed 203 tests with zero failures or skips, including E2, E3,
 legacy UI, PC3B, PC3C, OSV/dependency/evidence, and PostgreSQL integrity
-coverage. V1.1E Dependency Semantics v2 is complete and frozen; later analyst,
-suppression, UI 2.0, CLI/SARIF, and release-integration work remains outside
-this checkpoint.
+coverage. V1.1E Dependency Semantics v2 is complete and frozen. This checkpoint
+did not add analyst or suppression behavior; UI 2.0, CLI/SARIF, and final release
+integration were completed later in V1.1C, V1.1D, and V1.1R.
 
 V1.1P preserves V1.1E dependency semantics and adds only the missing
 applicability edge for the existing `requirements*.txt` manifest family. A
@@ -406,6 +408,29 @@ failures, errors, or skips, plus static and wheel-content validation. No Product
 Core, API schema, scanner, dependency, orchestration, lifecycle, database, or
 migration behavior changed. V1.1C Web UI 2.0 is COMPLETE and FROZEN. See
 `docs/source-v1.1c-web-ui.md`.
+
+V1.1R completed the final whole-product gate in a new isolated deployment. It
+installed the release wheel for trusted-host commands, migrated an empty
+PostgreSQL database to head, started the supported operator stack, exercised a
+real five-authority scan, navigated the full Web UI without manual UUID entry,
+and verified human CLI, JSON, deterministic SARIF, restart persistence, and
+clean operator shutdown. The primary run completed with ten findings across
+Semgrep, Gitleaks, Checkov, and OSV while `scan --wait` correctly returned zero;
+Syft remained the package-inventory component rather than a finding authority.
+Controlled runs proved dependency `COMPLETE + N`, `COMPLETE + 0`, and
+`NOT_APPLICABLE`, and a real four-run lineage proved `NEW`, `EXISTING`,
+`RESOLVED`, and `REOPENED`.
+
+The deterministic release matrix passed 3,216 unique release-relevant tests,
+including 146 PostgreSQL tests, with one classified nonapplicable skip and no
+final failures. Ruff, compileall, wheel inspection, source cleanliness, security
+review, responsive visual sanity, and supported restart checks also passed. The
+final primary SARIF digest was
+`cb8d2b089517c112f85dda3251d3338b1ed9b8b5e7a7289e62305e1bb2f8c02f`.
+No Product Core, API, database, migration, scanner, dependency, lifecycle, UI
+feature, or policy semantic changed in V1.1R. The Python package remains Core
+`0.1.0`; the annotated `source-v1.1.0` tag identifies the Source v1.1.0 product
+release. See `docs/source-v1.1-release.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
 runtime/deployment root, the supported idempotent `securescan init` workflow,

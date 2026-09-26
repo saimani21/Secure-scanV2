@@ -1,5 +1,11 @@
 # SecureScan Source v1 single-node deployment
 
+This guide applies to the SecureScan Source v1.1.0 product release identified by
+the annotated tag `source-v1.1.0`. The installed Python distribution and API report
+the independent SecureScan Core version `0.1.0`; that value is not the Source
+product release number. See the [V1.1 release notes](source-v1.1-release.md) for
+the complete supported surface and final acceptance record.
+
 ## Boundary
 
 The D1 deployment runs PostgreSQL, a one-shot Alembic migration, and the
