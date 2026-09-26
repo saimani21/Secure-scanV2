@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import secrets
+import time
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, replace
@@ -22,6 +23,7 @@ from securescan.observability.readiness import _bootstrap_database_schema
 from securescan.orchestration.models import frozen_source_v1_authority_roster
 from securescan.persistence.database import create_session_factory, utc_now
 from securescan.product_core import (
+    InvalidProjectPaginationError,
     InvalidScanFilterError,
     InvalidScanPaginationError,
     ProductCoreIndexError,
@@ -29,16 +31,23 @@ from securescan.product_core import (
     ProductCoreSubmissionError,
     ScanNotFoundError,
     ScanNotPublishedError,
+    SourceCoverageSummary,
+    SourceDependencySummary,
     SourceFindingSummary,
+    SourceGapSummary,
     SourcePreparedScanRequest,
     SourceProject,
     SourceProjectError,
+    SourceProjectPage,
+    SourceProjectPersistenceError,
     SourceProjectService,
     SourcePublishedReport,
+    SourceScanListItem,
     SourceScanPage,
     SourceScanQueryError,
     SourceScanQueryPersistenceError,
     SourceScanQueryService,
+    SourceScanStages,
     SourceScanSubmission,
     SourceScanSubmissionService,
     SourceScanSummary,
@@ -137,6 +146,31 @@ class _QueryService(Protocol):
         offset: int = 0,
     ) -> SourceScanPage[SourceFindingSummary]: ...
 
+    def list_scans(
+        self,
+        *,
+        project_id: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> SourceScanPage[SourceScanListItem]: ...
+
+    def get_stages(self, run_id: str) -> SourceScanStages: ...
+
+    def list_dependencies(
+        self, run_id: str, *, limit: int = 50, offset: int = 0
+    ) -> SourceScanPage[SourceDependencySummary]: ...
+
+    def get_coverage(self, run_id: str) -> SourceCoverageSummary: ...
+
+    def list_gaps(
+        self,
+        run_id: str,
+        *,
+        authority: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> SourceScanPage[SourceGapSummary]: ...
+
     def get_report(self, run_id: str) -> SourcePublishedReport: ...
 
 
@@ -156,6 +190,8 @@ class SourceCliServices:
     clock: Callable[[], datetime] = utc_now
     idempotency_key_factory: Callable[[], str] = lambda: secrets.token_hex(32)
     projects: SourceProjectService | None = None
+    monotonic: Callable[[], float] = time.monotonic
+    sleep: Callable[[float], None] = time.sleep
 
 
 @dataclass(frozen=True, slots=True)
@@ -477,13 +513,25 @@ def create_project(services: SourceCliServices, *, name: str) -> SourceProject:
         ) from None
 
 
-def list_projects(services: SourceCliServices, *, limit: int) -> tuple[SourceProject, ...]:
+def list_projects(
+    services: SourceCliServices, *, limit: int, offset: int
+) -> SourceProjectPage:
     if services.projects is None:
         raise SourceCliError("PROJECT_UNAVAILABLE", "Source project service is unavailable", 5)
     try:
-        return services.projects.list(limit=limit)
+        return services.projects.list_page(limit=limit, offset=offset)
+    except InvalidProjectPaginationError:
+        raise SourceCliError(
+            "INVALID_PROJECT_QUERY", "Source project pagination is invalid", 2
+        ) from None
+    except SourceProjectPersistenceError:
+        raise SourceCliError(
+            "PROJECT_UNAVAILABLE", "Source project service is unavailable", 5
+        ) from None
     except SourceProjectError:
-        raise SourceCliError("INVALID_PROJECT", "Project list request is invalid", 2) from None
+        raise SourceCliError(
+            "INVALID_PROJECT", "Project list request is invalid", 2
+        ) from None
 
 
 def translate_query_error(exc: SourceScanQueryError) -> SourceCliError:
@@ -605,11 +653,13 @@ def report_data(report: SourcePublishedReport) -> dict[str, Any]:
     return {"report": _plain(report.report), "run_id": report.run_id}
 
 
-def canonical_json(value: object, *, pretty: bool = False) -> str:
+def canonical_json(
+    value: object, *, pretty: bool = False, ensure_ascii: bool = False
+) -> str:
     return json.dumps(
         value,
         allow_nan=False,
-        ensure_ascii=False,
+        ensure_ascii=ensure_ascii,
         indent=2 if pretty else None,
         separators=None if pretty else (",", ":"),
         sort_keys=True,

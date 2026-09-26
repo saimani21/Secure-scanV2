@@ -37,6 +37,16 @@ from securescan.source_runtime import (
     create_source_runtime,
 )
 
+from .developer import (
+    DEFAULT_POLL_SECONDS,
+    project_page_data,
+    resolved_wait_timeout,
+    validated_poll_seconds,
+    wait_for_scan,
+    waited_scan_data,
+)
+from .developer_commands import register_developer_commands
+from .presentation import terminal_text
 from .source import (
     SourceCliError,
     canonical_json,
@@ -295,14 +305,14 @@ def _display_findings(data: dict[str, object], *, json_output: bool) -> None:
         typer.echo(
             " | ".join(
                 (
-                    str(item["finding_id"]),
-                    str(item["authority"]),
-                    str(item["category"]),
-                    str(item["severity"] or "-"),
-                    str(item["priority"]),
-                    str(item["lifecycle"]),
-                    canonical_json(item["subject"]),
-                    canonical_json(item["primary_location"]),
+                    terminal_text(item["finding_id"]),
+                    terminal_text(item["authority"]),
+                    terminal_text(item["category"]),
+                    terminal_text(item["severity"] or "-"),
+                    terminal_text(item["priority"]),
+                    terminal_text(item["lifecycle"]),
+                    terminal_text(canonical_json(item["subject"]), limit=4_096),
+                    terminal_text(canonical_json(item["primary_location"]), limit=4_096),
                 )
             )
         )
@@ -327,7 +337,7 @@ def project_create(
             typer.echo(canonical_json(data))
         else:
             typer.echo(f"Project ID: {project.project_id}")
-            typer.echo(f"Name: {project.name}")
+            typer.echo(f"Name: {terminal_text(project.name)}")
     except SourceCliError as exc:
         _fail(exc, json_output=json_output)
     except Exception:
@@ -340,26 +350,27 @@ def project_create(
 @project_app.command("list")
 def project_list(
     limit: Annotated[int, typer.Option("--limit", min=1, max=200)] = 100,
+    offset: Annotated[int, typer.Option("--offset", min=0)] = 0,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """List bounded durable project identities."""
 
     try:
         with create_source_cli_services() as services:
-            projects = list_projects(services, limit=limit)
-        items = [
-            {
-                "created_at": project.created_at.isoformat(),
-                "name": project.name,
-                "project_id": project.project_id,
-            }
-            for project in projects
-        ]
+            page = list_projects(services, limit=limit, offset=offset)
+        data = project_page_data(page)
         if json_output:
-            typer.echo(canonical_json({"items": items, "limit": limit, "total": len(items)}))
+            typer.echo(canonical_json(data))
         else:
-            for project in projects:
-                typer.echo(f"{project.project_id}  {project.name}")
+            typer.echo("Projects")
+            for project in page.items:
+                created = project.created_at.isoformat()
+                typer.echo(
+                    f"{terminal_text(project.name)}    {project.project_id}    {created}"
+                )
+            first = 0 if page.total == 0 else page.offset + 1
+            last = page.offset + len(page.items)
+            typer.echo(f"Showing {first}–{last} of {page.total}")
     except SourceCliError as exc:
         _fail(exc, json_output=json_output)
     except Exception:
@@ -384,6 +395,15 @@ def scan(
         int | None,
         typer.Option("--deadline-seconds", min=300, max=86_400),
     ] = None,
+    wait: Annotated[bool, typer.Option("--wait")] = False,
+    wait_timeout_seconds: Annotated[
+        int | None,
+        typer.Option("--wait-timeout-seconds", min=1, max=86_460),
+    ] = None,
+    poll_seconds: Annotated[
+        float,
+        typer.Option("--poll-seconds", min=0.1, max=60.0),
+    ] = DEFAULT_POLL_SECONDS,
     json_output: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Prepare a local repository and submit an asynchronous Source scan."""
@@ -395,6 +415,13 @@ def scan(
             ),
             json_output=json_output,
         )
+    if not wait and (
+        wait_timeout_seconds is not None or poll_seconds != DEFAULT_POLL_SECONDS
+    ):
+        _fail(
+            SourceCliError("INVALID_WAIT_OPTIONS", "Wait options require --wait", 2),
+            json_output=json_output,
+        )
     try:
         with create_source_cli_services() as services:
             result = submit_local_scan(
@@ -404,9 +431,43 @@ def scan(
                 lineage_id=lineage_id,
                 deadline_seconds=deadline_seconds,
             )
-        _display_scan_result(scan_result_data(result), json_output=json_output)
+            if wait:
+                analysis_deadline = (
+                    services.default_deadline_seconds
+                    if deadline_seconds is None
+                    else deadline_seconds
+                )
+                timeout = resolved_wait_timeout(
+                    analysis_deadline_seconds=analysis_deadline,
+                    wait_timeout_seconds=wait_timeout_seconds,
+                )
+                interval = validated_poll_seconds(poll_seconds)
+                summary = wait_for_scan(
+                    services,
+                    result.submission.run_id,
+                    timeout_seconds=timeout,
+                    poll_seconds=interval,
+                )
+        if not wait:
+            _display_scan_result(scan_result_data(result), json_output=json_output)
+            return
+        data = waited_scan_data(summary)
+        if json_output:
+            typer.echo(canonical_json(data))
+        else:
+            typer.echo("Source scan completed")
+            _display_status(data, json_output=False)
     except SourceCliError as exc:
         _fail(exc, json_output=json_output)
+    except KeyboardInterrupt:
+        _fail(
+            SourceCliError(
+                "WAIT_INTERRUPTED",
+                "Waiting stopped; the durable scan was not cancelled.",
+                130,
+            ),
+            json_output=json_output,
+        )
     except Exception:
         _fail(
             SourceCliError(
@@ -481,7 +542,13 @@ def report(
     try:
         with create_source_cli_services() as services:
             published = query_report(services, run_id)
-        typer.echo(canonical_json(report_data(published), pretty=not json_output))
+        typer.echo(
+            canonical_json(
+                report_data(published),
+                pretty=not json_output,
+                ensure_ascii=not json_output,
+            )
+        )
     except SourceCliError as exc:
         _fail(exc, json_output=json_output)
     except Exception:
@@ -623,6 +690,9 @@ def run_fake(
         max_output_bytes=max_output_bytes,
     )
     typer.echo(json.dumps(report.model_dump(mode="json"), indent=2))
+
+
+register_developer_commands(app, lambda: create_source_cli_services(), _fail)
 
 
 if __name__ == "__main__":

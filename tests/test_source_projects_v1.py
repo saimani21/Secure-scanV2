@@ -11,7 +11,12 @@ from securescan.cli import main as cli_main
 from securescan.cli.source import SourceCliServices
 from securescan.config import Settings
 from securescan.persistence.database import create_session_factory, initialize_database
-from securescan.product_core import SourceProject, SourceProjectError, SourceProjectService
+from securescan.product_core import (
+    SourceProject,
+    SourceProjectError,
+    SourceProjectPage,
+    SourceProjectService,
+)
 
 _NOW = datetime(2026, 9, 21, 12, tzinfo=UTC)
 _PROJECT_ID = "11111111-1111-4111-8111-111111111111"
@@ -62,9 +67,15 @@ class _Projects:
     def create(self, *, name: str) -> SourceProject:
         return SourceProject(_PROJECT_ID, name, _NOW)
 
-    def list(self, *, limit: int) -> tuple[SourceProject, ...]:
+    def list_page(self, *, limit: int, offset: int) -> SourceProjectPage:
         assert limit == 10
-        return (SourceProject(_PROJECT_ID, "Release acceptance", _NOW),)
+        assert offset == 0
+        return SourceProjectPage(
+            (SourceProject(_PROJECT_ID, "Release acceptance", _NOW),),
+            1,
+            limit,
+            offset,
+        )
 
 
 def _services() -> SourceCliServices:
@@ -106,5 +117,6 @@ def test_project_cli_create_and_list_use_application_service(monkeypatch) -> Non
             }
         ],
         "limit": 10,
+        "offset": 0,
         "total": 1,
     }
