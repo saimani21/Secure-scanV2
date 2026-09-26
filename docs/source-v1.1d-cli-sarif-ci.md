@@ -122,3 +122,39 @@ release version in comments. No floating branch or major tag is used.
 GitHub Code Scanning is a presentation and integration sink. SecureScan
 canonical findings remain authoritative; GitHub dismissal state never flows
 back into SecureScan lifecycle.
+
+## D4 isolated acceptance
+
+Status: **COMPLETE / FROZEN**
+
+The final gate used only the dedicated profile
+`/tmp/securescan-v11d-d4-20260926/profile/operator.json`, Compose project
+`securescan-v11d-d4-20260926`, API port `18110`, PostgreSQL port `55510`,
+database `securescan_v11d_d4`, and deployment root
+`/tmp/securescan-v11d-d4-20260926/data`. The existing V1.1C C8 deployment on
+ports `18004/55436` remained running and untouched throughout the gate.
+
+The real `tests/fixtures/release_benchmark` scan completed as run
+`0ad25749-3293-425b-9796-85397ce03a6a` with three `HIGH` findings and
+`scan --wait` exit 0. Its two SARIF exports were byte-identical at SHA-256
+`54712616c0c946820a93007586ced861d852cab870228034c3fff947d24d4967`,
+with three rules and three results. The clean subfixture completed as run
+`69814628-e601-4c77-8002-9077ad8233d3` with zero findings and valid empty
+`rules` and `results` arrays.
+
+A real unfinished run returned `SARIF_NOT_READY`/exit 3 and an invalid run
+returned `SCAN_NOT_FOUND`/exit 3; neither created a file. Existing-file refusal,
+explicit overwrite, symlink target, symlink parent, directory, FIFO, and missing
+parent behavior all passed with no temporary residue. The vulnerable run's
+project, scan history, status, findings, dependencies, coverage, gaps, verified
+report, and regenerated SARIF remained byte-identical across supported
+`system down`/`system up` persistence.
+
+The final selected gate covered 612 unique tests: 564 passed in the ordinary
+CLI/operator/Product Core/read-model/lifecycle run, its one PostgreSQL-marked
+stage test was then passed against the isolated database, and all 47 dedicated
+PostgreSQL Source tests passed there as well. Ruff, compileall, CLI help, YAML
+parsing, immutable-action checks, generated-SARIF secret/path searches, and the
+wheel build/inspection passed. The CI-shaped local flow was exercised through
+startup, project creation, wait, SARIF generation, artifact-path handling, and
+operator cleanup; no actual GitHub Code Scanning upload was claimed.

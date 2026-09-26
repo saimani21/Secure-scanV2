@@ -380,6 +380,12 @@ active workflow and does not claim universal GitHub-hosted-runner portability.
 SecureScan findings remain authoritative and GitHub Code Scanning is a one-way
 presentation surface.
 
+V1.1D CLI, deterministic SARIF, and the inert CI example are complete and
+frozen after isolated real scanning, empty-result, fail-closed output,
+filesystem safety, restart persistence, PostgreSQL parity, static, and wheel
+acceptance. Vulnerability findings—including `HIGH` and `CRITICAL`—remain
+successful analysis results rather than a policy exit condition.
+
 The [Source v1 release-acceptance runbook](docs/source-v1-release-acceptance.md)
 defines the final four-run, five-authority acceptance path and its sanitized evidence
 summary. Its committed RA1 fixtures and offline verifier do not themselves constitute a
