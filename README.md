@@ -354,8 +354,9 @@ files by hand. Both API and worker remain non-root.
 
 The API also serves a dependency-free, same-origin Source analysis console at
 `http://127.0.0.1:<SECURESCAN_API_PORT>/`. Submit repositories with the trusted-host
-`securescan scan` CLI, then open the returned run ID in the console. The browser
-does not accept repository paths or upload source trees.
+`securescan scan` CLI, then use Overview, Projects, and scan history to open the
+result in the console. Normal browser navigation does not require pasting a run
+ID. The browser does not accept repository paths or upload source trees.
 
 The host CLI also provides `securescan project create` and `securescan project
 list`, so a supported local scan never requires direct SQL or knowledge of the

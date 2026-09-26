@@ -2,17 +2,10 @@
 
 ## Status
 
-V1.1C0 is the approved UI/API architecture and design contract. V1.1C1
-established design tokens, the application shell, explicit browser routing,
-readiness presentation, and accessibility foundations. V1.1C2 added real
-Overview, Projects, Project Detail, and Global Scans navigation while preserving
-the frozen read API and Product Core contracts. V1.1C3 added the real Scan
-Overview and authoritative Analysis stage progress. V1.1C4 adds the real
-Findings workspace and evidence-backed finding detail. V1.1C5 adds the package
-inventory, dependency-evaluation workspace, and canonical advisory detail.
-Coverage detail, gaps, and reports remain later checkpoints.
-
-V1.1C is not frozen or complete.
+V1.1C Web UI 2.0 is complete and frozen. C1-C7 delivered and hardened every
+approved product route over the frozen read APIs. C8 then passed isolated real
+scan, browser, responsive, restart/persistence, PostgreSQL parity, packaging,
+and static acceptance without changing backend semantics.
 
 ## Architecture
 
@@ -88,9 +81,9 @@ preferences disable the short layout transitions.
 
 The browser remains read-only for repository intake. It does not accept local
 paths, uploads, source content, or arbitrary Git URLs. Repository preparation
-and scan submission remain trusted-host CLI operations. C3 adds no browser
-mutation and does not fetch findings, dependencies, coverage detail, gaps, or
-reports.
+and scan submission remain trusted-host CLI operations. The browser adds no
+mutation path; it reads findings, dependencies, coverage, gaps, and the verified
+report only through the frozen same-origin public APIs.
 
 ## C2 product navigation
 
@@ -381,6 +374,71 @@ captures were reviewed for hierarchy, wrapping, table transformation, spacing,
 and restrained accent use. No external assets, decorative dashboards, gradients,
 glass effects, or AI-style visual elements were added.
 
+## C8 isolated acceptance and final freeze
+
+C8 used a new isolated deployment with Compose project
+`securescan-v11c-c8`, API port `18004`, PostgreSQL port `55436`, an independent
+operator profile and deployment root, and its own `securescan_pg` volume. No
+older SecureScan deployment, persistent root, database, or volume was stopped,
+modified, or deleted. Final vulnerability intelligence came from the frozen
+controlled OSV snapshot through the existing acceptance seam; acceptance did
+not depend on mutable external services.
+
+Three real trusted-host CLI submissions completed through the normal scanner,
+orchestration, assembly, publication, and finalization path:
+
+| Case | Run | Dependency result |
+| --- | --- | --- |
+| vulnerable | `dd2c1c0f-392d-4ad2-849f-c83b7278c379` | PyYAML 5.3.1: `COMPLETE`, one canonical CVE-2020-14343 advisory group |
+| clean | `5aec6f8e-1062-468e-b7be-3fde2d03b371` | synthetic pinned npm package: `COMPLETE`, zero known vulnerabilities |
+| not applicable | `f0799d60-5569-4fc0-8557-8c9c88f3f1db` | Go module: `NOT_APPLICABLE`, count `null` |
+
+The vulnerable run published ten findings from Semgrep, Gitleaks, Checkov, and
+OSV, including HIGH Semgrep evidence, HIGH redacted-secret evidence, UNRANKED
+Checkov evidence, and one CRITICAL canonical dependency group. All findings were
+`NEW`; aliases did not inflate the dependency count. The five-authority stage
+roster completed, detailed coverage remained complete with exact outcome states,
+and zero published gaps remained explicitly distinct from a security-coverage
+claim. Public report inspection confirmed that neither the secret value nor an
+absolute acceptance-host path was disclosed.
+
+A separate real submission was captured while `RUNNING`; the scan page showed
+pending findings, coverage, and gaps plus the five execution states, then stopped
+polling after the run completed. Normal click navigation exercised Overview,
+Projects, Project Detail, Scan, Findings, Dependencies, Coverage, Gaps, and
+Report without entering an identifier. Back, forward, refresh, and the same
+deep links remained functional.
+
+The 25-image acceptance matrix covered the prescribed desktop, tablet, and true
+390x844 mobile states, including running/completed scans, Semgrep and UNRANKED
+Checkov detail, all three dependency outcomes, drawers, report, and a safe 404.
+No screenshot is committed. Automated geometry checks found no document-level
+horizontal overflow; reviewed captures preserved the graphite hierarchy,
+restrained lime accent, readable wrapped evidence, secondary technical detail,
+and usable tablet/mobile selection states.
+
+The supported operator lifecycle stopped and restarted only the isolated
+deployment without volume deletion. Project history and the vulnerable run's
+summary, ten findings, dependency, coverage, zero-gap projection, and report all
+remained readable afterward. Canonicalized report SHA-256 remained exactly:
+
+```text
+8540381be1a70b550973e0e3e23aa36bf647e9a5d842e4442c374e315682976d
+```
+
+Final validation passed 345 bounded frontend/read-model tests with the isolated
+PostgreSQL service and pinned local Syft enabled (`0` failures, `0` errors,
+`0` skips), plus 32 focused PostgreSQL navigation, dependency, Product Core,
+and run-read-model parity tests (`0` failures, `0` errors, `0` skips). Static
+Python, JavaScript, security-sink, CSP, external-resource, and wheel-content
+checks also passed.
+
+Deliberate V1.1C limitations remain part of the product boundary: scan submission
+is trusted-host CLI only; current-page search does not claim a global search;
+technical JSON is disclosure rather than the primary report; and V1.2 analyst
+disposition, suppression, intelligence enrichment, scoring, policy, reachability,
+remediation, and AI features do not exist.
+
 ## Checkpoint plan
 
 ```text
@@ -391,10 +449,11 @@ C4  findings and detail
 C5  dependencies and detail
 C6  coverage, gaps, report (complete checkpoint)
 C7  responsive, accessibility, hostile-input hardening (complete checkpoint)
-C8  isolated E2E, visual acceptance, final freeze
+C8  isolated E2E, visual acceptance, final freeze (complete)
 ```
 
-Later phases must continue to present frozen Product Core truth. They may format
+V1.1C is frozen at this boundary. Later phases must continue to present frozen
+Product Core truth. They may format
 or group exact returned values, but must not infer security state, fabricate
 remediation or lifecycle history, count advisory aliases as vulnerabilities, or
 turn partial, failed, unknown, or not-applicable states into zero.

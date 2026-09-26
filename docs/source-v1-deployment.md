@@ -163,10 +163,11 @@ SecureScan host, not from the browser:
 ./.venv/bin/securescan scan /absolute/repository/path --project-id <project-uuid>
 ```
 
-Paste the returned run ID into the console to inspect Product Core status,
+Use Overview, Projects, and project scan history to inspect Product Core status,
 findings, published evidence, dependency intelligence, and explicit coverage
-gaps. The console is read-only and does not accept filesystem paths, source
-uploads, or remote Git locations.
+gaps. Normal navigation does not require pasting the returned run ID. The
+console is read-only and does not accept filesystem paths, source uploads, or
+remote Git locations.
 
 Compose publishes PostgreSQL and the API on `127.0.0.1` only. PostgreSQL data is
 stored in the `securescan_pg` named volume. CAS objects, managed workspaces,

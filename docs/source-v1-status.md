@@ -197,6 +197,8 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1C5 | Dependencies and canonical advisory detail | COMPLETE - CHECKPOINT |
 | V1.1C6 | Coverage, gaps, and verified report workspaces | COMPLETE - CHECKPOINT |
 | V1.1C7 | Complete UI hardening and polish | COMPLETE - CHECKPOINT |
+| V1.1C8 | Isolated E2E, visual acceptance, and persistence | COMPLETE - FINAL GATE |
+| V1.1C | Web UI 2.0 | COMPLETE - FROZEN |
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
@@ -382,6 +384,22 @@ measurement at seven prescribed widths, with representative screenshots reviewed
 at desktop, compact, breakpoint, and true 390px layouts. No Product Core, API
 schema, scanner, dependency, orchestration, lifecycle, database, or migration
 behavior changed. V1.1C remains incomplete and unfrozen pending C8. See
+`docs/source-v1.1c-web-ui.md`.
+
+V1.1C8 completes the final isolated release gate. A dedicated
+`securescan-v11c-c8` deployment on API/PostgreSQL ports `18004/55436` completed
+real vulnerable, clean, and not-applicable dependency cases without mutable
+external intelligence. The vulnerable run published ten findings across
+Semgrep, Gitleaks, Checkov, and OSV; the fixed five-authority roster completed
+with exact coverage outcomes and zero published gaps. A real nonterminal scan
+state, normal click navigation, all required desktop/tablet/mobile/error views,
+and restart persistence passed. The canonical report digest remained
+`8540381be1a70b550973e0e3e23aa36bf647e9a5d842e4442c374e315682976d`
+across the supported stop/start cycle. Final gates passed 345 bounded
+frontend/read-model tests and 32 focused PostgreSQL parity tests with zero
+failures, errors, or skips, plus static and wheel-content validation. No Product
+Core, API schema, scanner, dependency, orchestration, lifecycle, database, or
+migration behavior changed. V1.1C Web UI 2.0 is COMPLETE and FROZEN. See
 `docs/source-v1.1c-web-ui.md`.
 
 Source v1 controlled acceptance used a fresh isolated PostgreSQL volume and
