@@ -206,6 +206,16 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1D | CLI, SARIF, and CI developer integration | COMPLETE - FROZEN |
 | V1.1R | Final whole-product release acceptance | COMPLETE - FROZEN |
 | V1.1 | SecureScan Source v1.1.0 | COMPLETE - FROZEN |
+| V1.2A | Governance Contract Audit | COMPLETE - CONTRACT FROZEN |
+
+V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
+state. Future finding governance binds to `(lineage_id, finding_id)`, with
+project ownership derived and validated through the lineage. It must not use a
+run-specific, project-wide, global, fuzzy, cross-tool, or AI-derived identity.
+Evidence, S4, coverage, gaps, execution truth, priority, and lifecycle remain
+authoritative and unchanged. No production code, API, schema, migration, or
+preserved v1.1 runtime state changed. See
+`docs/source-v1.2a-governance-contract.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
