@@ -927,6 +927,129 @@ class SourceFindingLifecycleEventRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class SourceFindingGovernanceRow(Base):
+    __tablename__ = "source_finding_governance"
+
+    __table_args__ = (
+        CheckConstraint(
+            "disposition IN ('UNREVIEWED', 'FALSE_POSITIVE', 'ACCEPTED_RISK')",
+            name="ck_source_finding_governance_disposition",
+        ),
+        CheckConstraint(
+            "(disposition = 'UNREVIEWED' AND reason IS NULL AND expires_at IS NULL) OR "
+            "(disposition = 'FALSE_POSITIVE' AND reason IS NOT NULL "
+            "AND expires_at IS NULL) OR "
+            "(disposition = 'ACCEPTED_RISK' AND reason IS NOT NULL "
+            "AND expires_at IS NOT NULL)",
+            name="ck_source_finding_governance_material",
+        ),
+        CheckConstraint(
+            "reason IS NULL OR (length(reason) >= 1 AND length(reason) <= 1000)",
+            name="ck_source_finding_governance_reason",
+        ),
+        CheckConstraint("revision >= 1", name="ck_source_finding_governance_revision"),
+        CheckConstraint(
+            "actor_type = 'LOCAL_OPERATOR'",
+            name="ck_source_finding_governance_actor",
+        ),
+        CheckConstraint(
+            "created_at <= updated_at",
+            name="ck_source_finding_governance_time_order",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "finding_id"],
+            ["source_finding_lifecycles.lineage_id", "source_finding_lifecycles.finding_id"],
+            name="fk_source_finding_governance_lifecycle",
+            ondelete="CASCADE",
+        ),
+        Index(
+            "ix_source_finding_governance_lineage_disposition",
+            "lineage_id",
+            "disposition",
+        ),
+    )
+
+    lineage_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    finding_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    disposition: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourceFindingGovernanceEventRow(Base):
+    __tablename__ = "source_finding_governance_events"
+
+    __table_args__ = (
+        CheckConstraint(
+            "operation IN ('SET', 'CLEAR')",
+            name="ck_source_finding_governance_events_operation",
+        ),
+        CheckConstraint(
+            "previous_disposition IN ('UNREVIEWED', 'FALSE_POSITIVE', 'ACCEPTED_RISK')",
+            name="ck_source_finding_governance_events_previous",
+        ),
+        CheckConstraint(
+            "new_disposition IN ('UNREVIEWED', 'FALSE_POSITIVE', 'ACCEPTED_RISK')",
+            name="ck_source_finding_governance_events_new",
+        ),
+        CheckConstraint(
+            "previous_reason IS NULL OR "
+            "(length(previous_reason) >= 1 AND length(previous_reason) <= 1000)",
+            name="ck_source_finding_governance_events_previous_reason",
+        ),
+        CheckConstraint(
+            "new_reason IS NULL OR (length(new_reason) >= 1 AND length(new_reason) <= 1000)",
+            name="ck_source_finding_governance_events_new_reason",
+        ),
+        CheckConstraint(
+            "resulting_revision >= 1",
+            name="ck_source_finding_governance_events_revision",
+        ),
+        CheckConstraint(
+            "actor_type = 'LOCAL_OPERATOR'",
+            name="ck_source_finding_governance_events_actor",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "finding_id"],
+            ["source_finding_lifecycles.lineage_id", "source_finding_lifecycles.finding_id"],
+            name="fk_source_finding_governance_events_lifecycle",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "lineage_id",
+            "finding_id",
+            "resulting_revision",
+            name="uq_source_finding_governance_events_revision",
+        ),
+        Index(
+            "ix_source_finding_governance_events_history",
+            "lineage_id",
+            "finding_id",
+            "resulting_revision",
+        ),
+    )
+
+    event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    lineage_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    finding_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    operation: Mapped[str] = mapped_column(String(16), nullable=False)
+    previous_disposition: Mapped[str] = mapped_column(String(32), nullable=False)
+    new_disposition: Mapped[str] = mapped_column(String(32), nullable=False)
+    previous_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    previous_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    new_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    resulting_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
 class SourceOrchestrationAuthorityRow(Base):
     __tablename__ = "source_orchestration_authorities"
 

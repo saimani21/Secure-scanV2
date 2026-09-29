@@ -207,6 +207,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1R | Final whole-product release acceptance | COMPLETE - FROZEN |
 | V1.1 | SecureScan Source v1.1.0 | COMPLETE - FROZEN |
 | V1.2A | Governance Contract Audit | COMPLETE - CONTRACT FROZEN |
+| V1.2B | Governance Core + Audit + Basic Concurrency | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -216,6 +217,25 @@ Evidence, S4, coverage, gaps, execution truth, priority, and lifecycle remain
 authoritative and unchanged. No production code, API, schema, migration, or
 preserved v1.1 runtime state changed. See
 `docs/source-v1.2a-governance-contract.md`.
+
+V1.2B implements analyst `FALSE_POSITIVE` and expiring `ACCEPTED_RISK` state,
+absence/default `UNREVIEWED`, append-only audit events, independent optimistic
+revision control, strict project/lineage validation, and a minimal trusted-host
+API. Migration `a2b7c4d9e105` adds only the normalized governance current/event
+tables keyed through the frozen `(lineage_id, finding_id)` lifecycle identity.
+The earlier shorthand "Analyst Disposition" is refined additively to
+"Governance Core + Audit + Basic Concurrency" without changing V1.2A.
+
+V1.2B is complete and frozen. Its 428 non-PostgreSQL regressions and 5 mandatory
+PostgreSQL tests pass with no failures or skips. PostgreSQL evidence covers
+migration round-trip, seeded V1.1-head upgrade, first-write and existing-row
+concurrency conflicts, project isolation, atomic audit convergence, and existing
+lifecycle concurrency. A read-only dump of the running preserved V1.1 database
+was restored into a disposable database and upgraded from `f7c2d4e8a901` to
+`a2b7c4d9e105`; 2 projects, 4 analysis runs, and 450 lifecycle rows remained
+unchanged, and the new governance tables were empty. The preserved V1.1 runtime
+was never migrated, reset, stopped, or mutated. See
+`docs/source-v1.2b-governance-core.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one

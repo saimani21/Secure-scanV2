@@ -19,7 +19,8 @@ pytestmark = pytest.mark.postgres
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "f7c2d4e8a901"
+V11_HEAD_REVISION = "f7c2d4e8a901"
+HEAD_REVISION = "a2b7c4d9e105"
 
 APPLICATION_TABLES = {
     "projects",
@@ -41,6 +42,8 @@ APPLICATION_TABLES = {
     "source_finding_lifecycles",
     "source_finding_lifecycle_events",
     "source_scan_submissions",
+    "source_finding_governance",
+    "source_finding_governance_events",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -135,6 +138,58 @@ def _assert_tool_execution_attempt_identity(database_inspector) -> None:
         index["name"] for index in database_inspector.get_indexes("tool_executions")
     }
     assert indexes >= {"ix_tool_executions_job_id", "ix_tool_executions_run_id"}
+
+
+def _assert_governance_schema(database_inspector) -> None:
+    current_columns = {
+        item["name"]: item for item in database_inspector.get_columns("source_finding_governance")
+    }
+    assert set(current_columns) == {
+        "lineage_id",
+        "finding_id",
+        "disposition",
+        "reason",
+        "expires_at",
+        "revision",
+        "actor_type",
+        "created_at",
+        "updated_at",
+    }
+    current_checks = {
+        item["name"]
+        for item in database_inspector.get_check_constraints("source_finding_governance")
+    }
+    assert current_checks >= {
+        "ck_source_finding_governance_disposition",
+        "ck_source_finding_governance_material",
+        "ck_source_finding_governance_reason",
+        "ck_source_finding_governance_revision",
+        "ck_source_finding_governance_actor",
+        "ck_source_finding_governance_time_order",
+    }
+    event_columns = {
+        item["name"] for item in database_inspector.get_columns("source_finding_governance_events")
+    }
+    assert event_columns == {
+        "event_id",
+        "lineage_id",
+        "finding_id",
+        "operation",
+        "previous_disposition",
+        "new_disposition",
+        "previous_reason",
+        "new_reason",
+        "previous_expires_at",
+        "new_expires_at",
+        "actor_type",
+        "occurred_at",
+        "resulting_revision",
+    }
+    event_uniques = {
+        item["name"]
+        for item in database_inspector.get_unique_constraints("source_finding_governance_events")
+    }
+    assert "uq_source_finding_governance_events_revision" in event_uniques
 
 
 def _validated_test_database_url() -> str:
@@ -247,6 +302,7 @@ def test_postgres_migration_round_trip_and_schema_contract(
         _assert_lease_token_column(inspector)
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
+        _assert_governance_schema(inspector)
         job_check_constraints = {
             constraint["name"] for constraint in inspector.get_check_constraints("jobs")
         }
@@ -273,7 +329,43 @@ def test_postgres_migration_round_trip_and_schema_contract(
         _assert_lease_token_column(inspector)
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
+        _assert_governance_schema(inspector)
         assert _current_revision(engine) == HEAD_REVISION
         command.check(config)
+    finally:
+        engine.dispose()
+
+
+def test_postgres_upgrade_from_v11_head_preserves_existing_data(
+    postgres_migration_environment: tuple[Config, str],
+) -> None:
+    config, database_url = postgres_migration_environment
+    engine = create_engine(database_url)
+    project_id = "11111111-1111-4111-8111-111111111111"
+    try:
+        command.upgrade(config, V11_HEAD_REVISION)
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO projects (id, name, created_at) VALUES (:id, :name, :created_at)"
+                ),
+                {
+                    "id": project_id,
+                    "name": "v11-upgrade-proof",
+                    "created_at": "2026-09-29T00:00:00+00:00",
+                },
+            )
+        command.upgrade(config, "head")
+        with engine.connect() as connection:
+            assert (
+                connection.scalar(
+                    text("SELECT name FROM projects WHERE id = :id"),
+                    {"id": project_id},
+                )
+                == "v11-upgrade-proof"
+            )
+        inspector = inspect(engine)
+        _assert_governance_schema(inspector)
+        assert _current_revision(engine) == HEAD_REVISION
     finally:
         engine.dispose()
