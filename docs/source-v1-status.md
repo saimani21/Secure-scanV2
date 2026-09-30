@@ -210,6 +210,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.2B | Governance Core + Audit + Basic Concurrency | COMPLETE - FROZEN |
 | V1.2C | Suppression + Expiry | COMPLETE - FROZEN |
 | V1.2D | Effective Governance + Inheritance | COMPLETE - FROZEN |
+| V1.2E | Trusted Baseline + Security Delta | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -280,6 +281,32 @@ runs, 450 lifecycle rows, one B governance decision/event, and one C suppression
 episode/event with unchanged material digests. Legacy anchors remained `NULL`,
 new D events recorded exact lifecycle versions, and the preserved deployment
 was never mutated. See `docs/source-v1.2d-effective-governance.md`.
+
+V1.2E adds explicit trusted-local-operator baseline promotion and a derived,
+read-only candidate-versus-baseline Security Delta. Migration `e7a1b3c5d902`
+adds only append-only promotion history with stable baseline IDs, monotonic
+per-lineage revisions, and no mutable current flag. Promotion is optimistic,
+lineage-locked, monotonically ordered by the authoritative lineage sequence,
+and structurally limited to verified, finalized `COMPLETED` or `PARTIAL`
+Product Core runs. Repository contents, scanner output, SARIF, and CI cannot
+select or promote the baseline.
+
+Delta identity remains the exact canonical S4 finding ID. `INTRODUCED` and
+`REMOVED` require direction-correct authority-safe absence proof; exact shared
+identity is `PRESENT`; unsafe evidence is explicit `NOT_COMPARABLE`. Sequential
+lifecycle does not substitute for baseline comparison. Authorities are isolated,
+and governance/suppression never rewrite delta truth. PostgreSQL evaluation uses
+one repeatable-read snapshot for baseline selection, both verified S4 reports,
+coverage, contracts, scope, and result derivation, and always returns the exact
+baseline ID/revision used.
+
+V1.2E is complete and frozen after 899 passes and four classified opt-in
+real-Syft replay skips across 903 unique selected cases, including 25 PostgreSQL
+tests. A read-only V1.1-derived copy retained 2 projects, 4 runs, 450 lifecycle
+rows, and seeded B/C/D material with identical digest through the E upgrade; the
+new history began empty and accepted a normal revision-1 promotion. The
+preserved runtime was never mutated. See
+`docs/source-v1.2e-trusted-baseline-delta.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one

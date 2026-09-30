@@ -348,13 +348,18 @@ class SourceFindingIndexService:
         except SQLAlchemyError:
             raise ProductCoreIndexError from None
 
-    def _rebuild_trusted_report(self, run_id: str) -> SecureScanEvidenceReport:
+    def _rebuild_trusted_report(
+        self,
+        run_id: str,
+        *,
+        session: Session | None = None,
+    ) -> SecureScanEvidenceReport:
         try:
             # The frozen S6D builder is the strict S4 validation boundary. PC1
             # deliberately does not deserialize a weaker subset of report JSON.
             report = SourceResultAssemblyService(
                 self._sessions, self._artifacts
-            )._build_report(run_id)
+            )._build_report(run_id, session=session)
         except (OSError, SourceResultAssemblyError, TypeError, UnicodeError, ValueError):
             raise ProductCoreIndexError from None
         if not isinstance(report, SecureScanEvidenceReport):

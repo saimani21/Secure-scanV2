@@ -22,7 +22,8 @@ MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
 V11_HEAD_REVISION = "f7c2d4e8a901"
 V12B_HEAD_REVISION = "a2b7c4d9e105"
 V12C_HEAD_REVISION = "c4e8a1f6b203"
-HEAD_REVISION = "d6f9b2c7a104"
+V12D_HEAD_REVISION = "d6f9b2c7a104"
+HEAD_REVISION = "e7a1b3c5d902"
 
 APPLICATION_TABLES = {
     "projects",
@@ -48,6 +49,7 @@ APPLICATION_TABLES = {
     "source_finding_governance_events",
     "source_finding_suppressions",
     "source_finding_suppression_events",
+    "source_trusted_baseline_promotions",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -66,9 +68,7 @@ EXPECTED_JOB_INDEXES = {
 
 
 def _assert_lease_token_column(database_inspector) -> None:
-    columns = {
-        column["name"]: column for column in database_inspector.get_columns("jobs")
-    }
+    columns = {column["name"]: column for column in database_inspector.get_columns("jobs")}
     lease_token = columns["lease_token"]
     assert isinstance(lease_token["type"], String)
     assert lease_token["type"].length == 36
@@ -76,9 +76,7 @@ def _assert_lease_token_column(database_inspector) -> None:
 
 
 def _assert_cancellation_timestamp_column(database_inspector) -> None:
-    columns = {
-        column["name"]: column for column in database_inspector.get_columns("jobs")
-    }
+    columns = {column["name"]: column for column in database_inspector.get_columns("jobs")}
     cancel_requested_at = columns["cancel_requested_at"]
     assert isinstance(cancel_requested_at["type"], DateTime)
     assert cancel_requested_at["type"].timezone is True
@@ -87,8 +85,7 @@ def _assert_cancellation_timestamp_column(database_inspector) -> None:
 
 def _assert_tool_execution_attempt_identity(database_inspector) -> None:
     columns = {
-        column["name"]: column
-        for column in database_inspector.get_columns("tool_executions")
+        column["name"]: column for column in database_inspector.get_columns("tool_executions")
     }
     assert {
         "id",
@@ -138,9 +135,7 @@ def _assert_tool_execution_attempt_identity(database_inspector) -> None:
         for constraint in database_inspector.get_unique_constraints("tool_executions")
     }
     assert "uq_tool_executions_job_attempt" in unique_constraints
-    indexes = {
-        index["name"] for index in database_inspector.get_indexes("tool_executions")
-    }
+    indexes = {index["name"] for index in database_inspector.get_indexes("tool_executions")}
     assert indexes >= {"ix_tool_executions_job_id", "ix_tool_executions_run_id"}
 
 
@@ -232,8 +227,7 @@ def _assert_suppression_schema(database_inspector) -> None:
     assert "uq_source_finding_suppressions_id" in current_uniques
 
     event_columns = {
-        item["name"]
-        for item in database_inspector.get_columns("source_finding_suppression_events")
+        item["name"] for item in database_inspector.get_columns("source_finding_suppression_events")
     }
     assert event_columns == {
         "event_id",
@@ -254,9 +248,7 @@ def _assert_suppression_schema(database_inspector) -> None:
     }
     event_checks = {
         item["name"]
-        for item in database_inspector.get_check_constraints(
-            "source_finding_suppression_events"
-        )
+        for item in database_inspector.get_check_constraints("source_finding_suppression_events")
     }
     assert event_checks >= {
         "ck_source_finding_suppression_events_operation",
@@ -269,11 +261,47 @@ def _assert_suppression_schema(database_inspector) -> None:
     }
     event_uniques = {
         item["name"]
-        for item in database_inspector.get_unique_constraints(
-            "source_finding_suppression_events"
-        )
+        for item in database_inspector.get_unique_constraints("source_finding_suppression_events")
     }
     assert "uq_source_finding_suppression_events_revision" in event_uniques
+
+
+def _assert_trusted_baseline_schema(database_inspector) -> None:
+    columns = {
+        item["name"]: item
+        for item in database_inspector.get_columns("source_trusted_baseline_promotions")
+    }
+    assert set(columns) == {
+        "baseline_id",
+        "lineage_id",
+        "run_id",
+        "revision",
+        "actor_type",
+        "promoted_at",
+    }
+    assert isinstance(columns["revision"]["type"], Integer)
+    assert all(not item["nullable"] for item in columns.values())
+    checks = {
+        item["name"]
+        for item in database_inspector.get_check_constraints("source_trusted_baseline_promotions")
+    }
+    assert checks >= {
+        "ck_source_trusted_baseline_promotions_revision",
+        "ck_source_trusted_baseline_promotions_actor",
+    }
+    uniques = {
+        item["name"]
+        for item in database_inspector.get_unique_constraints("source_trusted_baseline_promotions")
+    }
+    assert "uq_source_trusted_baseline_promotions_revision" in uniques
+    foreign_keys = {
+        item["name"]: item
+        for item in database_inspector.get_foreign_keys("source_trusted_baseline_promotions")
+    }
+    assert foreign_keys["fk_source_trusted_baseline_promotions_run"]["constrained_columns"] == [
+        "lineage_id",
+        "run_id",
+    ]
 
 
 def _validated_test_database_url() -> str:
@@ -361,8 +389,7 @@ def test_postgres_migration_round_trip_and_schema_contract(
 
         inspector = inspect(engine)
         parent_columns = {
-            column["name"]: column
-            for column in inspector.get_columns("source_orchestrations")
+            column["name"]: column for column in inspector.get_columns("source_orchestrations")
         }
         assert isinstance(parent_columns["max_active_jobs"]["type"], Integer)
         assert parent_columns["max_active_jobs"]["nullable"] is False
@@ -374,9 +401,7 @@ def test_postgres_migration_round_trip_and_schema_contract(
         assert isinstance(parent_columns["assembly_failure_at"]["type"], DateTime)
         orchestration_checks = {
             constraint["name"]
-            for constraint in inspector.get_check_constraints(
-                "source_orchestrations"
-            )
+            for constraint in inspector.get_check_constraints("source_orchestrations")
         }
         assert orchestration_checks >= {
             "ck_source_orchestrations_max_active_jobs",
@@ -388,6 +413,7 @@ def test_postgres_migration_round_trip_and_schema_contract(
         _assert_tool_execution_attempt_identity(inspector)
         _assert_governance_schema(inspector)
         _assert_suppression_schema(inspector)
+        _assert_trusted_baseline_schema(inspector)
         job_check_constraints = {
             constraint["name"] for constraint in inspector.get_check_constraints("jobs")
         }
@@ -416,6 +442,7 @@ def test_postgres_migration_round_trip_and_schema_contract(
         _assert_tool_execution_attempt_identity(inspector)
         _assert_governance_schema(inspector)
         _assert_suppression_schema(inspector)
+        _assert_trusted_baseline_schema(inspector)
         assert _current_revision(engine) == HEAD_REVISION
         command.check(config)
     finally:
@@ -453,6 +480,7 @@ def test_postgres_upgrade_from_v11_head_preserves_existing_data(
         inspector = inspect(engine)
         _assert_governance_schema(inspector)
         _assert_suppression_schema(inspector)
+        _assert_trusted_baseline_schema(inspector)
         assert _current_revision(engine) == HEAD_REVISION
     finally:
         engine.dispose()
@@ -470,18 +498,19 @@ def test_postgres_upgrade_from_v12b_preserves_governance_schema(
             item["name"] for item in before.get_columns("source_finding_governance")
         )
         assert "lifecycle_transition_version" not in {
-            item["name"]
-            for item in before.get_columns("source_finding_governance_events")
+            item["name"] for item in before.get_columns("source_finding_governance_events")
         }
 
         command.upgrade(config, "head")
 
         after = inspect(engine)
-        assert tuple(
-            item["name"] for item in after.get_columns("source_finding_governance")
-        ) == governance_columns
+        assert (
+            tuple(item["name"] for item in after.get_columns("source_finding_governance"))
+            == governance_columns
+        )
         _assert_governance_schema(after)
         _assert_suppression_schema(after)
+        _assert_trusted_baseline_schema(after)
         assert _current_revision(engine) == HEAD_REVISION
     finally:
         engine.dispose()
@@ -496,12 +525,10 @@ def test_postgres_upgrade_from_v12c_adds_nullable_event_anchors(
         command.upgrade(config, V12C_HEAD_REVISION)
         before = inspect(engine)
         assert "lifecycle_transition_version" not in {
-            item["name"]
-            for item in before.get_columns("source_finding_governance_events")
+            item["name"] for item in before.get_columns("source_finding_governance_events")
         }
         assert "lifecycle_transition_version" not in {
-            item["name"]
-            for item in before.get_columns("source_finding_suppression_events")
+            item["name"] for item in before.get_columns("source_finding_suppression_events")
         }
 
         command.upgrade(config, "head")
@@ -509,6 +536,7 @@ def test_postgres_upgrade_from_v12c_adds_nullable_event_anchors(
         after = inspect(engine)
         _assert_governance_schema(after)
         _assert_suppression_schema(after)
+        _assert_trusted_baseline_schema(after)
         for table in (
             "source_finding_governance_events",
             "source_finding_suppression_events",
@@ -516,6 +544,29 @@ def test_postgres_upgrade_from_v12c_adds_nullable_event_anchors(
             columns = {item["name"]: item for item in after.get_columns(table)}
             assert columns["lifecycle_transition_version"]["nullable"] is True
             assert isinstance(columns["lifecycle_transition_version"]["type"], Integer)
+        assert _current_revision(engine) == HEAD_REVISION
+    finally:
+        engine.dispose()
+
+
+def test_postgres_upgrade_from_v12d_adds_empty_baseline_history(
+    postgres_migration_environment: tuple[Config, str],
+) -> None:
+    config, database_url = postgres_migration_environment
+    engine = create_engine(database_url)
+    try:
+        command.upgrade(config, V12D_HEAD_REVISION)
+        assert "source_trusted_baseline_promotions" not in inspect(engine).get_table_names()
+
+        command.upgrade(config, "head")
+
+        inspector = inspect(engine)
+        _assert_trusted_baseline_schema(inspector)
+        with engine.connect() as connection:
+            assert (
+                connection.scalar(text("SELECT count(*) FROM source_trusted_baseline_promotions"))
+                == 0
+            )
         assert _current_revision(engine) == HEAD_REVISION
     finally:
         engine.dispose()

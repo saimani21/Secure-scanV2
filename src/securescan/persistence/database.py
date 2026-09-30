@@ -723,6 +723,48 @@ class SourceLineageRunRow(Base):
     )
 
 
+class SourceTrustedBaselinePromotionRow(Base):
+    __tablename__ = "source_trusted_baseline_promotions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "revision >= 1",
+            name="ck_source_trusted_baseline_promotions_revision",
+        ),
+        CheckConstraint(
+            "actor_type = 'LOCAL_OPERATOR'",
+            name="ck_source_trusted_baseline_promotions_actor",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "run_id"],
+            ["source_lineage_runs.lineage_id", "source_lineage_runs.run_id"],
+            name="fk_source_trusted_baseline_promotions_run",
+            ondelete="RESTRICT",
+        ),
+        UniqueConstraint(
+            "lineage_id",
+            "revision",
+            name="uq_source_trusted_baseline_promotions_revision",
+        ),
+        Index(
+            "ix_source_trusted_baseline_promotions_history",
+            "lineage_id",
+            "revision",
+        ),
+    )
+
+    baseline_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_target_lineages.lineage_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    promoted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class SourceFindingOccurrenceRow(Base):
     __tablename__ = "source_finding_occurrences"
 

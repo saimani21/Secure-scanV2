@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable, Mapping
+from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from types import MappingProxyType
@@ -858,10 +859,18 @@ class SourceResultAssemblyService:
         except SQLAlchemyError:
             raise SourceResultAssemblyError from None
 
-    def _build_report(self, run_id: str) -> SecureScanEvidenceReport:
+    def _build_report(
+        self,
+        run_id: str,
+        *,
+        session: Session | None = None,
+    ) -> SecureScanEvidenceReport:
         try:
-            with self._sessions() as session:
-                parent = session.get(SourceOrchestrationRow, run_id)
+            session_context = (
+                self._sessions() if session is None else nullcontext(session)
+            )
+            with session_context as read_session:
+                parent = read_session.get(SourceOrchestrationRow, run_id)
                 if (
                     parent is None
                     or parent.cancel_requested
@@ -875,7 +884,7 @@ class SourceResultAssemblyService:
                     raise SourceResultAssemblyError
                 snapshot = self._load_snapshot(parent)
                 nodes = tuple(
-                    session.scalars(
+                    read_session.scalars(
                         select(SourceOrchestrationNodeRow)
                         .where(SourceOrchestrationNodeRow.run_id == run_id)
                         .order_by(SourceOrchestrationNodeRow.node_id)
@@ -922,7 +931,7 @@ class SourceResultAssemblyService:
                 ]
                 for node in nodes:
                     fragments.append(
-                        self._node_fragment(session, snapshot, scope, node)
+                        self._node_fragment(read_session, snapshot, scope, node)
                     )
                 report = build_report(scope, *fragments)
                 report.canonical_json()
