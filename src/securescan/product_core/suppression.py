@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from securescan.persistence.database import (
+    SourceFindingLifecycleEventRow,
     SourceFindingLifecycleRow,
     SourceFindingSuppressionEventRow,
     SourceFindingSuppressionRow,
@@ -86,6 +87,7 @@ class FindingSuppressionEvent:
     actor_type: str
     occurred_at: datetime
     resulting_revision: int
+    lifecycle_transition_version: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,7 +142,9 @@ class SourceFindingSuppressionService:
             raise FindingSuppressionValidationError("expires_at must be in the future")
         try:
             with self._sessions.begin() as session:
-                self._require_target(session, project_id, lineage_id, finding_id, lock_lineage=True)
+                lifecycle = self._require_target(
+                    session, project_id, lineage_id, finding_id, lock_lineage=True
+                )
                 row = self._locked_row(session, lineage_id, finding_id)
                 current_revision = 0 if row is None else row.revision
                 if current_revision != expected_revision:
@@ -152,7 +156,22 @@ class SourceFindingSuppressionService:
                     None if row is None else self._optional_utc(row.revoked_at)
                 )
                 revision = current_revision + 1
-                creates_episode = row is None or not self._is_active(row, now)
+                current_event = (
+                    None
+                    if row is None
+                    else self._current_event(session, lineage_id, finding_id, row.revision)
+                )
+                if row is not None and current_event is None:
+                    raise FindingSuppressionPersistenceError
+                latest_reopen = self._latest_reopen_version(session, lineage_id, finding_id)
+                belongs_to_episode = latest_reopen is None or (
+                    current_event is not None
+                    and current_event.lifecycle_transition_version is not None
+                    and current_event.lifecycle_transition_version >= latest_reopen
+                )
+                creates_episode = (
+                    row is None or not self._is_active(row, now) or not belongs_to_episode
+                )
                 if creates_episode:
                     suppression_id = str(self._suppression_id_factory())
                     operation = SuppressionOperation.CREATE
@@ -197,6 +216,7 @@ class SourceFindingSuppressionService:
                     previous_expires_at=previous_expires_at,
                     previous_revoked_at=previous_revoked_at,
                     occurred_at=now,
+                    lifecycle_transition_version=lifecycle.transition_version,
                 )
                 session.flush()
                 return self._state(lineage_id, finding_id, row, now)
@@ -224,7 +244,9 @@ class SourceFindingSuppressionService:
         now = self._now()
         try:
             with self._sessions.begin() as session:
-                self._require_target(session, project_id, lineage_id, finding_id, lock_lineage=True)
+                lifecycle = self._require_target(
+                    session, project_id, lineage_id, finding_id, lock_lineage=True
+                )
                 row = self._locked_row(session, lineage_id, finding_id)
                 current_revision = 0 if row is None else row.revision
                 if current_revision != expected_revision:
@@ -248,6 +270,7 @@ class SourceFindingSuppressionService:
                     previous_expires_at=previous_expires_at,
                     previous_revoked_at=previous_revoked_at,
                     occurred_at=now,
+                    lifecycle_transition_version=lifecycle.transition_version,
                 )
                 session.flush()
                 return self._state(lineage_id, finding_id, row, now)
@@ -321,6 +344,32 @@ class SourceFindingSuppressionService:
         )
 
     @staticmethod
+    def _current_event(session: Session, lineage_id: str, finding_id: str, revision: int):
+        return session.execute(
+            select(
+                SourceFindingSuppressionEventRow.event_id,
+                SourceFindingSuppressionEventRow.lifecycle_transition_version,
+            ).where(
+                SourceFindingSuppressionEventRow.lineage_id == lineage_id,
+                SourceFindingSuppressionEventRow.finding_id == finding_id,
+                SourceFindingSuppressionEventRow.resulting_revision == revision,
+            )
+        ).one_or_none()
+
+    @staticmethod
+    def _latest_reopen_version(
+        session: Session, lineage_id: str, finding_id: str
+    ) -> int | None:
+        return session.scalar(
+            select(func.max(SourceFindingLifecycleEventRow.transition_version)).where(
+                SourceFindingLifecycleEventRow.lineage_id == lineage_id,
+                SourceFindingLifecycleEventRow.finding_id == finding_id,
+                SourceFindingLifecycleEventRow.event_kind == "TRANSITION",
+                SourceFindingLifecycleEventRow.resulting_state == "REOPENED",
+            )
+        )
+
+    @staticmethod
     def _require_target(
         session: Session,
         project_id: str,
@@ -328,7 +377,7 @@ class SourceFindingSuppressionService:
         finding_id: str,
         *,
         lock_lineage: bool = False,
-    ) -> None:
+    ) -> SourceFindingLifecycleRow:
         statement = select(SourceTargetLineageRow).where(
             SourceTargetLineageRow.lineage_id == lineage_id
         )
@@ -338,6 +387,7 @@ class SourceFindingSuppressionService:
         lifecycle = session.get(SourceFindingLifecycleRow, (lineage_id, finding_id))
         if lineage is None or lineage.project_id != project_id or lifecycle is None:
             raise FindingSuppressionNotFoundError
+        return lifecycle
 
     def _append_event(
         self,
@@ -349,6 +399,7 @@ class SourceFindingSuppressionService:
         previous_expires_at: datetime | None,
         previous_revoked_at: datetime | None,
         occurred_at: datetime,
+        lifecycle_transition_version: int,
     ) -> None:
         session.add(
             SourceFindingSuppressionEventRow(
@@ -366,6 +417,7 @@ class SourceFindingSuppressionService:
                 actor_type=LOCAL_OPERATOR,
                 occurred_at=occurred_at,
                 resulting_revision=row.revision,
+                lifecycle_transition_version=lifecycle_transition_version,
             )
         )
 
@@ -461,6 +513,7 @@ class SourceFindingSuppressionService:
             row.actor_type,
             SourceFindingSuppressionService._as_utc(row.occurred_at),
             row.resulting_revision,
+            row.lifecycle_transition_version,
         )
 
     @staticmethod

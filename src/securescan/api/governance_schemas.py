@@ -60,6 +60,7 @@ class FindingGovernanceEventResponse(_StrictModel):
     actor_type: str
     occurred_at: datetime
     resulting_revision: int
+    lifecycle_transition_version: int | None
 
 
 class FindingGovernanceEventPageResponse(_StrictModel):

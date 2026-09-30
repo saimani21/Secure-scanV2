@@ -1,6 +1,15 @@
 """Thin Product Core indexes over authoritative SecureScan evidence."""
 
 from .dependencies import SourceDependencyAdvisorySummary
+from .effective_governance import (
+    EffectiveGovernance,
+    EffectiveGovernanceError,
+    EffectiveGovernanceNotFoundError,
+    EffectiveGovernancePersistenceError,
+    EffectiveGovernanceReasonCode,
+    EffectiveGovernanceService,
+    EffectiveGovernanceValidationError,
+)
 from .finalization import (
     DEFAULT_FINALIZATION_LIMIT,
     MAX_FINALIZATION_LIMIT,
@@ -110,6 +119,13 @@ from .suppression import (
 )
 
 __all__ = [
+    "EffectiveGovernance",
+    "EffectiveGovernanceError",
+    "EffectiveGovernanceNotFoundError",
+    "EffectiveGovernancePersistenceError",
+    "EffectiveGovernanceReasonCode",
+    "EffectiveGovernanceService",
+    "EffectiveGovernanceValidationError",
     "DEFAULT_FINALIZATION_LIMIT",
     "MAX_FINALIZATION_LIMIT",
     "ProductFinalizationBatchResult",

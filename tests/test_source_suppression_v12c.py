@@ -155,6 +155,7 @@ def test_absent_create_update_revoke_and_ordered_audit(suppression_context) -> N
         SuppressionOperation.REVOKE,
     ]
     assert [item.resulting_revision for item in page.items] == [1, 2, 3]
+    assert [item.lifecycle_transition_version for item in page.items] == [1, 1, 1]
     assert page.items[0].new_reason == hostile
 
 

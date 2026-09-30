@@ -84,6 +84,7 @@ class FindingGovernanceEvent:
     actor_type: str
     occurred_at: datetime
     resulting_revision: int
+    lifecycle_transition_version: int | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,7 +139,9 @@ class SourceFindingGovernanceService:
             raise FindingGovernanceValidationError("expires_at must be in the future")
         try:
             with self._sessions.begin() as session:
-                self._require_target(session, project_id, lineage_id, finding_id, lock_lineage=True)
+                lifecycle = self._require_target(
+                    session, project_id, lineage_id, finding_id, lock_lineage=True
+                )
                 row = session.scalar(
                     select(SourceFindingGovernanceRow)
                     .where(
@@ -193,6 +196,7 @@ class SourceFindingGovernanceService:
                         actor_type=LOCAL_OPERATOR,
                         occurred_at=now,
                         resulting_revision=revision,
+                        lifecycle_transition_version=lifecycle.transition_version,
                     )
                 )
                 session.flush()
@@ -262,7 +266,7 @@ class SourceFindingGovernanceService:
         finding_id: str,
         *,
         lock_lineage: bool = False,
-    ) -> None:
+    ) -> SourceFindingLifecycleRow:
         statement = select(SourceTargetLineageRow).where(
             SourceTargetLineageRow.lineage_id == lineage_id
         )
@@ -272,6 +276,7 @@ class SourceFindingGovernanceService:
         lifecycle = session.get(SourceFindingLifecycleRow, (lineage_id, finding_id))
         if lineage is None or lineage.project_id != project_id or lifecycle is None:
             raise FindingGovernanceNotFoundError
+        return lifecycle
 
     def _validate_mutation(self, disposition, reason, expires_at, expected_revision):
         if not isinstance(disposition, AnalystDisposition):
@@ -360,6 +365,7 @@ class SourceFindingGovernanceService:
             row.actor_type,
             SourceFindingGovernanceService._as_utc(row.occurred_at),
             row.resulting_revision,
+            row.lifecycle_transition_version,
         )
 
     @staticmethod

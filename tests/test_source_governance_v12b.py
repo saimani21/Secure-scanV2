@@ -114,6 +114,7 @@ def test_default_false_positive_clear_and_ordered_audit(governance_context) -> N
     page = service.list_events(project_id=project_id, lineage_id=lineage_id, finding_id=finding_id)
     assert page.total == 2
     assert [item.resulting_revision for item in page.items] == [1, 2]
+    assert [item.lifecycle_transition_version for item in page.items] == [1, 1]
     assert page.items[0].new_reason == hostile
     assert page.items[1].previous_reason == hostile
 

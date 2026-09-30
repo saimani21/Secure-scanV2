@@ -209,6 +209,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.2A | Governance Contract Audit | COMPLETE - CONTRACT FROZEN |
 | V1.2B | Governance Core + Audit + Basic Concurrency | COMPLETE - FROZEN |
 | V1.2C | Suppression + Expiry | COMPLETE - FROZEN |
+| V1.2D | Effective Governance + Inheritance | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -256,6 +257,29 @@ rows was upgraded through V1.2B and V1.2C; a seeded V1.2B governance decision
 and event retained identical counts and material digest, and the new suppression
 tables began empty. The preserved deployment was never mutated. See
 `docs/source-v1.2c-suppression-expiry.md`.
+
+V1.2D adds a deterministic read-only projection over lifecycle, disposition,
+accepted-risk expiry, suppression, and immutable event history. Migration
+`d6f9b2c7a104` adds nullable lifecycle-transition anchors only to governance and
+suppression events. New mutations capture the current lifecycle version under
+the existing lineage lock. Legacy `NULL` anchors remain eligible before any
+reopen but become conservatively dormant afterward.
+
+NEW and EXISTING inherit current-episode decisions. RESOLVED makes every
+exclusionary decision dormant without mutation. REOPENED never reactivates an
+older false positive, accepted risk, or suppression; otherwise-valid historical
+controls require review and explicit post-reopen reaffirmation. Same-value
+governance mutation provides audited reaffirmation, while a post-reopen
+suppression PUT creates a new suppression ID even when the old episode remains
+unexpired. One evaluation timestamp and one SQL statement provide a PostgreSQL
+statement-level snapshot without claiming serializable cross-request behavior.
+
+V1.2D is complete and frozen after 460 unique non-PostgreSQL and 18 mandatory
+PostgreSQL tests. The real V1.1-derived upgrade retained 2 projects, 4 analysis
+runs, 450 lifecycle rows, one B governance decision/event, and one C suppression
+episode/event with unchanged material digests. Legacy anchors remained `NULL`,
+new D events recorded exact lifecycle versions, and the preserved deployment
+was never mutated. See `docs/source-v1.2d-effective-governance.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one

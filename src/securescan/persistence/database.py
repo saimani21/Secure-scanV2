@@ -1048,6 +1048,7 @@ class SourceFindingGovernanceEventRow(Base):
     actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     resulting_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    lifecycle_transition_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class SourceFindingSuppressionRow(Base):
@@ -1186,6 +1187,7 @@ class SourceFindingSuppressionEventRow(Base):
     actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     resulting_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    lifecycle_transition_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class SourceOrchestrationAuthorityRow(Base):

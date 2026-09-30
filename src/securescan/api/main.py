@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from securescan.adapters.fake_scanner import FakeScannerAdapter
+from securescan.api.effective_governance_routes import router as effective_governance_router
 from securescan.api.governance_routes import router as governance_router
 from securescan.api.job_routes import router as job_router
 from securescan.api.operations_routes import router as operations_router
@@ -37,6 +38,7 @@ from securescan.orchestration.models import frozen_source_v1_authority_roster
 from securescan.orchestration.service import SourceOrchestrationService
 from securescan.persistence.database import create_session_factory
 from securescan.product_core import (
+    EffectiveGovernanceService,
     SourceFindingGovernanceService,
     SourceFindingSuppressionService,
     SourceProjectService,
@@ -97,6 +99,9 @@ async def lifespan(application: FastAPI):
         application.state.source_finding_suppression_service = SourceFindingSuppressionService(
             session_factory
         )
+        application.state.effective_governance_service = EffectiveGovernanceService(
+            session_factory
+        )
         application.state.source_orchestration_coordinator_service = (
             SourceOrchestrationCoordinatorService(
                 session_factory,
@@ -119,6 +124,7 @@ app.include_router(operations_router)
 app.include_router(project_router)
 app.include_router(governance_router)
 app.include_router(suppression_router)
+app.include_router(effective_governance_router)
 app.include_router(source_scan_router)
 app.include_router(frontend_router)
 

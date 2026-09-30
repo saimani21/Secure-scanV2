@@ -21,7 +21,8 @@ ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
 V11_HEAD_REVISION = "f7c2d4e8a901"
 V12B_HEAD_REVISION = "a2b7c4d9e105"
-HEAD_REVISION = "c4e8a1f6b203"
+V12C_HEAD_REVISION = "c4e8a1f6b203"
+HEAD_REVISION = "d6f9b2c7a104"
 
 APPLICATION_TABLES = {
     "projects",
@@ -187,6 +188,7 @@ def _assert_governance_schema(database_inspector) -> None:
         "actor_type",
         "occurred_at",
         "resulting_revision",
+        "lifecycle_transition_version",
     }
     event_uniques = {
         item["name"]
@@ -248,6 +250,7 @@ def _assert_suppression_schema(database_inspector) -> None:
         "actor_type",
         "occurred_at",
         "resulting_revision",
+        "lifecycle_transition_version",
     }
     event_checks = {
         item["name"]
@@ -463,10 +466,13 @@ def test_postgres_upgrade_from_v12b_preserves_governance_schema(
     try:
         command.upgrade(config, V12B_HEAD_REVISION)
         before = inspect(engine)
-        _assert_governance_schema(before)
         governance_columns = tuple(
             item["name"] for item in before.get_columns("source_finding_governance")
         )
+        assert "lifecycle_transition_version" not in {
+            item["name"]
+            for item in before.get_columns("source_finding_governance_events")
+        }
 
         command.upgrade(config, "head")
 
@@ -476,6 +482,40 @@ def test_postgres_upgrade_from_v12b_preserves_governance_schema(
         ) == governance_columns
         _assert_governance_schema(after)
         _assert_suppression_schema(after)
+        assert _current_revision(engine) == HEAD_REVISION
+    finally:
+        engine.dispose()
+
+
+def test_postgres_upgrade_from_v12c_adds_nullable_event_anchors(
+    postgres_migration_environment: tuple[Config, str],
+) -> None:
+    config, database_url = postgres_migration_environment
+    engine = create_engine(database_url)
+    try:
+        command.upgrade(config, V12C_HEAD_REVISION)
+        before = inspect(engine)
+        assert "lifecycle_transition_version" not in {
+            item["name"]
+            for item in before.get_columns("source_finding_governance_events")
+        }
+        assert "lifecycle_transition_version" not in {
+            item["name"]
+            for item in before.get_columns("source_finding_suppression_events")
+        }
+
+        command.upgrade(config, "head")
+
+        after = inspect(engine)
+        _assert_governance_schema(after)
+        _assert_suppression_schema(after)
+        for table in (
+            "source_finding_governance_events",
+            "source_finding_suppression_events",
+        ):
+            columns = {item["name"]: item for item in after.get_columns(table)}
+            assert columns["lifecycle_transition_version"]["nullable"] is True
+            assert isinstance(columns["lifecycle_transition_version"]["type"], Integer)
         assert _current_revision(engine) == HEAD_REVISION
     finally:
         engine.dispose()
