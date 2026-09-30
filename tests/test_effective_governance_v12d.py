@@ -141,9 +141,71 @@ def test_default_read_is_one_statement_and_side_effect_free(effective_context) -
         assert (
             session.scalar(select(func.count()).select_from(SourceFindingSuppressionEventRow)) == 0
         )
-        assert (
-            session.scalar(select(func.count()).select_from(SourceFindingLifecycleEventRow)) == 1
-        )
+        assert session.scalar(select(func.count()).select_from(SourceFindingLifecycleEventRow)) == 1
+
+
+def test_caller_session_bulk_read_is_exactly_equivalent(effective_context) -> None:
+    public = _read(effective_context)
+    statements: list[str] = []
+
+    def capture(_connection, _cursor, statement, _parameters, _context, _executemany):
+        statements.append(statement)
+
+    environment = effective_context["environment"]
+    event.listen(environment.engine, "before_cursor_execute", capture)
+    try:
+        with environment.factory() as session:
+            internal = effective_context["effective"].get_many_in_session(
+                session,
+                project_id=effective_context["project_id"],
+                lineage_id=effective_context["lineage_id"],
+                finding_ids=(effective_context["finding_id"],),
+                evaluated_at=_NOW,
+            )
+    finally:
+        event.remove(environment.engine, "before_cursor_execute", capture)
+
+    assert internal == (public,)
+    assert len(statements) == 1
+    assert statements[0].lstrip().upper().startswith("SELECT")
+
+
+def test_caller_session_bulk_read_chunks_without_omitting_findings(
+    effective_context, monkeypatch
+) -> None:
+    service = effective_context["effective"]
+    finding_ids = tuple(f"{number:064x}" for number in range(401))
+
+    class _Result:
+        def __init__(self, chunk):
+            self.chunk = chunk
+
+        def mappings(self):
+            return self
+
+        def all(self):
+            return [{"finding_id": finding_id} for finding_id in self.chunk]
+
+    class _Session:
+        def __init__(self):
+            self.chunk_sizes = []
+
+        def execute(self, chunk):
+            self.chunk_sizes.append(len(chunk))
+            return _Result(chunk)
+
+    monkeypatch.setattr(service, "_statement", lambda _lineage, _project, chunk: chunk)
+    monkeypatch.setattr(service, "_project", lambda _lineage, finding_id, _row, _at: finding_id)
+    session = _Session()
+    result = service.get_many_in_session(
+        session,
+        project_id=effective_context["project_id"],
+        lineage_id=effective_context["lineage_id"],
+        finding_ids=finding_ids,
+        evaluated_at=_NOW,
+    )
+    assert session.chunk_sizes == [200, 200, 1]
+    assert result == finding_ids
 
 
 def test_new_existing_and_resolved_inheritance(effective_context, monkeypatch) -> None:
@@ -269,9 +331,7 @@ def test_old_unexpired_suppression_requires_new_post_reopen_episode(
     assert current.suppression_lifecycle_transition_version == 3
 
 
-def test_legacy_null_marker_is_eligible_only_without_reopen(
-    effective_context, monkeypatch
-) -> None:
+def test_legacy_null_marker_is_eligible_only_without_reopen(effective_context, monkeypatch) -> None:
     _govern(
         effective_context,
         AnalystDisposition.FALSE_POSITIVE,

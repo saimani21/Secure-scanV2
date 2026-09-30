@@ -211,6 +211,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.2C | Suppression + Expiry | COMPLETE - FROZEN |
 | V1.2D | Effective Governance + Inheritance | COMPLETE - FROZEN |
 | V1.2E | Trusted Baseline + Security Delta | COMPLETE - FROZEN |
+| V1.2F | Deterministic Policy Engine | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -307,6 +308,27 @@ rows, and seeded B/C/D material with identical digest through the E upgrade; the
 new history began empty and accepted a normal revision-1 promotion. The
 preserved runtime was never mutated. See
 `docs/source-v1.2e-trusted-baseline-delta.md`.
+
+V1.2F adds typed, trusted operator policy definitions and immutable evaluation
+records through additive migration `f8c2d6e1a305`. A built-in default requires
+complete comparison for all four scanner authorities. Rules distinguish
+introduced, present, and candidate-run reopened findings; effective governance
+can exclude enforcement but never changes Security Delta truth. Incomplete
+required coverage, scanner failure, unsafe comparison, or missing required
+facts yields `ERROR`, while proven violations yield `FAIL` and safely evaluable
+compliance yields `PASS`. The policy service captures one evaluation time and
+one PostgreSQL repeatable-read snapshot for the policy, exact baseline,
+candidate facts, delta, and bounded governance projection, then persists the
+result in the same transaction. Existing scan-only CLI, SARIF, scanner, S4,
+lifecycle, governance, suppression, baseline, and delta semantics are unchanged.
+
+V1.2F is complete and frozen after 984 passing selected regressions and four
+classified opt-in real-Syft skips across 988 unique cases, including 86 real
+PostgreSQL cases. The preserved V1.1 database was copied read-only into a
+disposable container and upgraded through F; two projects, four analysis runs,
+and 450 lifecycle rows retained matching canonical hashes. The new policy
+tables began empty, and Alembic found no drift. See
+`docs/source-v1.2f-deterministic-policy.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one

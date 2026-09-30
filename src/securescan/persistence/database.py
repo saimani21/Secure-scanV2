@@ -39,14 +39,8 @@ def utc_now() -> datetime:
     return datetime.now(UTC)
 
 
-JOB_STATUS_SQL = ", ".join(
-    f"'{status.value}'"
-    for status in JobStatus
-)
-JOB_FAILURE_CATEGORY_SQL = ", ".join(
-    f"'{category.value}'"
-    for category in JobFailureCategory
-)
+JOB_STATUS_SQL = ", ".join(f"'{status.value}'" for status in JobStatus)
+JOB_FAILURE_CATEGORY_SQL = ", ".join(f"'{category.value}'" for category in JobFailureCategory)
 
 
 class Base(DeclarativeBase):
@@ -329,8 +323,7 @@ class ToolExecutionRow(Base):
             name="ck_tool_executions_attempt_positive",
         ),
         CheckConstraint(
-            "failure_category IS NULL "
-            f"OR failure_category IN ({JOB_FAILURE_CATEGORY_SQL})",
+            f"failure_category IS NULL OR failure_category IN ({JOB_FAILURE_CATEGORY_SQL})",
             name="ck_tool_executions_failure_category",
         ),
         UniqueConstraint(
@@ -504,9 +497,7 @@ class SourceOrchestrationRow(Base):
     )
     assembly_artifact_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     assembly_artifact_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    assembly_artifact_media_type: Mapped[str | None] = mapped_column(
-        String(128), nullable=True
-    )
+    assembly_artifact_media_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
     assembly_schema_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
     assembly_artifact_storage_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     assembled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -587,17 +578,13 @@ class SourceScanSubmissionRow(Base):
     predecessor_run_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("analysis_runs.id", ondelete="RESTRICT"), nullable=True
     )
-    predecessor_sequence_number: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    predecessor_sequence_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     intake_kind: Mapped[str] = mapped_column(String(32), nullable=False)
     intake_ref: Mapped[str] = mapped_column(String(69), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
     )
-    finalized_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    finalized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class SourceLineageRunRow(Base):
@@ -701,22 +688,16 @@ class SourceLineageRunRow(Base):
     )
     sequence_number: Mapped[int] = mapped_column(Integer, nullable=False)
     predecessor_run_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
-    predecessor_sequence_number: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
-    )
+    predecessor_sequence_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     report_artifact_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     report_artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     report_schema_version: Mapped[str] = mapped_column(String(128), nullable=False)
     indexing_state: Mapped[str] = mapped_column(String(16), nullable=False)
-    indexed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    indexed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     lifecycle_evaluated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    lifecycle_evaluation_sha256: Mapped[str | None] = mapped_column(
-        String(64), nullable=True
-    )
+    lifecycle_evaluation_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     lifecycle_event_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
@@ -763,6 +744,70 @@ class SourceTrustedBaselinePromotionRow(Base):
     revision: Mapped[int] = mapped_column(Integer, nullable=False)
     actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
     promoted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourcePolicyDefinitionRow(Base):
+    __tablename__ = "source_policy_definitions"
+
+    __table_args__ = (
+        CheckConstraint("version >= 2", name="ck_source_policy_definitions_version"),
+        CheckConstraint("actor_type = 'LOCAL_OPERATOR'", name="ck_source_policy_definitions_actor"),
+        CheckConstraint("length(digest) = 64", name="ck_source_policy_definitions_digest"),
+    )
+
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_target_lineages.lineage_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    version: Mapped[int] = mapped_column(Integer, primary_key=True)
+    policy_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    definition_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourcePolicyEvaluationRow(Base):
+    __tablename__ = "source_policy_evaluations"
+
+    __table_args__ = (
+        CheckConstraint(
+            "result IN ('PASS', 'FAIL', 'ERROR')", name="ck_source_policy_evaluations_result"
+        ),
+        CheckConstraint(
+            "(baseline_id IS NULL) = (baseline_revision IS NULL)",
+            name="ck_source_policy_evaluations_baseline_pair",
+        ),
+        CheckConstraint("policy_version >= 1", name="ck_source_policy_evaluations_policy_version"),
+        ForeignKeyConstraint(
+            ["lineage_id", "candidate_run_id"],
+            ["source_lineage_runs.lineage_id", "source_lineage_runs.run_id"],
+            name="fk_source_policy_evaluations_candidate",
+            ondelete="RESTRICT",
+        ),
+        Index("ix_source_policy_evaluations_lineage", "lineage_id", "evaluated_at"),
+    )
+
+    evaluation_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_target_lineages.lineage_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    candidate_run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    baseline_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("source_trusted_baseline_promotions.baseline_id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    baseline_revision: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    policy_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    policy_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    result: Mapped[str] = mapped_column(String(8), nullable=False)
+    decisions_json: Mapped[list] = mapped_column(JSON, nullable=False)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class SourceFindingOccurrenceRow(Base):
@@ -1106,8 +1151,7 @@ class SourceFindingSuppressionRow(Base):
             name="ck_source_finding_suppressions_expiry",
         ),
         CheckConstraint(
-            "revoked_at IS NULL OR "
-            "(revoked_at >= created_at AND revoked_at <= updated_at)",
+            "revoked_at IS NULL OR (revoked_at >= created_at AND revoked_at <= updated_at)",
             name="ck_source_finding_suppressions_revocation",
         ),
         CheckConstraint(
@@ -1493,9 +1537,7 @@ class SourceOrchestrationScannerJobRow(Base):
     capability: Mapped[str] = mapped_column(String(64), nullable=False)
     analyzer_id: Mapped[str] = mapped_column(String(128), nullable=False)
     contract_digest: Mapped[str] = mapped_column(String(64), nullable=False)
-    input_kind: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="SOURCE_PROJECTION"
-    )
+    input_kind: Mapped[str] = mapped_column(String(32), nullable=False, default="SOURCE_PROJECTION")
     context_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
     context_artifact_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     context_artifact_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -1511,9 +1553,7 @@ class SourceOrchestrationScannerJobRow(Base):
     osv_scope_digest: Mapped[str | None] = mapped_column(String(64), nullable=True)
     execution_input_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     execution_input_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    execution_input_schema_version: Mapped[str | None] = mapped_column(
-        String(128), nullable=True
-    )
+    execution_input_schema_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
     selected_attempt_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -1601,9 +1641,7 @@ class SourceOrchestrationAttemptRow(Base):
     native_result_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     native_result_size_bytes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     native_result_media_type: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    native_result_schema_version: Mapped[str | None] = mapped_column(
-        String(128), nullable=True
-    )
+    native_result_schema_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
     native_result_storage_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     projection_revalidated: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     dependency_input_revalidated: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
@@ -1674,11 +1712,7 @@ def create_session_factory(settings: Settings):
         assert database_url.database is not None
         Path(database_url.database).parent.mkdir(parents=True, exist_ok=True)
 
-    connect_args = (
-        {"check_same_thread": False}
-        if is_sqlite
-        else {}
-    )
+    connect_args = {"check_same_thread": False} if is_sqlite else {}
 
     engine = create_engine(
         settings.database_url,

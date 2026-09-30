@@ -15,7 +15,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "f7c2d4e8a901"
+HEAD_REVISION = "f8c2d6e1a305"
 
 APPLICATION_TABLES = {
     "projects",
@@ -37,6 +37,13 @@ APPLICATION_TABLES = {
     "source_finding_lifecycles",
     "source_finding_lifecycle_events",
     "source_scan_submissions",
+    "source_finding_governance",
+    "source_finding_governance_events",
+    "source_finding_suppressions",
+    "source_finding_suppression_events",
+    "source_trusted_baseline_promotions",
+    "source_policy_definitions",
+    "source_policy_evaluations",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -72,8 +79,7 @@ def _assert_source_product_core_schema(database_inspector) -> None:
         "source_scan_submissions",
     } <= set(database_inspector.get_table_names())
     assert {
-        column["name"]
-        for column in database_inspector.get_columns("source_scan_submissions")
+        column["name"] for column in database_inspector.get_columns("source_scan_submissions")
     } == {
         "run_id",
         "lineage_id",
@@ -90,15 +96,10 @@ def _assert_source_product_core_schema(database_inspector) -> None:
     ] == ["run_id"]
     assert {
         item["name"]
-        for item in database_inspector.get_unique_constraints(
-            "source_scan_submissions"
-        )
+        for item in database_inspector.get_unique_constraints("source_scan_submissions")
     } == {"uq_source_scan_submissions_sequence"}
     assert {
-        item["name"]
-        for item in database_inspector.get_check_constraints(
-            "source_scan_submissions"
-        )
+        item["name"] for item in database_inspector.get_check_constraints("source_scan_submissions")
     } == {
         "ck_source_scan_submissions_intake_kind",
         "ck_source_scan_submissions_intake_ref",
@@ -106,13 +107,9 @@ def _assert_source_product_core_schema(database_inspector) -> None:
         "ck_source_scan_submissions_sequence_positive",
     }
     assert {
-        column["name"]
-        for column in database_inspector.get_columns("source_target_lineages")
+        column["name"] for column in database_inspector.get_columns("source_target_lineages")
     } == {"lineage_id", "project_id", "created_at"}
-    assert {
-        column["name"]
-        for column in database_inspector.get_columns("source_lineage_runs")
-    } == {
+    assert {column["name"] for column in database_inspector.get_columns("source_lineage_runs")} == {
         "run_id",
         "lineage_id",
         "sequence_number",
@@ -129,8 +126,7 @@ def _assert_source_product_core_schema(database_inspector) -> None:
         "created_at",
     }
     assert {
-        column["name"]
-        for column in database_inspector.get_columns("source_finding_occurrences")
+        column["name"] for column in database_inspector.get_columns("source_finding_occurrences")
     } == {
         "run_id",
         "finding_id",
@@ -152,8 +148,7 @@ def _assert_source_product_core_schema(database_inspector) -> None:
         "constrained_columns"
     ] == ["run_id", "finding_id"]
     lineage_run_uniques = {
-        item["name"]
-        for item in database_inspector.get_unique_constraints("source_lineage_runs")
+        item["name"] for item in database_inspector.get_unique_constraints("source_lineage_runs")
     }
     assert lineage_run_uniques >= {
         "uq_source_lineage_runs_membership",
@@ -162,13 +157,11 @@ def _assert_source_product_core_schema(database_inspector) -> None:
         "uq_source_lineage_runs_sequence",
     }
     occurrence_foreign_keys = {
-        item["name"]
-        for item in database_inspector.get_foreign_keys("source_finding_occurrences")
+        item["name"] for item in database_inspector.get_foreign_keys("source_finding_occurrences")
     }
     assert "fk_source_finding_occurrences_report_membership" in occurrence_foreign_keys
     assert {
-        column["name"]
-        for column in database_inspector.get_columns("source_finding_lifecycles")
+        column["name"] for column in database_inspector.get_columns("source_finding_lifecycles")
     } == {
         "lineage_id",
         "finding_id",
@@ -186,9 +179,7 @@ def _assert_source_product_core_schema(database_inspector) -> None:
     }
     assert {
         column["name"]
-        for column in database_inspector.get_columns(
-            "source_finding_lifecycle_events"
-        )
+        for column in database_inspector.get_columns("source_finding_lifecycle_events")
     } == {
         "run_id",
         "finding_id",

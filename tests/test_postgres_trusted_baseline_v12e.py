@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -15,7 +15,12 @@ from securescan.persistence.database import (
     TargetRow,
 )
 from securescan.product_core import (
+    AnalystDisposition,
+    EffectiveGovernanceService,
     SecurityDeltaState,
+    SourceFindingGovernanceService,
+    SourceFindingLifecycleService,
+    SourceFindingSuppressionService,
     SourceScanSubmissionService,
     SourceSecurityDeltaService,
     SourceTrustedBaselineService,
@@ -223,3 +228,108 @@ def test_postgres_delta_self_read_is_stable_and_does_not_mutate_baseline(
     assert {item.state for item in result.findings} == {SecurityDeltaState.PRESENT}
     current = baselines.get_current(project_id=project_id, lineage_id=lineage_id)
     assert current.revision == 1 and current.baseline == promoted
+
+
+@pytest.mark.parametrize("mutation", ("governance", "suppression"))
+def test_postgres_shared_snapshot_excludes_concurrent_governance_changes(
+    postgres_baseline, mutation: str
+) -> None:
+    promoted = _promote(postgres_baseline, 0)
+    environment, _baselines, project_id, lineage_id = postgres_baseline
+    delta_service = SourceSecurityDeltaService(environment.factory, environment.store)
+    effective_service = EffectiveGovernanceService(environment.factory, clock=lambda: _NOW)
+    with environment.factory() as session:
+        session.connection(execution_options={"isolation_level": "REPEATABLE READ"})
+        delta = delta_service.evaluate_in_session(
+            session,
+            project_id=project_id,
+            lineage_id=lineage_id,
+            candidate_run_id=str(_RUN_ID),
+        )
+        finding_id = delta.findings[0].finding_id
+
+        def mutate() -> None:
+            if mutation == "governance":
+                SourceFindingGovernanceService(environment.factory, clock=lambda: _NOW).mutate(
+                    project_id=project_id,
+                    lineage_id=lineage_id,
+                    finding_id=finding_id,
+                    disposition=AnalystDisposition.FALSE_POSITIVE,
+                    reason="snapshot race",
+                    expires_at=None,
+                    expected_revision=0,
+                )
+            else:
+                SourceFindingSuppressionService(environment.factory, clock=lambda: _NOW).suppress(
+                    project_id=project_id,
+                    lineage_id=lineage_id,
+                    finding_id=finding_id,
+                    reason="snapshot race",
+                    expires_at=_NOW + timedelta(days=30),
+                    expected_revision=0,
+                )
+
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            pool.submit(mutate).result(timeout=30)
+        snapshot = effective_service.get_many_in_session(
+            session,
+            project_id=project_id,
+            lineage_id=lineage_id,
+            finding_ids=(finding_id,),
+            evaluated_at=_NOW,
+        )[0]
+        assert delta.baseline_id == promoted.baseline_id
+        assert snapshot.false_positive_effective is False
+        assert snapshot.suppression_effective is False
+
+    current = effective_service.get(
+        project_id=project_id, lineage_id=lineage_id, finding_id=finding_id
+    )
+    assert (
+        current.false_positive_effective
+        if mutation == "governance"
+        else current.suppression_effective
+    )
+
+
+def test_postgres_shared_snapshot_pins_baseline_and_candidate_lifecycle(
+    postgres_baseline,
+) -> None:
+    first = _promote(postgres_baseline, 0)
+    environment, _baselines, project_id, lineage_id = postgres_baseline
+    delta_service = SourceSecurityDeltaService(environment.factory, environment.store)
+    lifecycle_service = SourceFindingLifecycleService(environment.factory, environment.store)
+    with environment.factory() as session:
+        session.connection(execution_options={"isolation_level": "REPEATABLE READ"})
+        delta = delta_service.evaluate_in_session(
+            session,
+            project_id=project_id,
+            lineage_id=lineage_id,
+            candidate_run_id=str(_RUN_ID),
+        )
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            second = pool.submit(_promote, postgres_baseline, 1).result(timeout=30)
+        facts = lifecycle_service.load_candidate_facts_in_session(
+            session,
+            project_id=project_id,
+            lineage_id=lineage_id,
+            run_id=str(_RUN_ID),
+        )
+        assert facts
+        assert delta.baseline_id == first.baseline_id
+        assert delta.baseline_revision == 1
+        assert (
+            delta_service.evaluate_in_session(
+                session,
+                project_id=project_id,
+                lineage_id=lineage_id,
+                candidate_run_id=str(_RUN_ID),
+            ).baseline_id
+            == first.baseline_id
+        )
+    assert (
+        delta_service.evaluate(
+            project_id=project_id, lineage_id=lineage_id, candidate_run_id=str(_RUN_ID)
+        ).baseline_id
+        == second.baseline_id
+    )

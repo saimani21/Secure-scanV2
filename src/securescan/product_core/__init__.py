@@ -48,6 +48,7 @@ from .http_submission import (
     SourceTrustedTargetSubmissionService,
 )
 from .lifecycle import (
+    CandidateFindingFact,
     FindingLifecycle,
     FindingLifecycleEvent,
     FindingLifecycleState,
@@ -58,6 +59,23 @@ from .lifecycle import (
     PriorityReasonCode,
     ProductCoreLifecycleError,
     SourceFindingLifecycleService,
+)
+from .policy import (
+    DEFAULT_POLICY,
+    PolicyAction,
+    PolicyConflictError,
+    PolicyDecision,
+    PolicyDecisionKind,
+    PolicyError,
+    PolicyEvaluation,
+    PolicyNotFoundError,
+    PolicyPersistenceError,
+    PolicyResult,
+    PolicySpec,
+    PolicyValidationError,
+    PriorityActions,
+    SourcePolicyService,
+    TrustedPolicy,
 )
 from .projects import (
     MAX_PROJECT_LIST_LIMIT,
@@ -143,6 +161,22 @@ from .trusted_baseline import (
 )
 
 __all__ = [
+    "DEFAULT_POLICY",
+    "PolicyAction",
+    "PolicyConflictError",
+    "PolicyDecision",
+    "PolicyDecisionKind",
+    "PolicyError",
+    "PolicyEvaluation",
+    "PolicyNotFoundError",
+    "PolicyPersistenceError",
+    "PolicyResult",
+    "PolicySpec",
+    "PolicyValidationError",
+    "PriorityActions",
+    "SourcePolicyService",
+    "TrustedPolicy",
+    "CandidateFindingFact",
     "EffectiveGovernance",
     "EffectiveGovernanceError",
     "EffectiveGovernanceNotFoundError",

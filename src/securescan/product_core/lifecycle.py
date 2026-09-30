@@ -142,6 +142,17 @@ class LifecycleEvaluationResult:
 
 
 @dataclass(frozen=True, slots=True)
+class CandidateFindingFact:
+    finding_id: str
+    authority: str
+    category: str
+    priority_band: PriorityBand
+    priority_reason_codes: tuple[str, ...]
+    lifecycle_state: FindingLifecycleState
+    lifecycle_transition_version: int
+
+
+@dataclass(frozen=True, slots=True)
 class _EventMaterial:
     finding_id: str
     event_kind: str
@@ -220,8 +231,7 @@ class SourceFindingLifecycleService:
                     select(SourceLineageRunRow.run_id)
                     .where(
                         SourceLineageRunRow.lineage_id == lineage_id,
-                        SourceLineageRunRow.sequence_number
-                        > membership.sequence_number,
+                        SourceLineageRunRow.sequence_number > membership.sequence_number,
                         SourceLineageRunRow.lifecycle_evaluated_at.is_not(None),
                     )
                     .limit(1)
@@ -250,8 +260,7 @@ class SourceFindingLifecycleService:
                     )
                 )
                 if any(
-                    item.priority_band is not None
-                    or item.priority_reason_codes_json is not None
+                    item.priority_band is not None or item.priority_reason_codes_json is not None
                     for item in occurrences
                 ):
                     raise ProductCoreLifecycleError
@@ -349,9 +358,7 @@ class SourceFindingLifecycleService:
                         or lifecycle.current_state == FindingLifecycleState.RESOLVED.value
                     ):
                         continue
-                    origin_membership = session.get(
-                        SourceLineageRunRow, lifecycle.last_seen_run_id
-                    )
+                    origin_membership = session.get(SourceLineageRunRow, lifecycle.last_seen_run_id)
                     if (
                         origin_membership is None
                         or origin_membership.lineage_id != lineage_id
@@ -436,9 +443,7 @@ class SourceFindingLifecycleService:
                             created_at=transition_at,
                         )
                     )
-                digest = self._evaluation_digest(
-                    run_id, events, priorities, transition_at
-                )
+                digest = self._evaluation_digest(run_id, events, priorities, transition_at)
                 membership.lifecycle_evaluated_at = now
                 membership.lifecycle_evaluation_sha256 = digest
                 membership.lifecycle_event_count = len(events)
@@ -525,9 +530,7 @@ class SourceFindingLifecycleService:
         except (SQLAlchemyError, TypeError, ValueError):
             raise ProductCoreLifecycleError from None
 
-    def list_events(
-        self, *, lineage_id: str, run_id: str
-    ) -> tuple[FindingLifecycleEvent, ...]:
+    def list_events(self, *, lineage_id: str, run_id: str) -> tuple[FindingLifecycleEvent, ...]:
         self._require_uuid(lineage_id)
         self._require_uuid(run_id)
         try:
@@ -543,6 +546,73 @@ class SourceFindingLifecycleService:
                     )
                 )
                 return tuple(self._event_record(item) for item in rows)
+        except (SQLAlchemyError, TypeError, ValueError):
+            raise ProductCoreLifecycleError from None
+
+    def load_candidate_facts_in_session(
+        self,
+        session: Session,
+        *,
+        project_id: str,
+        lineage_id: str,
+        run_id: str,
+    ) -> tuple[CandidateFindingFact, ...]:
+        """Load occurrence facts anchored to this run's verified lifecycle events."""
+        self._require_uuid(project_id)
+        self._require_uuid(lineage_id)
+        self._require_uuid(run_id)
+        try:
+            lineage = session.get(SourceTargetLineageRow, lineage_id)
+            membership = session.get(SourceLineageRunRow, run_id)
+            if (
+                lineage is None
+                or lineage.project_id != project_id
+                or membership is None
+                or membership.lineage_id != lineage_id
+            ):
+                raise ProductCoreLifecycleError
+            self._load_completed_evaluation(session, membership)
+            occurrences = tuple(
+                session.scalars(
+                    select(SourceFindingOccurrenceRow)
+                    .where(SourceFindingOccurrenceRow.run_id == run_id)
+                    .order_by(SourceFindingOccurrenceRow.finding_id)
+                )
+            )
+            events = {
+                item.finding_id: item
+                for item in session.scalars(
+                    select(SourceFindingLifecycleEventRow).where(
+                        SourceFindingLifecycleEventRow.lineage_id == lineage_id,
+                        SourceFindingLifecycleEventRow.run_id == run_id,
+                    )
+                )
+            }
+            facts: list[CandidateFindingFact] = []
+            for occurrence in occurrences:
+                event = events.get(occurrence.finding_id)
+                if (
+                    occurrence.lineage_id != lineage_id
+                    or occurrence.priority_band is None
+                    or occurrence.priority_reason_codes_json is None
+                    or event is None
+                    or event.event_kind != LifecycleEventKind.TRANSITION.value
+                ):
+                    raise ProductCoreLifecycleError
+                facts.append(
+                    CandidateFindingFact(
+                        finding_id=occurrence.finding_id,
+                        authority=occurrence.authority,
+                        category=occurrence.category,
+                        priority_band=PriorityBand(occurrence.priority_band),
+                        priority_reason_codes=tuple(occurrence.priority_reason_codes_json),
+                        lifecycle_state=FindingLifecycleState(event.resulting_state),
+                        lifecycle_transition_version=event.transition_version,
+                    )
+                )
+            return tuple(facts)
+        except ProductCoreLifecycleError:
+            raise
         except (SQLAlchemyError, TypeError, ValueError):
             raise ProductCoreLifecycleError from None
 
@@ -669,9 +739,7 @@ class SourceFindingLifecycleService:
         if any(item.get("kind") == "REPOSITORY_SCOPE" for item in scope):
             return True
         paths = {item.get("path") for item in scope if item.get("path") is not None}
-        finding_paths = {
-            item.get("path") for item in locations if item.get("path") is not None
-        }
+        finding_paths = {item.get("path") for item in locations if item.get("path") is not None}
         return bool(finding_paths) and finding_paths <= paths
 
     @staticmethod
@@ -707,9 +775,7 @@ class SourceFindingLifecycleService:
         return False
 
     @staticmethod
-    def _relevant_suppression(
-        report: SecureScanEvidenceReport, finding: SecureScanFinding
-    ) -> bool:
+    def _relevant_suppression(report: SecureScanEvidenceReport, finding: SecureScanFinding) -> bool:
         subject = finding.subject.canonical_data()
         finding_paths = {
             item.canonical_data().get("path")
@@ -736,11 +802,7 @@ class SourceFindingLifecycleService:
         component_id = None
         if outcome.component_ref is not None:
             component = next(
-                (
-                    item
-                    for item in report.components
-                    if item.component_ref == outcome.component_ref
-                ),
+                (item for item in report.components if item.component_ref == outcome.component_ref),
                 None,
             )
             component_id = getattr(
@@ -866,16 +928,13 @@ class SourceFindingLifecycleService:
             and current_outcome.reason_code == "NO_PACKAGES_OBSERVED"
             and current_outcome.finding_count == 0
             and current_outcome.gap_count == 0
-            and current_osv_node.lifecycle_state
-            == OrchestrationNodeLifecycleState.TERMINAL.value
+            and current_osv_node.lifecycle_state == OrchestrationNodeLifecycleState.TERMINAL.value
             and current_osv_node.terminal_disposition
             == OrchestrationNodeDisposition.NOT_APPLICABLE.value
             and current_osv_node.terminal_reason_code == "NO_PACKAGES_OBSERVED"
         ):
             return None
-        reasons = self._osv_prerequisite_reasons(
-            session, origin_run_id, current_run_id
-        )
+        reasons = self._osv_prerequisite_reasons(session, origin_run_id, current_run_id)
         current_syft_nodes = tuple(
             session.scalars(
                 select(SourceOrchestrationNodeRow).where(
@@ -915,10 +974,7 @@ class SourceFindingLifecycleService:
             or syft_outcomes[0].state is not CoverageState.COMPLETE
             or syft_outcomes[0].finding_count != 0
             or syft_outcomes[0].gap_count != 0
-            or any(
-                item.authority is EvidenceAuthority.SYFT
-                for item in current_report.evidence
-            )
+            or any(item.authority is EvidenceAuthority.SYFT for item in current_report.evidence)
         ):
             reasons.add("ZERO_PACKAGE_S4_EVIDENCE_INVALID")
         osv_mapping = session.scalar(
@@ -938,8 +994,7 @@ class SourceFindingLifecycleService:
             reasons.add("ZERO_PACKAGE_DEPENDENCY_EVIDENCE_INVALID")
             return reasons
         if not (
-            evaluation.decision
-            is DependencyEvaluationDecision.NOT_APPLICABLE_NO_PACKAGES
+            evaluation.decision is DependencyEvaluationDecision.NOT_APPLICABLE_NO_PACKAGES
             and not evaluation.coverage_limited
             and evaluation.syft_prerequisite.prerequisite_complete
             and evaluation.syft_prerequisite.node_id == current_syft.node_id
@@ -956,8 +1011,7 @@ class SourceFindingLifecycleService:
             and not evaluation.candidate_ids
             and not evaluation.coordinate_gaps
             and evaluation.scope.selected_paths == self._selected_paths(current_syft)
-            and evaluation.scope.selected_paths
-            == self._selected_paths(current_osv_node)
+            and evaluation.scope.selected_paths == self._selected_paths(current_osv_node)
         ):
             reasons.add("ZERO_PACKAGE_DEPENDENCY_EVIDENCE_INVALID")
         return reasons
@@ -1111,8 +1165,7 @@ class SourceFindingLifecycleService:
                 event.lineage_id != membership.lineage_id
                 or event_parent is None
                 or event_parent.published_at is None
-                or self._as_utc(event.created_at)
-                != self._published_at(event_parent)
+                or self._as_utc(event.created_at) != self._published_at(event_parent)
             ):
                 raise ProductCoreLifecycleError
             lifecycle = session.get(
@@ -1155,9 +1208,7 @@ class SourceFindingLifecycleService:
         return self._result(membership, events, created=False)
 
     @staticmethod
-    def _validate_lifecycle_row(
-        session: Session, lifecycle: SourceFindingLifecycleRow
-    ) -> None:
+    def _validate_lifecycle_row(session: Session, lifecycle: SourceFindingLifecycleRow) -> None:
         events = tuple(
             session.scalars(
                 select(SourceFindingLifecycleEventRow).where(
@@ -1264,8 +1315,7 @@ class SourceFindingLifecycleService:
             or lifecycle.first_seen_run_id != first_seen_run_id
             or lifecycle.last_seen_run_id != last_seen_run_id
             or lifecycle.resolved_run_id != resolved_run_id
-            or SourceFindingLifecycleService._as_utc(lifecycle.first_seen_at)
-            != first_seen_at
+            or SourceFindingLifecycleService._as_utc(lifecycle.first_seen_at) != first_seen_at
             or SourceFindingLifecycleService._as_utc(lifecycle.last_seen_at) != last_seen_at
             or (
                 None
@@ -1297,12 +1347,9 @@ class SourceFindingLifecycleService:
                 item.event_kind == LifecycleEventKind.TRANSITION.value for item in events
             ),
             withheld_count=sum(
-                item.event_kind == LifecycleEventKind.RESOLUTION_WITHHELD.value
-                for item in events
+                item.event_kind == LifecycleEventKind.RESOLUTION_WITHHELD.value for item in events
             ),
-            evaluated_at=SourceFindingLifecycleService._as_utc(
-                membership.lifecycle_evaluated_at
-            ),
+            evaluated_at=SourceFindingLifecycleService._as_utc(membership.lifecycle_evaluated_at),
             created=created,
         )
 
@@ -1378,9 +1425,7 @@ class SourceFindingLifecycleService:
             finding_id=row.finding_id,
             event_kind=LifecycleEventKind(row.event_kind),
             previous_state=(
-                None
-                if row.previous_state is None
-                else FindingLifecycleState(row.previous_state)
+                None if row.previous_state is None else FindingLifecycleState(row.previous_state)
             ),
             resulting_state=FindingLifecycleState(row.resulting_state),
             reason_codes=tuple(row.reason_codes_json),

@@ -23,7 +23,8 @@ V11_HEAD_REVISION = "f7c2d4e8a901"
 V12B_HEAD_REVISION = "a2b7c4d9e105"
 V12C_HEAD_REVISION = "c4e8a1f6b203"
 V12D_HEAD_REVISION = "d6f9b2c7a104"
-HEAD_REVISION = "e7a1b3c5d902"
+V12E_HEAD_REVISION = "e7a1b3c5d902"
+HEAD_REVISION = "f8c2d6e1a305"
 
 APPLICATION_TABLES = {
     "projects",
@@ -50,6 +51,8 @@ APPLICATION_TABLES = {
     "source_finding_suppressions",
     "source_finding_suppression_events",
     "source_trusted_baseline_promotions",
+    "source_policy_definitions",
+    "source_policy_evaluations",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -567,6 +570,27 @@ def test_postgres_upgrade_from_v12d_adds_empty_baseline_history(
                 connection.scalar(text("SELECT count(*) FROM source_trusted_baseline_promotions"))
                 == 0
             )
+        assert _current_revision(engine) == HEAD_REVISION
+    finally:
+        engine.dispose()
+
+
+def test_postgres_upgrade_from_v12e_adds_empty_policy_history(
+    postgres_migration_environment: tuple[Config, str],
+) -> None:
+    config, database_url = postgres_migration_environment
+    engine = create_engine(database_url)
+    try:
+        command.upgrade(config, V12E_HEAD_REVISION)
+        before = set(inspect(engine).get_table_names())
+        assert "source_policy_definitions" not in before
+        assert "source_policy_evaluations" not in before
+        command.upgrade(config, "head")
+        after = set(inspect(engine).get_table_names())
+        assert after - before == {"source_policy_definitions", "source_policy_evaluations"}
+        with engine.connect() as connection:
+            assert connection.scalar(text("SELECT count(*) FROM source_policy_definitions")) == 0
+            assert connection.scalar(text("SELECT count(*) FROM source_policy_evaluations")) == 0
         assert _current_revision(engine) == HEAD_REVISION
     finally:
         engine.dispose()

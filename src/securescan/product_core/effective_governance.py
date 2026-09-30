@@ -25,6 +25,7 @@ from securescan.product_core.governance import AnalystDisposition
 from securescan.product_core.lifecycle import FindingLifecycleState
 
 _FINDING_ID = re.compile(r"^[0-9a-f]{64}$")
+_BULK_QUERY_SIZE = 200
 
 
 class EffectiveGovernanceReasonCode(StrEnum):
@@ -96,6 +97,68 @@ class EffectiveGovernanceService:
     def get(self, *, project_id: str, lineage_id: str, finding_id: str) -> EffectiveGovernance:
         self._validate_identifiers(project_id, lineage_id, finding_id)
         evaluated_at = self._now()
+        try:
+            with self._sessions() as session:
+                return self.get_many_in_session(
+                    session,
+                    project_id=project_id,
+                    lineage_id=lineage_id,
+                    finding_ids=(finding_id,),
+                    evaluated_at=evaluated_at,
+                )[0]
+        except EffectiveGovernanceError:
+            raise
+        except (SQLAlchemyError, TypeError, ValueError):
+            raise EffectiveGovernancePersistenceError from None
+
+    def get_many_in_session(
+        self,
+        session: Session,
+        *,
+        project_id: str,
+        lineage_id: str,
+        finding_ids: tuple[str, ...],
+        evaluated_at: datetime,
+    ) -> tuple[EffectiveGovernance, ...]:
+        """Project a bounded finding set in the caller's transaction and time domain."""
+        self._validate_scope(project_id, lineage_id)
+        evaluated_at = self._explicit_evaluated_at(evaluated_at)
+        if not isinstance(finding_ids, tuple):
+            raise EffectiveGovernanceValidationError("finding_ids must be a tuple")
+        ordered_ids = tuple(sorted(finding_ids))
+        if len(set(ordered_ids)) != len(ordered_ids):
+            raise EffectiveGovernanceValidationError("duplicate effective-governance finding")
+        for finding_id in ordered_ids:
+            if not isinstance(finding_id, str) or _FINDING_ID.fullmatch(finding_id) is None:
+                raise EffectiveGovernanceValidationError("invalid effective-governance identifier")
+        if not ordered_ids:
+            return ()
+
+        try:
+            rows_by_id = {}
+            for offset in range(0, len(ordered_ids), _BULK_QUERY_SIZE):
+                chunk = ordered_ids[offset : offset + _BULK_QUERY_SIZE]
+                rows = (
+                    session.execute(self._statement(lineage_id, project_id, chunk)).mappings().all()
+                )
+                for row in rows:
+                    finding_id = row["finding_id"]
+                    if finding_id in rows_by_id:
+                        raise EffectiveGovernancePersistenceError
+                    rows_by_id[finding_id] = row
+            if set(rows_by_id) != set(ordered_ids):
+                raise EffectiveGovernanceNotFoundError
+            return tuple(
+                self._project(lineage_id, finding_id, rows_by_id[finding_id], evaluated_at)
+                for finding_id in ordered_ids
+            )
+        except EffectiveGovernanceError:
+            raise
+        except (SQLAlchemyError, TypeError, ValueError):
+            raise EffectiveGovernancePersistenceError from None
+
+    @staticmethod
+    def _statement(lineage_id: str, project_id: str, finding_ids: tuple[str, ...]):
         latest_reopen = (
             select(
                 SourceFindingLifecycleEventRow.lineage_id.label("lineage_id"),
@@ -106,7 +169,7 @@ class EffectiveGovernanceService:
             )
             .where(
                 SourceFindingLifecycleEventRow.lineage_id == lineage_id,
-                SourceFindingLifecycleEventRow.finding_id == finding_id,
+                SourceFindingLifecycleEventRow.finding_id.in_(finding_ids),
                 SourceFindingLifecycleEventRow.event_kind == "TRANSITION",
                 SourceFindingLifecycleEventRow.resulting_state == "REOPENED",
             )
@@ -118,6 +181,7 @@ class EffectiveGovernanceService:
         )
         statement = (
             select(
+                SourceFindingLifecycleRow.finding_id.label("finding_id"),
                 SourceFindingLifecycleRow.current_state.label("lifecycle_state"),
                 SourceFindingLifecycleRow.transition_version.label("lifecycle_version"),
                 latest_reopen.c.transition_version.label("latest_reopen_version"),
@@ -154,10 +218,8 @@ class EffectiveGovernanceService:
             .outerjoin(
                 SourceFindingGovernanceRow,
                 and_(
-                    SourceFindingGovernanceRow.lineage_id
-                    == SourceFindingLifecycleRow.lineage_id,
-                    SourceFindingGovernanceRow.finding_id
-                    == SourceFindingLifecycleRow.finding_id,
+                    SourceFindingGovernanceRow.lineage_id == SourceFindingLifecycleRow.lineage_id,
+                    SourceFindingGovernanceRow.finding_id == SourceFindingLifecycleRow.finding_id,
                 ),
             )
             .outerjoin(
@@ -174,10 +236,8 @@ class EffectiveGovernanceService:
             .outerjoin(
                 SourceFindingSuppressionRow,
                 and_(
-                    SourceFindingSuppressionRow.lineage_id
-                    == SourceFindingLifecycleRow.lineage_id,
-                    SourceFindingSuppressionRow.finding_id
-                    == SourceFindingLifecycleRow.finding_id,
+                    SourceFindingSuppressionRow.lineage_id == SourceFindingLifecycleRow.lineage_id,
+                    SourceFindingSuppressionRow.finding_id == SourceFindingLifecycleRow.finding_id,
                 ),
             )
             .outerjoin(
@@ -194,19 +254,10 @@ class EffectiveGovernanceService:
             .where(
                 SourceTargetLineageRow.lineage_id == lineage_id,
                 SourceTargetLineageRow.project_id == project_id,
-                SourceFindingLifecycleRow.finding_id == finding_id,
+                SourceFindingLifecycleRow.finding_id.in_(finding_ids),
             )
         )
-        try:
-            with self._sessions() as session:
-                row = session.execute(statement).mappings().one_or_none()
-            if row is None:
-                raise EffectiveGovernanceNotFoundError
-            return self._project(lineage_id, finding_id, row, evaluated_at)
-        except EffectiveGovernanceError:
-            raise
-        except (SQLAlchemyError, TypeError, ValueError):
-            raise EffectiveGovernancePersistenceError from None
+        return statement
 
     def _project(self, lineage_id, finding_id, row, evaluated_at) -> EffectiveGovernance:
         lifecycle_state = FindingLifecycleState(row["lifecycle_state"])
@@ -266,8 +317,7 @@ class EffectiveGovernanceService:
 
         accepted_risk_expires_at = self._optional_utc(row["governance_expires_at"])
         if (
-            disposition is AnalystDisposition.ACCEPTED_RISK
-            and accepted_risk_expires_at is None
+            disposition is AnalystDisposition.ACCEPTED_RISK and accepted_risk_expires_at is None
         ) or (
             disposition is not AnalystDisposition.ACCEPTED_RISK
             and accepted_risk_expires_at is not None
@@ -284,9 +334,7 @@ class EffectiveGovernanceService:
             and governance_current_episode
         )
         accepted_risk_effective = (
-            accepted_risk_temporally_active
-            and lifecycle_active
-            and governance_current_episode
+            accepted_risk_temporally_active and lifecycle_active and governance_current_episode
         )
 
         suppression_expires_at = self._optional_utc(row["suppression_expires_at"])
@@ -298,28 +346,26 @@ class EffectiveGovernanceService:
             and suppression_expires_at > evaluated_at
         )
         suppression_effective = (
-            suppression_temporally_active
-            and lifecycle_active
-            and suppression_current_episode
+            suppression_temporally_active and lifecycle_active and suppression_current_episode
         )
 
         pre_reopen_governance = (
             governance_present
             and latest_reopen is not None
             and not governance_current_episode
-            and disposition
-            in {AnalystDisposition.FALSE_POSITIVE, AnalystDisposition.ACCEPTED_RISK}
+            and disposition in {AnalystDisposition.FALSE_POSITIVE, AnalystDisposition.ACCEPTED_RISK}
         )
         pre_reopen_suppression = (
-            suppression_present
-            and latest_reopen is not None
-            and not suppression_current_episode
+            suppression_present and latest_reopen is not None and not suppression_current_episode
         )
         review_required = lifecycle_state is FindingLifecycleState.REOPENED and (
-            (pre_reopen_governance and (
-                disposition is AnalystDisposition.FALSE_POSITIVE
-                or accepted_risk_temporally_active
-            ))
+            (
+                pre_reopen_governance
+                and (
+                    disposition is AnalystDisposition.FALSE_POSITIVE
+                    or accepted_risk_temporally_active
+                )
+            )
             or (pre_reopen_suppression and suppression_temporally_active)
         )
 
@@ -396,6 +442,26 @@ class EffectiveGovernanceService:
             valid = False
         if not valid:
             raise EffectiveGovernanceValidationError("invalid effective-governance identifier")
+
+    @staticmethod
+    def _validate_scope(project_id: str, lineage_id: str) -> None:
+        try:
+            valid = (
+                isinstance(project_id, str)
+                and str(UUID(project_id)) == project_id
+                and isinstance(lineage_id, str)
+                and str(UUID(lineage_id)) == lineage_id
+            )
+        except (AttributeError, TypeError, ValueError):
+            valid = False
+        if not valid:
+            raise EffectiveGovernanceValidationError("invalid effective-governance identifier")
+
+    @staticmethod
+    def _explicit_evaluated_at(value: datetime) -> datetime:
+        if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+            raise EffectiveGovernanceValidationError("evaluated_at must be timezone-aware")
+        return value.astimezone(UTC)
 
     def _now(self) -> datetime:
         value = self._clock()

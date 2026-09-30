@@ -298,6 +298,41 @@ def test_exact_self_comparison_is_all_present(delta_context) -> None:
     )
 
 
+def test_caller_session_delta_is_exactly_equivalent(delta_context) -> None:
+    _promote(delta_context, _BASELINE_RUN)
+    public = _delta(delta_context, _CANDIDATE_RUNS[0])
+    with delta_context["environment"].factory() as session:
+        internal = delta_context["delta"].evaluate_in_session(
+            session,
+            project_id=delta_context["project_id"],
+            lineage_id=delta_context["lineage"].lineage_id,
+            candidate_run_id=_CANDIDATE_RUNS[0],
+        )
+    assert internal == public
+
+
+def test_candidate_facts_use_historical_run_lifecycle_event(delta_context) -> None:
+    lifecycle = delta_context["pc2"][2]
+    finding_id = delta_context["reports"][_CANDIDATE_RUNS[0]].findings[0].finding_id
+    current = lifecycle.load_lifecycle(
+        lineage_id=delta_context["lineage"].lineage_id,
+        finding_id=finding_id,
+    )
+    assert current.current_state is FindingLifecycleState.EXISTING
+
+    with delta_context["environment"].factory() as session:
+        facts = lifecycle.load_candidate_facts_in_session(
+            session,
+            project_id=delta_context["project_id"],
+            lineage_id=delta_context["lineage"].lineage_id,
+            run_id=_CANDIDATE_RUNS[0],
+        )
+
+    fact = next(item for item in facts if item.finding_id == finding_id)
+    assert fact.lifecycle_state is FindingLifecycleState.REOPENED
+    assert fact.lifecycle_transition_version == 3
+
+
 def test_clean_candidate_proves_removed_for_exact_baseline_finding(delta_context) -> None:
     _promote(delta_context, str(_RUN_ID))
     result = _delta(delta_context, _BASELINE_RUN)
@@ -558,9 +593,7 @@ def test_clean_first_baseline_keeps_new_then_existing_candidates_introduced(
 
         baselines = SourceTrustedBaselineService(environment.factory, environment.store)
         delta = SourceSecurityDeltaService(environment.factory, environment.store)
-        monkeypatch.setattr(
-            baselines._index, "_rebuild_trusted_report", _report_loader(reports)
-        )
+        monkeypatch.setattr(baselines._index, "_rebuild_trusted_report", _report_loader(reports))
         monkeypatch.setattr(delta._index, "_rebuild_trusted_report", _report_loader(reports))
         baselines.promote(
             project_id=project_id,

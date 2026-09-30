@@ -135,63 +135,91 @@ class SourceSecurityDeltaService:
             with self._sessions() as session:
                 if session.get_bind().dialect.name == "postgresql":
                     session.connection(execution_options={"isolation_level": "REPEATABLE READ"})
-                lineage = session.get(SourceTargetLineageRow, lineage_id)
-                if lineage is None or lineage.project_id != project_id:
-                    raise SecurityDeltaNotFoundError
-                promotion = session.scalar(
-                    select(SourceTrustedBaselinePromotionRow)
-                    .where(SourceTrustedBaselinePromotionRow.lineage_id == lineage_id)
-                    .order_by(SourceTrustedBaselinePromotionRow.revision.desc())
-                    .limit(1)
-                )
-                if promotion is None:
-                    raise SecurityDeltaNotFoundError
-                baseline = session.get(SourceLineageRunRow, promotion.run_id)
-                candidate = session.get(SourceLineageRunRow, candidate_run_id)
-                if (
-                    baseline is None
-                    or baseline.lineage_id != lineage_id
-                    or candidate is None
-                    or candidate.lineage_id != lineage_id
-                ):
-                    raise SecurityDeltaNotFoundError
-                baseline_report = self._verified_report(session, baseline)
-                candidate_report = self._verified_report(session, candidate)
-                if candidate.sequence_number < baseline.sequence_number:
-                    return self._ordered_failure(
-                        promotion,
-                        baseline,
-                        candidate,
-                        baseline_report,
-                        candidate_report,
-                    )
-                findings = self._findings(
+                return self.evaluate_in_session(
                     session,
+                    project_id=project_id,
+                    lineage_id=lineage_id,
+                    candidate_run_id=candidate_run_id,
+                )
+        except SecurityDeltaError:
+            raise
+        except (
+            ProductCoreIndexError,
+            ProductCoreLifecycleError,
+            SQLAlchemyError,
+            TypeError,
+            ValueError,
+        ):
+            raise SecurityDeltaPersistenceError from None
+
+    def evaluate_in_session(
+        self,
+        session: Session,
+        *,
+        project_id: str,
+        lineage_id: str,
+        candidate_run_id: str,
+    ) -> SecurityDelta:
+        """Evaluate using the caller's transaction and statement snapshot."""
+        self._validate_identifiers(project_id, lineage_id, candidate_run_id)
+        try:
+            lineage = session.get(SourceTargetLineageRow, lineage_id)
+            if lineage is None or lineage.project_id != project_id:
+                raise SecurityDeltaNotFoundError
+            promotion = session.scalar(
+                select(SourceTrustedBaselinePromotionRow)
+                .where(SourceTrustedBaselinePromotionRow.lineage_id == lineage_id)
+                .order_by(SourceTrustedBaselinePromotionRow.revision.desc())
+                .limit(1)
+            )
+            if promotion is None:
+                raise SecurityDeltaNotFoundError
+            baseline = session.get(SourceLineageRunRow, promotion.run_id)
+            candidate = session.get(SourceLineageRunRow, candidate_run_id)
+            if (
+                baseline is None
+                or baseline.lineage_id != lineage_id
+                or candidate is None
+                or candidate.lineage_id != lineage_id
+            ):
+                raise SecurityDeltaNotFoundError
+            baseline_report = self._verified_report(session, baseline)
+            candidate_report = self._verified_report(session, candidate)
+            if candidate.sequence_number < baseline.sequence_number:
+                return self._ordered_failure(
+                    promotion,
                     baseline,
                     candidate,
                     baseline_report,
                     candidate_report,
                 )
-                summaries = self._authority_summaries(
-                    session,
-                    baseline,
-                    candidate,
-                    baseline_report,
-                    candidate_report,
-                    findings,
-                )
-                status = self._overall_status(summaries)
-                return SecurityDelta(
-                    baseline_id=promotion.baseline_id,
-                    baseline_run_id=promotion.run_id,
-                    baseline_revision=promotion.revision,
-                    baseline_sequence_number=baseline.sequence_number,
-                    candidate_run_id=candidate.run_id,
-                    candidate_sequence_number=candidate.sequence_number,
-                    comparison_status=status,
-                    authority_summaries=summaries,
-                    findings=findings,
-                )
+            findings = self._findings(
+                session,
+                baseline,
+                candidate,
+                baseline_report,
+                candidate_report,
+            )
+            summaries = self._authority_summaries(
+                session,
+                baseline,
+                candidate,
+                baseline_report,
+                candidate_report,
+                findings,
+            )
+            status = self._overall_status(summaries)
+            return SecurityDelta(
+                baseline_id=promotion.baseline_id,
+                baseline_run_id=promotion.run_id,
+                baseline_revision=promotion.revision,
+                baseline_sequence_number=baseline.sequence_number,
+                candidate_run_id=candidate.run_id,
+                candidate_sequence_number=candidate.sequence_number,
+                comparison_status=status,
+                authority_summaries=summaries,
+                findings=findings,
+            )
         except SecurityDeltaError:
             raise
         except (

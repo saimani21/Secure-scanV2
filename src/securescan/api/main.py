@@ -12,6 +12,7 @@ from securescan.api.effective_governance_routes import router as effective_gover
 from securescan.api.governance_routes import router as governance_router
 from securescan.api.job_routes import router as job_router
 from securescan.api.operations_routes import router as operations_router
+from securescan.api.policy_routes import router as policy_router
 from securescan.api.project_routes import router as project_router
 from securescan.api.run_routes import router as run_router
 from securescan.api.source_scan_routes import router as source_scan_router
@@ -42,6 +43,7 @@ from securescan.product_core import (
     EffectiveGovernanceService,
     SourceFindingGovernanceService,
     SourceFindingSuppressionService,
+    SourcePolicyService,
     SourceProjectService,
     SourceScanQueryService,
     SourceScanSubmissionService,
@@ -102,13 +104,14 @@ async def lifespan(application: FastAPI):
         application.state.source_finding_suppression_service = SourceFindingSuppressionService(
             session_factory
         )
-        application.state.effective_governance_service = EffectiveGovernanceService(
-            session_factory
-        )
+        application.state.effective_governance_service = EffectiveGovernanceService(session_factory)
         application.state.source_trusted_baseline_service = SourceTrustedBaselineService(
             session_factory, artifact_store
         )
         application.state.source_security_delta_service = SourceSecurityDeltaService(
+            session_factory, artifact_store
+        )
+        application.state.source_policy_service = SourcePolicyService(
             session_factory, artifact_store
         )
         application.state.source_orchestration_coordinator_service = (
@@ -135,6 +138,7 @@ app.include_router(governance_router)
 app.include_router(suppression_router)
 app.include_router(effective_governance_router)
 app.include_router(trusted_baseline_router)
+app.include_router(policy_router)
 app.include_router(source_scan_router)
 app.include_router(frontend_router)
 
