@@ -208,6 +208,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.1 | SecureScan Source v1.1.0 | COMPLETE - FROZEN |
 | V1.2A | Governance Contract Audit | COMPLETE - CONTRACT FROZEN |
 | V1.2B | Governance Core + Audit + Basic Concurrency | COMPLETE - FROZEN |
+| V1.2C | Suppression + Expiry | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -236,6 +237,25 @@ was restored into a disposable database and upgraded from `f7c2d4e8a901` to
 unchanged, and the new governance tables were empty. The preserved V1.1 runtime
 was never migrated, reset, stopped, or mutated. See
 `docs/source-v1.2b-governance-core.md`.
+
+V1.2C adds temporary suppression as a separate mutable object keyed by the same
+exact `(lineage_id, finding_id)` attachment identity. Each activation episode
+has its own `suppression_id`; active updates retain it, while activation after
+expiry or revocation creates a new ID. Reason and timezone-aware future expiry
+are mandatory. Active state is derived from expiry and revocation at read time,
+never persisted, and explicit revocation preserves current state and immutable
+history. Migration `c4e8a1f6b203` adds only suppression current/event tables.
+It does not change evidence, scanner truth, lifecycle, disposition, priority,
+SARIF, CLI, UI, counts, or policy behavior.
+
+V1.2C is complete and frozen after 447 unique non-PostgreSQL and 11 mandatory
+PostgreSQL tests. PostgreSQL evidence includes first-write, update, expiry/new
+episode, revoke-versus-update, stale-revoke, and cross-project/lineage races. A
+read-only V1.1 database copy with 2 projects, 4 analysis runs, and 450 lifecycle
+rows was upgraded through V1.2B and V1.2C; a seeded V1.2B governance decision
+and event retained identical counts and material digest, and the new suppression
+tables began empty. The preserved deployment was never mutated. See
+`docs/source-v1.2c-suppression-expiry.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one

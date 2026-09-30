@@ -1050,6 +1050,144 @@ class SourceFindingGovernanceEventRow(Base):
     resulting_revision: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
+class SourceFindingSuppressionRow(Base):
+    __tablename__ = "source_finding_suppressions"
+
+    __table_args__ = (
+        CheckConstraint(
+            "length(reason) >= 1 AND length(reason) <= 1000",
+            name="ck_source_finding_suppressions_reason",
+        ),
+        CheckConstraint(
+            "expires_at > created_at",
+            name="ck_source_finding_suppressions_expiry",
+        ),
+        CheckConstraint(
+            "revoked_at IS NULL OR "
+            "(revoked_at >= created_at AND revoked_at <= updated_at)",
+            name="ck_source_finding_suppressions_revocation",
+        ),
+        CheckConstraint(
+            "revision >= 1",
+            name="ck_source_finding_suppressions_revision",
+        ),
+        CheckConstraint(
+            "actor_type = 'LOCAL_OPERATOR'",
+            name="ck_source_finding_suppressions_actor",
+        ),
+        CheckConstraint(
+            "created_at <= updated_at",
+            name="ck_source_finding_suppressions_time_order",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "finding_id"],
+            ["source_finding_lifecycles.lineage_id", "source_finding_lifecycles.finding_id"],
+            name="fk_source_finding_suppressions_lifecycle",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "suppression_id",
+            name="uq_source_finding_suppressions_id",
+        ),
+        Index(
+            "ix_source_finding_suppressions_lineage_expiry",
+            "lineage_id",
+            "expires_at",
+        ),
+    )
+
+    lineage_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    finding_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    suppression_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourceFindingSuppressionEventRow(Base):
+    __tablename__ = "source_finding_suppression_events"
+
+    __table_args__ = (
+        CheckConstraint(
+            "operation IN ('CREATE', 'UPDATE', 'REVOKE')",
+            name="ck_source_finding_suppression_events_operation",
+        ),
+        CheckConstraint(
+            "previous_reason IS NULL OR "
+            "(length(previous_reason) >= 1 AND length(previous_reason) <= 1000)",
+            name="ck_source_finding_suppression_events_previous_reason",
+        ),
+        CheckConstraint(
+            "length(new_reason) >= 1 AND length(new_reason) <= 1000",
+            name="ck_source_finding_suppression_events_new_reason",
+        ),
+        CheckConstraint(
+            "new_expires_at IS NOT NULL",
+            name="ck_source_finding_suppression_events_new_expiry",
+        ),
+        CheckConstraint(
+            "(operation = 'REVOKE' AND previous_reason IS NOT NULL "
+            "AND previous_expires_at IS NOT NULL AND previous_revoked_at IS NULL "
+            "AND new_revoked_at IS NOT NULL) OR "
+            "(operation IN ('CREATE', 'UPDATE') AND new_revoked_at IS NULL)",
+            name="ck_source_finding_suppression_events_material",
+        ),
+        CheckConstraint(
+            "resulting_revision >= 1",
+            name="ck_source_finding_suppression_events_revision",
+        ),
+        CheckConstraint(
+            "actor_type = 'LOCAL_OPERATOR'",
+            name="ck_source_finding_suppression_events_actor",
+        ),
+        ForeignKeyConstraint(
+            ["lineage_id", "finding_id"],
+            ["source_finding_lifecycles.lineage_id", "source_finding_lifecycles.finding_id"],
+            name="fk_source_finding_suppression_events_lifecycle",
+            ondelete="CASCADE",
+        ),
+        UniqueConstraint(
+            "lineage_id",
+            "finding_id",
+            "resulting_revision",
+            name="uq_source_finding_suppression_events_revision",
+        ),
+        Index(
+            "ix_source_finding_suppression_events_history",
+            "lineage_id",
+            "finding_id",
+            "resulting_revision",
+        ),
+        Index(
+            "ix_source_finding_suppression_events_suppression",
+            "suppression_id",
+        ),
+    )
+
+    event_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    lineage_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    finding_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    suppression_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    operation: Mapped[str] = mapped_column(String(16), nullable=False)
+    previous_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    new_reason: Mapped[str] = mapped_column(Text, nullable=False)
+    previous_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    new_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    previous_revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    new_revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    actor_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    resulting_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
 class SourceOrchestrationAuthorityRow(Base):
     __tablename__ = "source_orchestration_authorities"
 

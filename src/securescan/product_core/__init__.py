@@ -95,6 +95,19 @@ from .submission import (
     SourceScanSubmission,
     SourceScanSubmissionService,
 )
+from .suppression import (
+    FindingSuppression,
+    FindingSuppressionConflictError,
+    FindingSuppressionError,
+    FindingSuppressionEvent,
+    FindingSuppressionEventPage,
+    FindingSuppressionNotFoundError,
+    FindingSuppressionPersistenceError,
+    FindingSuppressionStateError,
+    FindingSuppressionValidationError,
+    SourceFindingSuppressionService,
+    SuppressionOperation,
+)
 
 __all__ = [
     "DEFAULT_FINALIZATION_LIMIT",
@@ -151,6 +164,17 @@ __all__ = [
     "SourcePreparedScanRequest",
     "SourceScanSubmission",
     "SourceScanSubmissionService",
+    "FindingSuppression",
+    "FindingSuppressionConflictError",
+    "FindingSuppressionError",
+    "FindingSuppressionEvent",
+    "FindingSuppressionEventPage",
+    "FindingSuppressionNotFoundError",
+    "FindingSuppressionPersistenceError",
+    "FindingSuppressionStateError",
+    "FindingSuppressionValidationError",
+    "SourceFindingSuppressionService",
+    "SuppressionOperation",
     "DEFAULT_QUERY_LIMIT",
     "MAX_QUERY_LIMIT",
     "InvalidScanFilterError",

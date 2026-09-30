@@ -20,7 +20,8 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
 V11_HEAD_REVISION = "f7c2d4e8a901"
-HEAD_REVISION = "a2b7c4d9e105"
+V12B_HEAD_REVISION = "a2b7c4d9e105"
+HEAD_REVISION = "c4e8a1f6b203"
 
 APPLICATION_TABLES = {
     "projects",
@@ -44,6 +45,8 @@ APPLICATION_TABLES = {
     "source_scan_submissions",
     "source_finding_governance",
     "source_finding_governance_events",
+    "source_finding_suppressions",
+    "source_finding_suppression_events",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -192,6 +195,84 @@ def _assert_governance_schema(database_inspector) -> None:
     assert "uq_source_finding_governance_events_revision" in event_uniques
 
 
+def _assert_suppression_schema(database_inspector) -> None:
+    current_columns = {
+        item["name"]: item for item in database_inspector.get_columns("source_finding_suppressions")
+    }
+    assert set(current_columns) == {
+        "lineage_id",
+        "finding_id",
+        "suppression_id",
+        "reason",
+        "expires_at",
+        "revoked_at",
+        "revision",
+        "actor_type",
+        "created_at",
+        "updated_at",
+    }
+    current_checks = {
+        item["name"]
+        for item in database_inspector.get_check_constraints("source_finding_suppressions")
+    }
+    assert current_checks >= {
+        "ck_source_finding_suppressions_reason",
+        "ck_source_finding_suppressions_expiry",
+        "ck_source_finding_suppressions_revocation",
+        "ck_source_finding_suppressions_revision",
+        "ck_source_finding_suppressions_actor",
+        "ck_source_finding_suppressions_time_order",
+    }
+    current_uniques = {
+        item["name"]
+        for item in database_inspector.get_unique_constraints("source_finding_suppressions")
+    }
+    assert "uq_source_finding_suppressions_id" in current_uniques
+
+    event_columns = {
+        item["name"]
+        for item in database_inspector.get_columns("source_finding_suppression_events")
+    }
+    assert event_columns == {
+        "event_id",
+        "lineage_id",
+        "finding_id",
+        "suppression_id",
+        "operation",
+        "previous_reason",
+        "new_reason",
+        "previous_expires_at",
+        "new_expires_at",
+        "previous_revoked_at",
+        "new_revoked_at",
+        "actor_type",
+        "occurred_at",
+        "resulting_revision",
+    }
+    event_checks = {
+        item["name"]
+        for item in database_inspector.get_check_constraints(
+            "source_finding_suppression_events"
+        )
+    }
+    assert event_checks >= {
+        "ck_source_finding_suppression_events_operation",
+        "ck_source_finding_suppression_events_previous_reason",
+        "ck_source_finding_suppression_events_new_reason",
+        "ck_source_finding_suppression_events_new_expiry",
+        "ck_source_finding_suppression_events_material",
+        "ck_source_finding_suppression_events_revision",
+        "ck_source_finding_suppression_events_actor",
+    }
+    event_uniques = {
+        item["name"]
+        for item in database_inspector.get_unique_constraints(
+            "source_finding_suppression_events"
+        )
+    }
+    assert "uq_source_finding_suppression_events_revision" in event_uniques
+
+
 def _validated_test_database_url() -> str:
     database_url = os.environ.get("SECURESCAN_TEST_POSTGRES_URL")
     if database_url is None:
@@ -303,6 +384,7 @@ def test_postgres_migration_round_trip_and_schema_contract(
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
         _assert_governance_schema(inspector)
+        _assert_suppression_schema(inspector)
         job_check_constraints = {
             constraint["name"] for constraint in inspector.get_check_constraints("jobs")
         }
@@ -330,6 +412,7 @@ def test_postgres_migration_round_trip_and_schema_contract(
         _assert_cancellation_timestamp_column(inspector)
         _assert_tool_execution_attempt_identity(inspector)
         _assert_governance_schema(inspector)
+        _assert_suppression_schema(inspector)
         assert _current_revision(engine) == HEAD_REVISION
         command.check(config)
     finally:
@@ -366,6 +449,33 @@ def test_postgres_upgrade_from_v11_head_preserves_existing_data(
             )
         inspector = inspect(engine)
         _assert_governance_schema(inspector)
+        _assert_suppression_schema(inspector)
+        assert _current_revision(engine) == HEAD_REVISION
+    finally:
+        engine.dispose()
+
+
+def test_postgres_upgrade_from_v12b_preserves_governance_schema(
+    postgres_migration_environment: tuple[Config, str],
+) -> None:
+    config, database_url = postgres_migration_environment
+    engine = create_engine(database_url)
+    try:
+        command.upgrade(config, V12B_HEAD_REVISION)
+        before = inspect(engine)
+        _assert_governance_schema(before)
+        governance_columns = tuple(
+            item["name"] for item in before.get_columns("source_finding_governance")
+        )
+
+        command.upgrade(config, "head")
+
+        after = inspect(engine)
+        assert tuple(
+            item["name"] for item in after.get_columns("source_finding_governance")
+        ) == governance_columns
+        _assert_governance_schema(after)
+        _assert_suppression_schema(after)
         assert _current_revision(engine) == HEAD_REVISION
     finally:
         engine.dispose()

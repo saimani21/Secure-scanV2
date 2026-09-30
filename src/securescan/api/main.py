@@ -14,6 +14,7 @@ from securescan.api.operations_routes import router as operations_router
 from securescan.api.project_routes import router as project_router
 from securescan.api.run_routes import router as run_router
 from securescan.api.source_scan_routes import router as source_scan_router
+from securescan.api.suppression_routes import router as suppression_router
 from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.config import get_settings
 from securescan.domain.enums import TargetType
@@ -37,6 +38,7 @@ from securescan.orchestration.service import SourceOrchestrationService
 from securescan.persistence.database import create_session_factory
 from securescan.product_core import (
     SourceFindingGovernanceService,
+    SourceFindingSuppressionService,
     SourceProjectService,
     SourceScanQueryService,
     SourceScanSubmissionService,
@@ -92,6 +94,9 @@ async def lifespan(application: FastAPI):
         application.state.source_finding_governance_service = SourceFindingGovernanceService(
             session_factory
         )
+        application.state.source_finding_suppression_service = SourceFindingSuppressionService(
+            session_factory
+        )
         application.state.source_orchestration_coordinator_service = (
             SourceOrchestrationCoordinatorService(
                 session_factory,
@@ -113,6 +118,7 @@ app.include_router(run_router)
 app.include_router(operations_router)
 app.include_router(project_router)
 app.include_router(governance_router)
+app.include_router(suppression_router)
 app.include_router(source_scan_router)
 app.include_router(frontend_router)
 
