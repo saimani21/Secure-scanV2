@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from securescan.adapters.fake_scanner import FakeScannerAdapter
 from securescan.api.effective_governance_routes import router as effective_governance_router
 from securescan.api.governance_routes import router as governance_router
+from securescan.api.guidance_routes import router as guidance_router
 from securescan.api.job_routes import router as job_router
 from securescan.api.operations_routes import router as operations_router
 from securescan.api.policy_routes import router as policy_router
@@ -51,6 +52,7 @@ from securescan.product_core import (
     SourceTrustedBaselineService,
     SourceTrustedTargetSubmissionService,
 )
+from securescan.product_core.guidance import FindingGuidanceService
 from securescan.runs import RunQueryService
 from securescan.runtime_storage import initialize_source_runtime_storage
 from securescan.services.scan_service import ScanService
@@ -97,6 +99,9 @@ async def lifespan(application: FastAPI):
         application.state.source_scan_query_service = SourceScanQueryService(
             session_factory, artifact_store
         )
+        application.state.finding_guidance_service = FindingGuidanceService(
+            session_factory, artifact_store
+        )
         application.state.source_project_service = SourceProjectService(session_factory)
         application.state.source_finding_governance_service = SourceFindingGovernanceService(
             session_factory
@@ -137,6 +142,7 @@ app.include_router(project_router)
 app.include_router(governance_router)
 app.include_router(suppression_router)
 app.include_router(effective_governance_router)
+app.include_router(guidance_router)
 app.include_router(trusted_baseline_router)
 app.include_router(policy_router)
 app.include_router(source_scan_router)

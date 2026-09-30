@@ -212,6 +212,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.2D | Effective Governance + Inheritance | COMPLETE - FROZEN |
 | V1.2E | Trusted Baseline + Security Delta | COMPLETE - FROZEN |
 | V1.2F | Deterministic Policy Engine | COMPLETE - FROZEN |
+| V1.2G | Deterministic Finding Guidance | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -329,6 +330,20 @@ disposable container and upgraded through F; two projects, four analysis runs,
 and 450 lifecycle rows retained matching canonical hashes. The new policy
 tables began empty, and Alembic found no drift. See
 `docs/source-v1.2f-deterministic-policy.md`.
+
+V1.2G adds derived, run-scoped guidance from verified published S4 reports.
+Semgrep is CWE-classification or family-level; Gitleaks is family-level
+and secret-safe; OSV names only accepted advisory and fixed-event facts;
+Checkov names exact source IaC checks without claiming live-cloud state.
+The GET-only trusted-host route is read-only and has no migration, scanner,
+S4, identity, lifecycle, priority, governance, suppression, baseline, delta,
+policy, CLI, SARIF, UI, network, AI, or patch-generation change. Its gate
+selected 901 current-branch non-PostgreSQL cases (897 passed, four opt-in
+real-Syft skips), 65 existing Web UI passes, 36 isolated PostgreSQL passes,
+and four additional exact-run/alias/hostile-input passes: 1,006 unique selected cases,
+1,002 passed, four classified skips, zero failures. The database tests used
+a disposable container and did not mutate preserved deployments. See
+`docs/source-v1.2g-deterministic-guidance.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
