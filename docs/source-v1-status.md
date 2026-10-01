@@ -213,6 +213,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.2E | Trusted Baseline + Security Delta | COMPLETE - FROZEN |
 | V1.2F | Deterministic Policy Engine | COMPLETE - FROZEN |
 | V1.2G | Deterministic Finding Guidance | COMPLETE - FROZEN |
+| V1.2H | Unified API, CLI and Web product experience | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -344,6 +345,18 @@ and four additional exact-run/alias/hostile-input passes: 1,006 unique selected 
 1,002 passed, four classified skips, zero failures. The database tests used
 a disposable container and did not mutate preserved deployments. See
 `docs/source-v1.2g-deterministic-guidance.md`.
+
+V1.2H connects frozen B–G product facts across bounded API, trusted-host CLI,
+and the same-origin Web UI. Repository intake and scan start remain host CLI-only;
+the browser cannot upload a repository or submit arbitrary paths. Its exact-run
+findings, guidance, governance, baseline, delta, policy and coverage views retain
+their original authority and temporal labels. No migration or scanner-semantic
+change was introduced. The release gate reconciled 3,320 unique collected cases:
+3,257 passes, one classified second-Checkov-launcher opt-in skip, 62 documented
+historical branch-binding exclusions, and zero unexplained current-branch
+failures or unclassified missing cases. A fresh disposable PostgreSQL gate and
+consolidated real operator/export flow passed. See
+`docs/source-v1.2h-unified-product-experience.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one

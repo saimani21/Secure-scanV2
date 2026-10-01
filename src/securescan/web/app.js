@@ -1,6 +1,7 @@
 "use strict";
 
 import { getReadiness } from "/assets/api.js";
+import { renderAssurancePage } from "/assets/assurance.js";
 import {
   breadcrumb,
   codeValue,
@@ -26,6 +27,7 @@ import { beginRequest, beginRoute } from "/assets/state.js";
 
 const ROUTE_TITLES = Object.freeze({
   findings: "Findings",
+  assurance: "Assurance",
   dependencies: "Dependencies",
   coverage: "Coverage",
   gaps: "Analysis gaps",
@@ -41,6 +43,7 @@ const GLOBAL_LINKS = Object.freeze([
 const SCAN_LINKS = Object.freeze([
   { suffix: "", label: "Overview", shortLabel: "OV", routeName: "scan" },
   { suffix: "/findings", label: "Findings", shortLabel: "FI", routeName: "findings" },
+  { suffix: "/assurance", label: "Assurance", shortLabel: "AS", routeName: "assurance" },
   {
     suffix: "/dependencies",
     label: "Dependencies",
@@ -151,6 +154,7 @@ function renderRoute(route, region, shellContext) {
     scan: renderScanPage,
     scans: renderScansPage,
     findings: renderFindingsPage,
+    assurance: renderAssurancePage,
     dependencies: renderDependenciesPage,
     coverage: renderCoveragePage,
     gaps: renderGapsPage,

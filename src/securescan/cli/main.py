@@ -47,6 +47,10 @@ from .developer import (
 )
 from .developer_commands import register_developer_commands
 from .presentation import terminal_text
+from .product_assurance import register_assurance_commands
+from .product_commands import register_product_commands
+from .product_findings import display_exact_run_findings, query_exact_run_findings
+from .product_guidance import register_guidance_commands
 from .source import (
     SourceCliError,
     canonical_json,
@@ -504,6 +508,7 @@ def findings(
     category: Annotated[str | None, typer.Option("--category")] = None,
     priority: Annotated[str | None, typer.Option("--priority")] = None,
     lifecycle: Annotated[str | None, typer.Option("--lifecycle")] = None,
+    exact_run: Annotated[bool, typer.Option("--exact-run")] = False,
     limit: Annotated[int, typer.Option("--limit")] = 50,
     offset: Annotated[int, typer.Option("--offset")] = 0,
     json_output: Annotated[bool, typer.Option("--json")] = False,
@@ -512,17 +517,26 @@ def findings(
 
     try:
         with create_source_cli_services() as services:
-            page = query_findings(
-                services,
-                run_id,
-                authority=authority,
-                category=category,
-                priority=priority,
-                lifecycle_state=lifecycle,
-                limit=limit,
-                offset=offset,
-            )
-        _display_findings(finding_page_data(page), json_output=json_output)
+            if exact_run:
+                product_page = query_exact_run_findings(
+                    services, run_id, authority=authority, category=category,
+                    priority=priority, lifecycle_state=lifecycle, limit=limit, offset=offset,
+                )
+            else:
+                page = query_findings(
+                    services,
+                    run_id,
+                    authority=authority,
+                    category=category,
+                    priority=priority,
+                    lifecycle_state=lifecycle,
+                    limit=limit,
+                    offset=offset,
+                )
+        if exact_run:
+            display_exact_run_findings(product_page, json_output=json_output)
+        else:
+            _display_findings(finding_page_data(page), json_output=json_output)
     except SourceCliError as exc:
         _fail(exc, json_output=json_output)
     except Exception:
@@ -693,6 +707,9 @@ def run_fake(
 
 
 register_developer_commands(app, lambda: create_source_cli_services(), _fail)
+register_product_commands(app, lambda: create_source_cli_services(), _fail)
+register_assurance_commands(app, lambda: create_source_cli_services(), _fail)
+register_guidance_commands(app, lambda: create_source_cli_services(), _fail)
 
 
 if __name__ == "__main__":

@@ -1927,3 +1927,139 @@
     display: none;
   }
 }
+
+.project-create-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-1);
+  padding: var(--space-4);
+}
+
+.project-create-form label {
+  width: 100%;
+  font-size: var(--font-metadata);
+  font-weight: 700;
+}
+
+.project-name-input {
+  flex: 1 1 220px;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-1);
+  background: var(--color-background);
+  color: var(--color-text);
+  padding: var(--space-3) var(--space-4);
+}
+
+.project-name-input:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.project-create-message {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.finding-governance {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+.finding-governance h3,
+.finding-governance h4 {
+  margin: 0;
+}
+
+.product-form {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-1);
+  padding: var(--space-4);
+}
+
+.product-form select,
+.product-form textarea,
+.product-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-1);
+  background: var(--color-background);
+  color: var(--color-text);
+  padding: var(--space-3) var(--space-4);
+  font: inherit;
+}
+
+.product-form :is(select, textarea, input):focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.product-form .button {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.product-form p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.assurance-page .page-section {
+  min-width: 0;
+}
+
+.assurance-block {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.assurance-block > p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.assurance-list {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding-left: var(--space-5);
+  overflow-wrap: anywhere;
+}
+
+.product-confirmation {
+  max-width: min(560px, calc(100vw - 2rem));
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-1);
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  padding: var(--space-5);
+}
+
+.product-confirmation::backdrop {
+  background: rgb(0 0 0 / 65%);
+}
+
+.product-confirmation .button {
+  margin-right: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.status-error .status-dot {
+  background: #b892ff;
+  color: #b892ff;
+}

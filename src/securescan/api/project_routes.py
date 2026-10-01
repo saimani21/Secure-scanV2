@@ -6,7 +6,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from securescan.api.job_schemas import ApiErrorResponse
-from securescan.api.project_schemas import ProjectPageResponse, ProjectSummaryResponse
+from securescan.api.project_schemas import (
+    ProjectCreateRequest,
+    ProjectPageResponse,
+    ProjectSummaryResponse,
+)
 from securescan.api.source_scan_routes import get_source_query_service
 from securescan.api.source_scan_schemas import ScanPageResponse
 from securescan.product_core import (
@@ -59,6 +63,25 @@ _RESPONSES = {
     422: {"model": ApiErrorResponse},
     503: {"model": ApiErrorResponse},
 }
+
+
+@router.post("", response_model=ProjectSummaryResponse, responses=_RESPONSES, status_code=201)
+def create_project(
+    body: ProjectCreateRequest,
+    service: Annotated[SourceProjectService, Depends(get_source_project_service)],
+) -> ProjectSummaryResponse:
+    # Use the frozen Product Core name validator; H adds no naming policy.
+    try:
+        service._name(body.name)
+    except SourceProjectError as error:
+        raise _error("INVALID_PROJECT_NAME", "Project name is invalid", 422) from error
+    try:
+        project = service.create(name=body.name)
+    except SourceProjectError as error:
+        raise _error(
+            "PROJECT_CREATE_UNAVAILABLE", "Source project creation is unavailable", 503
+        ) from error
+    return ProjectSummaryResponse.model_validate(project)
 
 
 @router.get("", response_model=ProjectPageResponse, responses=_RESPONSES)

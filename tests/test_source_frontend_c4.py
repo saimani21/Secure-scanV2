@@ -28,7 +28,7 @@ def test_c4_uses_only_frozen_findings_and_lazy_report_endpoints() -> None:
     findings = _SOURCES["findings.js"]
     assert 'getJson(`/v1/scans/${segment}/findings?' in api
     assert 'getJson(`/v1/scans/${segment}/report`' in api
-    assert "services.getFindings(runId" in findings
+    assert "services.getRunProductFindings || services.getFindings" in findings
     assert "services.getScanReport(runId" in findings
     assert "ensureReport()" in findings
     for forbidden in (
@@ -41,12 +41,10 @@ def test_c4_uses_only_frozen_findings_and_lazy_report_endpoints() -> None:
         "/gaps",
         "EPSS",
         "KEV",
-        "Accept Risk",
-        "False Positive",
-        "Suppress",
     ):
         assert forbidden not in findings
 
+    assert "governanceController.select(selectedSummary())" in findings
 
 def test_filters_ordering_vocabularies_and_query_state_match_product_core() -> None:
     findings = _SOURCES["findings.js"]

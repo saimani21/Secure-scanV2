@@ -1,6 +1,6 @@
 "use strict";
 
-const STATUS_TONES = new Set(["success", "warning", "failure", "neutral"]);
+const STATUS_TONES = new Set(["success", "warning", "failure", "error", "neutral"]);
 
 export function createElement(tagName, options = {}, children = []) {
   const node = document.createElement(tagName);

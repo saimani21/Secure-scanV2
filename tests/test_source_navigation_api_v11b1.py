@@ -246,11 +246,11 @@ def test_main_application_registers_exact_navigation_get_routes() -> None:
     from securescan.api.main import app
 
     paths = app.openapi()["paths"]
-    assert set(paths["/v1/projects"]) == {"get"}
+    assert set(paths["/v1/projects"]) == {"get", "post"}
     assert set(paths["/v1/projects/{project_id}"]) == {"get"}
     assert set(paths["/v1/projects/{project_id}/scans"]) == {"get"}
     assert set(paths["/v1/scans"]) == {"get", "post"}
-    assert "post" not in paths["/v1/projects"]
+    assert "post" in paths["/v1/projects"]
     operation_ids = tuple(
         operation["operationId"]
         for path in paths.values()

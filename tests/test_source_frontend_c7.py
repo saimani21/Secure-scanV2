@@ -48,13 +48,14 @@ def test_c7_every_approved_route_has_real_navigation_and_a_renderer() -> None:
         ("scans", "renderScansPage"),
         ("scan", "renderScanPage"),
         ("findings", "renderFindingsPage"),
+        ("assurance", "renderAssurancePage"),
         ("dependencies", "renderDependenciesPage"),
         ("coverage", "renderCoveragePage"),
         ("gaps", "renderGapsPage"),
         ("report", "renderReportPage"),
     ):
         assert f"{route}: {renderer}" in application
-    for suffix in ("findings", "dependencies", "coverage", "gaps", "report"):
+    for suffix in ("findings", "assurance", "dependencies", "coverage", "gaps", "report"):
         assert suffix in router
         assert f'routeName: "{suffix}"' in application
     for phrase in (
@@ -79,7 +80,11 @@ def test_c7_hostile_text_and_browser_security_invariants_are_global() -> None:
         assert sink not in _ALL_JAVASCRIPT
     assert 'name.toLowerCase().startsWith("on")' in _JAVASCRIPT["components.js"]
     assert 'method: "GET"' in _JAVASCRIPT["api.js"]
-    assert not re.search(r'method:\s*"(?:POST|PUT|PATCH|DELETE)"', _ALL_JAVASCRIPT)
+    read_only_modules = "\n".join(
+        source for name, source in _JAVASCRIPT.items() if name != "project_mutations.js"
+    )
+    assert not re.search(r'method:\s*"(?:POST|PUT|PATCH|DELETE)"', read_only_modules)
+    assert _JAVASCRIPT["project_mutations.js"].count('method: "POST"') == 1
     assert "unicode-bidi: isolate" in _ALL_STYLES
     assert "overflow-wrap: anywhere" in _ALL_STYLES
     assert "api.osv.dev" not in _ALL_JAVASCRIPT

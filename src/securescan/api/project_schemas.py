@@ -9,6 +9,10 @@ class _StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 
 
+class ProjectCreateRequest(_StrictModel):
+    name: str
+
+
 class ProjectSummaryResponse(_StrictModel):
     project_id: str
     name: str

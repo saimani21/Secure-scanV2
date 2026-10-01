@@ -23,6 +23,7 @@ from securescan.observability.readiness import _bootstrap_database_schema
 from securescan.orchestration.models import frozen_source_v1_authority_roster
 from securescan.persistence.database import create_session_factory, utc_now
 from securescan.product_core import (
+    EffectiveGovernanceService,
     InvalidProjectPaginationError,
     InvalidScanFilterError,
     InvalidScanPaginationError,
@@ -35,6 +36,7 @@ from securescan.product_core import (
     SourceDependencySummary,
     SourceFindingSummary,
     SourceGapSummary,
+    SourcePolicyService,
     SourcePreparedScanRequest,
     SourceProject,
     SourceProjectError,
@@ -51,7 +53,11 @@ from securescan.product_core import (
     SourceScanSubmission,
     SourceScanSubmissionService,
     SourceScanSummary,
+    SourceSecurityDeltaService,
+    SourceTrustedBaselineService,
 )
+from securescan.product_core.guidance import FindingGuidanceService
+from securescan.product_core.product_view import SourceFindingProductViewService
 from securescan.scanners.checkov import (
     CHECKOV_EXECUTABLE_UNAVAILABLE,
     CHECKOV_SOURCE_ANALYZER_ID,
@@ -190,6 +196,12 @@ class SourceCliServices:
     clock: Callable[[], datetime] = utc_now
     idempotency_key_factory: Callable[[], str] = lambda: secrets.token_hex(32)
     projects: SourceProjectService | None = None
+    policy: SourcePolicyService | None = None
+    guidance: FindingGuidanceService | None = None
+    product_findings: SourceFindingProductViewService | None = None
+    baseline: SourceTrustedBaselineService | None = None
+    delta: SourceSecurityDeltaService | None = None
+    effective_governance: EffectiveGovernanceService | None = None
     monotonic: Callable[[], float] = time.monotonic
     sleep: Callable[[float], None] = time.sleep
 
@@ -377,6 +389,12 @@ def create_source_cli_services() -> Iterator[SourceCliServices]:
             ),
             default_deadline_seconds=settings.source_scan_deadline_seconds,
             projects=SourceProjectService(session_factory),
+            policy=SourcePolicyService(session_factory, artifacts),
+            guidance=FindingGuidanceService(session_factory, artifacts),
+            product_findings=SourceFindingProductViewService(session_factory, artifacts),
+            baseline=SourceTrustedBaselineService(session_factory, artifacts),
+            delta=SourceSecurityDeltaService(session_factory, artifacts),
+            effective_governance=EffectiveGovernanceService(session_factory),
         )
     finally:
         engine.dispose()

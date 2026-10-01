@@ -11,6 +11,7 @@ import {
   paginationControls,
 } from "/assets/components.js";
 import { boundedDisplayText, formatDate, paginationLabel } from "/assets/format.js";
+import { projectCreateForm } from "/assets/project_create.js";
 import { isCanonicalUuid } from "/assets/router.js";
 import { beginRequest } from "/assets/state.js";
 
@@ -71,8 +72,8 @@ export function noProjectsState() {
   return createElement("div", { className: "state-stack" }, [
     emptyState(
       "No projects yet",
-      "Create a project from the trusted SecureScan host.",
-      "Browser project creation is not available.",
+      "Create a project above, or from the trusted SecureScan host.",
+      "Repository preparation and scan intake remain trusted-host CLI operations.",
     ),
     command,
   ]);
@@ -105,6 +106,7 @@ export function renderProjectsPage({ region, services = { getProjects } }) {
         title: "Repository projects",
         description: "Open a project to review its durable scan history.",
       }),
+      projectCreateForm(),
       listRegion,
     ]),
   );

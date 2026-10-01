@@ -27,19 +27,28 @@ _SECURITY_HEADERS = {
 }
 _ASSETS = {
     "app.js": "text/javascript; charset=utf-8",
+    "assurance.js": "text/javascript; charset=utf-8",
+    "assurance_api.js": "text/javascript; charset=utf-8",
     "api.js": "text/javascript; charset=utf-8",
     "components.js": "text/javascript; charset=utf-8",
     "coverage.js": "text/javascript; charset=utf-8",
     "dependencies.js": "text/javascript; charset=utf-8",
     "format.js": "text/javascript; charset=utf-8",
     "findings.js": "text/javascript; charset=utf-8",
+    "finding_guidance_state.js": "text/javascript; charset=utf-8",
+    "guidance.js": "text/javascript; charset=utf-8",
+    "governance.js": "text/javascript; charset=utf-8",
+    "governance_api.js": "text/javascript; charset=utf-8",
     "gaps.js": "text/javascript; charset=utf-8",
     "overview.js": "text/javascript; charset=utf-8",
     "project.js": "text/javascript; charset=utf-8",
+    "project_create.js": "text/javascript; charset=utf-8",
     "projects.js": "text/javascript; charset=utf-8",
+    "product_api.js": "text/javascript; charset=utf-8",
     "report.js": "text/javascript; charset=utf-8",
     "router.js": "text/javascript; charset=utf-8",
     "scan.js": "text/javascript; charset=utf-8",
+    "project_mutations.js": "text/javascript; charset=utf-8",
     "scans.js": "text/javascript; charset=utf-8",
     "state.js": "text/javascript; charset=utf-8",
     "base.css": "text/css; charset=utf-8",
@@ -91,6 +100,7 @@ def frontend_scan(run_id: _CanonicalUuidPath) -> FileResponse:
 
 
 @router.get("/scans/{run_id}/findings")
+@router.get("/scans/{run_id}/assurance")
 @router.get("/scans/{run_id}/dependencies")
 @router.get("/scans/{run_id}/coverage")
 @router.get("/scans/{run_id}/gaps")

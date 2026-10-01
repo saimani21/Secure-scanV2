@@ -1,6 +1,18 @@
 "use strict";
 
-import { getFindings, getScanReport } from "/assets/api.js";
+import { getFindings, getScanReport, getScanSummary } from "/assets/api.js";
+import { getFindingGuidance, getRunProductFindings } from "/assets/product_api.js";
+import { renderGuidance } from "/assets/guidance.js";
+import { createGuidanceController } from "/assets/finding_guidance_state.js";
+import { createGovernanceController, renderGovernance } from "/assets/governance.js";
+import {
+  getEffectiveGovernance,
+  getFindingGovernance,
+  getFindingSuppression,
+  putFindingGovernance,
+  putFindingSuppression,
+  revokeFindingSuppression,
+} from "/assets/governance_api.js";
 import {
   codeValue,
   copyButton,
@@ -279,7 +291,9 @@ function findingRow(summary, selected, href, onSelect) {
       statusIndicator(priority.label, priority.tone),
       createElement("span", {
         className: "finding-lifecycle",
-        textContent: lifecycleState(summary && summary.lifecycle_state),
+        textContent: summary && summary.lifecycle_state_at_run
+          ? `At scan: ${lifecycleState(summary.lifecycle_state_at_run)}`
+          : `Current: ${lifecycleState(summary && summary.lifecycle_state)}`,
       }),
     ]),
     createElement("h3", { textContent: findingSummaryTitle(summary) }),
@@ -406,7 +420,7 @@ function technicalEvidence(summary, correlation) {
   ]);
 }
 
-function findingDetail(summary, reportState) {
+function findingDetail(summary, reportState, guidanceState, governanceState, governanceActions) {
   const correlation = reportState.payload
     ? correlateFindingEvidence(summary, reportState.payload)
     : null;
@@ -417,7 +431,9 @@ function findingDetail(summary, reportState) {
       statusIndicator(priority.label, priority.tone),
       createElement("span", {
         className: "finding-lifecycle",
-        textContent: lifecycleState(summary.lifecycle_state),
+        textContent: summary.lifecycle_state_at_run
+          ? `At scan: ${lifecycleState(summary.lifecycle_state_at_run)}`
+          : `Current: ${lifecycleState(summary.lifecycle_state)}`,
       }),
     ]),
     createElement("h2", { textContent: title, attributes: { id: "finding-detail-title" } }),
@@ -430,10 +446,12 @@ function findingDetail(summary, reportState) {
   if (typeof summary.severity === "string" && summary.severity) {
     facts.push(fact("Scanner severity", summary.severity));
   }
-  facts.push(
-    fact("First seen", formatDateTime(summary.first_seen_at)),
-    fact("Last seen", formatDateTime(summary.last_seen_at)),
-  );
+  if (summary.first_seen_at) {
+    facts.push(fact("First seen", formatDateTime(summary.first_seen_at)));
+  }
+  if (summary.last_seen_at) {
+    facts.push(fact("Last seen", formatDateTime(summary.last_seen_at)));
+  }
   if (summary.resolved_at) {
     facts.push(fact("Resolved", formatDateTime(summary.resolved_at)));
   }
@@ -459,6 +477,12 @@ function findingDetail(summary, reportState) {
   } else {
     content.push(technicalEvidence(summary, correlation));
   }
+  const guidance = renderGuidance(guidanceState);
+  if (guidance) content.push(guidance);
+  const governance = renderGovernance(
+    governanceState, governanceActions.mutate, governanceActions.refresh,
+  );
+  if (governance) content.push(governance);
   return createElement("article", {
     className: "finding-detail",
     attributes: { "aria-labelledby": "finding-detail-title" },
@@ -505,7 +529,9 @@ function fatalFindingsError(error, runId) {
 export function renderFindingsPage({
   region,
   route,
-  services = { getFindings, getScanReport },
+  services = { getFindings, getScanReport, getScanSummary, getFindingGuidance, getRunProductFindings,
+    getEffectiveGovernance, getFindingGovernance, getFindingSuppression,
+    putFindingGovernance, putFindingSuppression, revokeFindingSuppression },
   navigation = {
     search: () => window.location.search,
     push: (url) => window.history.pushState({ securescanRoute: "findings" }, "", url),
@@ -606,11 +632,21 @@ export function renderFindingsPage({
     promise: null,
   };
 
+  const guidanceController = createGuidanceController({
+    runId, services,
+    onChange: () => { if (!disposed && state.finding) renderDetailTarget(); },
+  });
+  const governanceController = createGovernanceController({
+    services,
+    onChange: () => { if (!disposed && state.finding) renderDetailTarget(); },
+  });
   const removeResponsiveListeners = [];
   let unregisterCleanup = () => {};
   function dispose() {
     if (disposed) return;
     disposed = true;
+    guidanceController.dispose();
+    governanceController.dispose();
     for (const remove of removeResponsiveListeners) remove();
     if (detailDialog.open) {
       suppressDialogClose = true;
@@ -638,7 +674,11 @@ export function renderFindingsPage({
     const selected = selectedSummary();
     const content = state.finding
       ? selected
-        ? findingDetail(selected, reportState)
+        ? findingDetail(
+          selected, reportState, guidanceController.stateFor(selected.finding_id),
+          governanceController.stateFor(selected),
+          { mutate: governanceController.mutate, refresh: governanceController.refresh },
+        )
         : missingSelectedFinding()
       : noFindingSelected();
     workspace.className = `findings-workspace${state.finding ? " findings-has-selection" : ""}`;
@@ -720,12 +760,15 @@ export function renderFindingsPage({
     renderDetailTarget();
     if (selectedSummary()) {
       void ensureReport();
+      void guidanceController.select(selectedSummary().finding_id, selectedSummary().authority);
+      governanceController.select(selectedSummary());
     }
   }
 
   function clearSelection({ historyMode = "push", restoreFocus = true } = {}) {
     const restoreId = state.finding;
     state.finding = null;
+    governanceController.select(null);
     writeUrl(historyMode);
     renderList();
     renderDetailTarget();
@@ -897,7 +940,7 @@ export function renderFindingsPage({
     updateWarning.replaceChildren();
     if (!hadPage) listRegion.replaceChildren(loadingState("Loading findings"));
     try {
-      const result = await services.getFindings(runId, {
+      const result = await (services.getRunProductFindings || services.getFindings)(runId, {
         authority: state.authority,
         category: state.category,
         priority: state.priority,
@@ -912,7 +955,11 @@ export function renderFindingsPage({
       renderControls();
       renderList();
       renderDetailTarget();
-      if (selectedSummary()) void ensureReport();
+      if (selectedSummary()) {
+        void ensureReport();
+        void guidanceController.select(selectedSummary().finding_id, selectedSummary().authority);
+        governanceController.select(selectedSummary());
+      }
     } catch (error) {
       if (isAbortError(error) || !request.isCurrent() || disposed) return;
       if (hadPage) {

@@ -14,6 +14,7 @@ from securescan.api.guidance_routes import router as guidance_router
 from securescan.api.job_routes import router as job_router
 from securescan.api.operations_routes import router as operations_router
 from securescan.api.policy_routes import router as policy_router
+from securescan.api.product_view_routes import router as product_view_router
 from securescan.api.project_routes import router as project_router
 from securescan.api.run_routes import router as run_router
 from securescan.api.source_scan_routes import router as source_scan_router
@@ -53,6 +54,7 @@ from securescan.product_core import (
     SourceTrustedTargetSubmissionService,
 )
 from securescan.product_core.guidance import FindingGuidanceService
+from securescan.product_core.product_view import SourceFindingProductViewService
 from securescan.runs import RunQueryService
 from securescan.runtime_storage import initialize_source_runtime_storage
 from securescan.services.scan_service import ScanService
@@ -102,6 +104,9 @@ async def lifespan(application: FastAPI):
         application.state.finding_guidance_service = FindingGuidanceService(
             session_factory, artifact_store
         )
+        application.state.source_finding_product_view_service = (
+            SourceFindingProductViewService(session_factory, artifact_store)
+        )
         application.state.source_project_service = SourceProjectService(session_factory)
         application.state.source_finding_governance_service = SourceFindingGovernanceService(
             session_factory
@@ -145,6 +150,7 @@ app.include_router(effective_governance_router)
 app.include_router(guidance_router)
 app.include_router(trusted_baseline_router)
 app.include_router(policy_router)
+app.include_router(product_view_router)
 app.include_router(source_scan_router)
 app.include_router(frontend_router)
 

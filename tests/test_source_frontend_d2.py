@@ -46,6 +46,7 @@ def test_root_and_every_explicit_deep_link_serve_the_same_no_cache_shell(
         "/scans",
         f"/scans/{_RUN_ID}",
         f"/scans/{_RUN_ID}/findings",
+        f"/scans/{_RUN_ID}/assurance",
         f"/scans/{_RUN_ID}/dependencies",
         f"/scans/{_RUN_ID}/coverage",
         f"/scans/{_RUN_ID}/gaps",
@@ -94,6 +95,7 @@ def test_frontend_router_contains_no_wildcard_shell_or_asset_route() -> None:
         "/scans",
         "/scans/{run_id}",
         "/scans/{run_id}/findings",
+        "/scans/{run_id}/assurance",
         "/scans/{run_id}/dependencies",
         "/scans/{run_id}/coverage",
         "/scans/{run_id}/gaps",
@@ -121,16 +123,25 @@ def test_v1_and_health_routes_remain_registered_as_api_operations() -> None:
 def test_static_assets_are_strictly_allowlisted_and_no_cache(client: TestClient) -> None:
     expected = {
         "app.js": "text/javascript",
+        "assurance.js": "text/javascript",
+        "assurance_api.js": "text/javascript",
         "api.js": "text/javascript",
         "components.js": "text/javascript",
         "coverage.js": "text/javascript",
         "dependencies.js": "text/javascript",
         "findings.js": "text/javascript",
+        "finding_guidance_state.js": "text/javascript",
+        "guidance.js": "text/javascript",
+        "governance.js": "text/javascript",
+        "governance_api.js": "text/javascript",
         "gaps.js": "text/javascript",
         "format.js": "text/javascript",
         "overview.js": "text/javascript",
         "project.js": "text/javascript",
+        "project_create.js": "text/javascript",
         "projects.js": "text/javascript",
+        "project_mutations.js": "text/javascript",
+        "product_api.js": "text/javascript",
         "report.js": "text/javascript",
         "router.js": "text/javascript",
         "scan.js": "text/javascript",
@@ -211,7 +222,13 @@ def test_browser_code_remains_get_only_and_uses_only_frozen_read_apis() -> None:
     assert 'getJson("/health/ready"' in api
     assert 'acceptedStatuses: [503]' in api
     for forbidden in ('method: "POST"', 'method: "PUT"', 'method: "PATCH"', 'method: "DELETE"'):
-        assert forbidden not in _ALL_JAVASCRIPT
+        assert forbidden not in api
+    mutation = _JAVASCRIPT["project_mutations.js"]
+    assert 'method: "POST"' in mutation
+    assert 'fetch("/v1/projects"' in mutation
+    for forbidden in ('method: "PUT"', 'method: "PATCH"', 'method: "DELETE"'):
+        assert forbidden not in mutation
+    assert "repository" not in mutation.lower()
     for endpoint in (
         "/v1/projects?",
         "/v1/projects/${segment}",
