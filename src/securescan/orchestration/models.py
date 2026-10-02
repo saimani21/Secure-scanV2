@@ -38,7 +38,7 @@ PLANNING_SNAPSHOT_SCHEMA_VERSION = "securescan-source-orchestration-planning-s6a
 AUTHORITY_ROSTER_SCHEMA_VERSION = "securescan-source-authority-roster-s6a-v1"
 PLANNING_SNAPSHOT_MEDIA_TYPE = "application/vnd.securescan.source-orchestration-planning+json"
 SOURCE_V1_AUTHORITY_ROSTER_DIGEST = (
-    "c4400049a3f7e956aa64a02d2d01e14b4ad1235087d72cb18fabb41907480a4a"
+    "3f3a982d6858379595d4f9a01ceb07df2b4312c863155ce6c9e9e7fc2071c1cc"
 )
 
 _NODE_ID_DOMAIN = b"securescan-source-orchestration-node-s6a-v1\0"
@@ -133,9 +133,9 @@ _TRUSTED_AUTHORITY_IDENTITIES: tuple[dict[str, str], ...] = (
         "implementation_version": "v1",
     },
     {
-        "analyzer_id": "python-semgrep-v1",
+        "analyzer_id": "semgrep-source-v1",
         "authority": SourceAuthority.SEMGREP.value,
-        "capability": AnalysisCapability.PYTHON_SAST.value,
+        "capability": AnalysisCapability.SOURCE_SAST.value,
         "contract_digest": PRODUCTION_SEMGREP_BINDING_DIGEST,
         "contract_kind": "trusted-binding",
         "implementation_version": "1.171.0",
@@ -148,6 +148,24 @@ _TRUSTED_AUTHORITY_IDENTITIES: tuple[dict[str, str], ...] = (
         "contract_kind": "trusted-binding",
         "implementation_version": "1.51.0",
     },
+)
+
+_V12_TRUSTED_AUTHORITY_IDENTITIES: tuple[dict[str, str], ...] = tuple(
+    {
+        **item,
+        **(
+            {
+                "analyzer_id": "python-semgrep-v1",
+                "capability": AnalysisCapability.PYTHON_SAST.value,
+                "contract_digest": (
+                    "265fd32e59296d6dc50fd7f8b7558f0e35ead821c4ee689f5ff953bf70393ed2"
+                ),
+            }
+            if item["authority"] == SourceAuthority.SEMGREP.value
+            else {}
+        ),
+    }
+    for item in _TRUSTED_AUTHORITY_IDENTITIES
 )
 
 
@@ -196,7 +214,10 @@ class TrustedSourceAuthority:
         ):
             raise SourceOrchestrationIntegrityError("Source authority identity is not trusted")
         data = self.canonical_data()
-        if data not in _TRUSTED_AUTHORITY_IDENTITIES:
+        if (
+            data not in _TRUSTED_AUTHORITY_IDENTITIES
+            and data not in _V12_TRUSTED_AUTHORITY_IDENTITIES
+        ):
             raise SourceOrchestrationIntegrityError("Source authority identity is not trusted")
 
     def canonical_data(self) -> dict[str, str]:
@@ -225,7 +246,10 @@ class TrustedSourceAuthorityRoster:
             or len({item.authority for item in self.authorities}) != 5
             or len({item.capability for item in self.authorities}) != 5
             or tuple(item.canonical_data() for item in self.authorities)
-            != _TRUSTED_AUTHORITY_IDENTITIES
+            not in (
+                _TRUSTED_AUTHORITY_IDENTITIES,
+                _V12_TRUSTED_AUTHORITY_IDENTITIES,
+            )
         ):
             raise SourceOrchestrationIntegrityError("Source authority roster is invalid")
 
@@ -420,8 +444,11 @@ def build_source_v1_topology(
         if entry.action is SourcePlanAction.RUN and entry.capability in roster_capabilities:
             by_capability.setdefault(entry.capability, []).append(entry)
 
-    semgrep = roster.for_capability(AnalysisCapability.PYTHON_SAST)
-    for entry in by_capability.get(AnalysisCapability.PYTHON_SAST, []):
+    semgrep_capability = next(
+        item.capability for item in roster.authorities if item.authority is SourceAuthority.SEMGREP
+    )
+    semgrep = roster.for_capability(semgrep_capability)
+    for entry in by_capability.get(semgrep_capability, []):
         nodes.append(
             _node(
                 run_id=run_id,

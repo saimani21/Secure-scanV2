@@ -18,7 +18,7 @@ from securescan.scanners.semgrep import (
     SemgrepAdapterError,
     SemgrepScanPlan,
     create_semgrep_trusted_definition,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.workspaces import RepositoryWorkspaceManager
 
@@ -127,7 +127,7 @@ def _adapter(
         tool_version="1.171.0",
         docker_executor=executor,
         workspace_manager=manager,
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
         artifact_store=store,
         source_resolver=lambda _run_id: repository,
         plan=plan,
@@ -197,10 +197,10 @@ def test_adapter_returns_findings_in_sanitized_artifact_with_golden_digest(
     assert len(report["observations"]) == 1
     assert artifact_data["sanitized"] is True
     assert artifact_data["sha256"] == (
-        "ef7e9dae19a7b8dbe024d64bd4dd4616c94b66556da5c34a2b6bdff6d121b3da"
+        "f7a4b6fbf7d7b5de6d63b78f0a5f4f2848f6f27a0e0edf352ee525f278dbfea3"
     )
     assert hashlib.sha256(evidence_bytes).hexdigest() == (
-        "ef7e9dae19a7b8dbe024d64bd4dd4616c94b66556da5c34a2b6bdff6d121b3da"
+        "f7a4b6fbf7d7b5de6d63b78f0a5f4f2848f6f27a0e0edf352ee525f278dbfea3"
     )
     assert artifact_data["size_bytes"] == len(evidence_bytes)
     assert artifact_data["media_type"] == "application/json"
@@ -209,9 +209,7 @@ def test_adapter_returns_findings_in_sanitized_artifact_with_golden_digest(
         "results": [
             {
                 "end": {"column": 18, "line": 3},
-                "fingerprint": (
-                    "cbdd3555ad0fab1e38bf05936f72ba66b926d11954dea62997dda9c1fe3eaedb"
-                ),
+                "fingerprint": ("cbdd3555ad0fab1e38bf05936f72ba66b926d11954dea62997dda9c1fe3eaedb"),
                 "metadata": {"cwe": ["CWE-95"]},
                 "path": "app.py",
                 "rule_id": "securescan.python.dangerous-eval",
@@ -219,7 +217,7 @@ def test_adapter_returns_findings_in_sanitized_artifact_with_golden_digest(
                 "start": {"column": 5, "line": 3},
             }
         ],
-        "ruleset": {"id": "securescan-python-baseline-v2", "version": "2"},
+        "ruleset": {"id": "securescan-source-baseline-v3", "version": "3"},
         "scanner_id": "semgrep-ce",
         "schema_version": "securescan-semgrep-sanitized-v1",
         "summary": {
@@ -256,12 +254,8 @@ def test_adapter_sanitized_artifact_is_semantically_deterministic(
 
     first_report = first_adapter.execute(_job()).report_json
     second_report = second_adapter.execute(_job()).report_json
-    first_record = ArtifactRecord.model_validate(
-        first_report["executions"][0]["artifacts"][0]
-    )
-    second_record = ArtifactRecord.model_validate(
-        second_report["executions"][0]["artifacts"][0]
-    )
+    first_record = ArtifactRecord.model_validate(first_report["executions"][0]["artifacts"][0])
+    second_record = ArtifactRecord.model_validate(second_report["executions"][0]["artifacts"][0])
 
     assert first_record.sha256 == second_record.sha256
     assert first_store.read(first_record) == second_store.read(second_record)
@@ -282,9 +276,7 @@ def test_adapter_sanitized_artifact_contains_only_deduplicated_findings(
     )
 
     report = adapter.execute(_job()).report_json
-    artifact = ArtifactRecord.model_validate(
-        report["executions"][0]["artifacts"][0]
-    )
+    artifact = ArtifactRecord.model_validate(report["executions"][0]["artifacts"][0])
     evidence = json.loads(store.read(artifact))
 
     assert len(report["observations"]) == 1
@@ -325,9 +317,7 @@ def test_adapter_never_persists_untrusted_native_or_process_content(
 
     outcome = adapter.execute(_job())
     report = outcome.report_json
-    artifact = ArtifactRecord.model_validate(
-        report["executions"][0]["artifacts"][0]
-    )
+    artifact = ArtifactRecord.model_validate(report["executions"][0]["artifacts"][0])
     durable_outputs = (
         json.dumps(report, sort_keys=True, default=str).encode("utf-8"),
         store.read(artifact),
@@ -336,9 +326,7 @@ def test_adapter_never_persists_untrusted_native_or_process_content(
 
     assert outcome.final_status is JobStatus.PARTIAL
     assert report["observations"][0]["message"] == "Semgrep security rule matched"
-    assert report["observations"][0]["properties"]["metadata"] == {
-        "cwe": ["CWE-95"]
-    }
+    assert report["observations"][0]["properties"]["metadata"] == {"cwe": ["CWE-95"]}
     assert all(
         sentinel.encode("utf-8") not in durable_output
         for sentinel in sentinels
@@ -373,7 +361,7 @@ def test_adapter_rejects_nonzero_missing_malformed_and_oversized_output(
         (
             _FakeDockerExecutor(b"x" * (1024 * 1024 + 1)),
             SemgrepScanPlan(
-                ruleset=load_baseline_ruleset(),
+                ruleset=load_source_ruleset(),
                 maximum_result_bytes=1024 * 1024,
             ),
         ),

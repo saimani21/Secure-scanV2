@@ -121,7 +121,7 @@ from securescan.scanners.semgrep import (
     create_production_semgrep_source_binding,
     create_semgrep_trusted_definition,
     create_source_aware_semgrep_trusted_definition,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.scanners.syft import (
     SYFT_JSON_SCHEMA_VERSION,
@@ -146,12 +146,8 @@ from securescan.workspaces.models import repository_content_digest
 _LEASE_TOKEN = "33333333-3333-4333-8333-333333333333"
 _ATTEMPT_TOKEN = UUID("44444444-4444-4444-8444-444444444444")
 _SEMGREP_IMAGE = PRODUCTION_SEMGREP_IMAGE_REFERENCE
-_SEMGREP_FIXTURE = (
-    Path(__file__).parent / "fixtures" / "semgrep" / "output" / "valid-findings.json"
-)
-_GITLEAKS_EXECUTABLE = (
-    Path.home() / ".local/securescan-tools/gitleaks/8.30.1/gitleaks"
-)
+_SEMGREP_FIXTURE = Path(__file__).parent / "fixtures" / "semgrep" / "output" / "valid-findings.json"
+_GITLEAKS_EXECUTABLE = Path.home() / ".local/securescan-tools/gitleaks/8.30.1/gitleaks"
 _CHECKOV_EXECUTABLE = Path(".venv-checkov-3.3.16/bin/checkov")
 _CONTROLLED_SECRET = b"ghp_A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"
 
@@ -194,9 +190,7 @@ class _Environment:
                         entry=replace(
                             item.entry,
                             size_bytes=len(fixture_sources[item.relative_path]),
-                            sha256=hashlib.sha256(
-                                fixture_sources[item.relative_path]
-                            ).hexdigest(),
+                            sha256=hashlib.sha256(fixture_sources[item.relative_path]).hexdigest(),
                         ),
                     )
                     for item in profile.files
@@ -476,8 +470,8 @@ class _Environment:
                 {
                     "results": [],
                     "ruleset": {
-                        "id": "securescan-python-baseline-v2",
-                        "version": "2",
+                        "id": "securescan-source-baseline-v3",
+                        "version": "3",
                     },
                     "scanner_id": "semgrep-ce",
                     "schema_version": "securescan-semgrep-sanitized-v1",
@@ -531,9 +525,7 @@ def test_current_semgrep_native_identity_rejects_old_placeholder_binding(
 ) -> None:
     node, job = s6b.create(SourceAuthority.SEMGREP)
     native = s6b.native_result(node, job)
-    old_binding_digest = (
-        "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a"
-    )
+    old_binding_digest = "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a"
 
     with pytest.raises(SourceScannerExecutionIntegrityError):
         replace(native, binding_digest=old_binding_digest)
@@ -888,9 +880,7 @@ def test_raw_secret_and_workspace_path_never_enter_safe_native_artifact(
         for path in s6b.store.root.rglob("*")
         if path.is_file()
     )
-    assert _PRIVATE_SOURCE.rstrip(b"\n") not in Path(
-        str(s6b.engine.url.database)
-    ).read_bytes()
+    assert _PRIVATE_SOURCE.rstrip(b"\n") not in Path(str(s6b.engine.url.database)).read_bytes()
 
 
 def test_all_four_local_authorities_have_canonical_safe_native_schemas(
@@ -998,8 +988,8 @@ def test_all_four_local_authorities_have_canonical_safe_native_schemas(
                 {
                     "results": [],
                     "ruleset": {
-                        "id": "securescan-python-baseline-v2",
-                        "version": "2",
+                        "id": "securescan-source-baseline-v3",
+                        "version": "3",
                     },
                     "scanner_id": "semgrep-ce",
                     "schema_version": "securescan-semgrep-sanitized-v1",
@@ -1203,9 +1193,7 @@ class _CompletedDockerHandle:
             force_killed=False,
         )
 
-    def wait(
-        self, timeout_seconds: float | None = None
-    ) -> CancellableProcessResult:
+    def wait(self, timeout_seconds: float | None = None) -> CancellableProcessResult:
         del timeout_seconds
         return self.poll()
 
@@ -1239,11 +1227,7 @@ class _SandboxRunner:
         operation = argv[1]
         if operation == "create":
             output_mount = next(
-                (
-                    argument
-                    for argument in argv
-                    if argument.endswith(",dst=/workspace/output")
-                ),
+                (argument for argument in argv if argument.endswith(",dst=/workspace/output")),
                 None,
             )
             if output_mount is not None:
@@ -1253,9 +1237,7 @@ class _SandboxRunner:
                 self.output_directory = Path(source)
         if operation == "inspect" and "{{.State.Running}}|{{.State.ExitCode}}" in argv:
             return DockerControlCommandResult(0, b"false|0\n", b"")
-        if operation == "inspect" and any(
-            "securescan.managed" in argument for argument in argv
-        ):
+        if operation == "inspect" and any("securescan.managed" in argument for argument in argv):
             if self.inspected_identity is None:
                 return DockerControlCommandResult(1, b"", b"missing")
             return DockerControlCommandResult(
@@ -1278,9 +1260,7 @@ class _SandboxRunner:
         self.commands.append(argv)
         if self.semgrep_result is not None:
             assert self.output_directory is not None
-            (self.output_directory / "semgrep-results.json").write_bytes(
-                self.semgrep_result
-            )
+            (self.output_directory / "semgrep-results.json").write_bytes(self.semgrep_result)
         return _CompletedDockerHandle()
 
 
@@ -1290,7 +1270,7 @@ def _semgrep_docker_contract(
     *,
     image_reference: str = _SEMGREP_IMAGE,
 ) -> tuple[object, TrustedSemgrepSourceBinding]:
-    ruleset = load_baseline_ruleset()
+    ruleset = load_source_ruleset()
     definition = create_semgrep_trusted_definition(
         image_reference=image_reference,
         tool_version="1.171.0",
@@ -1375,9 +1355,7 @@ def test_attempt_bound_semgrep_docker_records_cleanup_only_after_removal(
 
     handle = executor.start(request)
     with s6b.factory() as session:
-        durable = session.get(
-            SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number)
-        )
+        durable = session.get(SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number))
         assert durable is not None
         assert durable.containment_state == OrchestrationContainmentState.ACTIVE.value
         assert durable.cleanup_receipt_sha256 is None
@@ -1395,9 +1373,7 @@ def test_attempt_bound_semgrep_docker_records_cleanup_only_after_removal(
         "inspect",
     ]
     with s6b.factory() as session:
-        durable = session.get(
-            SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number)
-        )
+        durable = session.get(SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number))
         assert durable is not None
         assert durable.containment_state == OrchestrationContainmentState.CLEAN.value
         assert durable.cleanup_receipt_sha256 is not None
@@ -1423,7 +1399,7 @@ def test_frozen_semgrep_adapter_runs_through_attempt_bound_docker_and_acceptance
         tool_version="1.171.0",
         docker_executor=docker_executor,
         workspace_manager=RepositoryWorkspaceManager(tmp_path / "adapter-workspaces"),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
         artifact_store=s6b.store,
         source_resolver=lambda _run_id: tmp_path,
         projection_manager=s6b.projections,
@@ -1487,9 +1463,7 @@ def test_semgrep_docker_reconciliation_removes_only_matching_attempt_sandbox(
 ) -> None:
     _node, job, attempt = _register_running_attempt(s6b, SourceAuthority.SEMGREP)
     with s6b.factory.begin() as session:
-        durable = session.get(
-            SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number)
-        )
+        durable = session.get(SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number))
         node = session.get(SourceOrchestrationNodeRow, attempt.node_id)
         assert durable is not None and node is not None
         durable.containment_state = OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
@@ -1497,9 +1471,7 @@ def test_semgrep_docker_reconciliation_removes_only_matching_attempt_sandbox(
     name = source_sandbox_execution_identity(
         attempt.job_id, attempt.attempt_number, attempt.attempt_token
     )
-    runner = _SandboxRunner(
-        inspected_identity=f"/{name}|true|{attempt.job_id}|true"
-    )
+    runner = _SandboxRunner(inspected_identity=f"/{name}|true|{attempt.job_id}|true")
     definition, binding = _semgrep_docker_contract(s6b, tmp_path)
 
     recovered = SourceSandboxReconciliationService(
@@ -1524,9 +1496,7 @@ def test_semgrep_docker_reconciliation_rejects_foreign_identity_without_removal(
 ) -> None:
     _node, job, attempt = _register_running_attempt(s6b, SourceAuthority.SEMGREP)
     with s6b.factory.begin() as session:
-        durable = session.get(
-            SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number)
-        )
+        durable = session.get(SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number))
         node = session.get(SourceOrchestrationNodeRow, attempt.node_id)
         assert durable is not None and node is not None
         durable.containment_state = OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
@@ -1534,9 +1504,7 @@ def test_semgrep_docker_reconciliation_rejects_foreign_identity_without_removal(
     name = source_sandbox_execution_identity(
         attempt.job_id, attempt.attempt_number, attempt.attempt_token
     )
-    runner = _SandboxRunner(
-        inspected_identity=f"/{name}|false|{attempt.job_id}|true"
-    )
+    runner = _SandboxRunner(inspected_identity=f"/{name}|false|{attempt.job_id}|true")
     definition, binding = _semgrep_docker_contract(s6b, tmp_path)
 
     with pytest.raises(DockerContainerInspectionError):
@@ -1549,13 +1517,10 @@ def test_semgrep_docker_reconciliation_rejects_foreign_identity_without_removal(
 
     assert [command[1] for command in runner.commands] == ["inspect"]
     with s6b.factory() as session:
-        durable = session.get(
-            SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number)
-        )
+        durable = session.get(SourceOrchestrationAttemptRow, (job.job_id, attempt.attempt_number))
         assert durable is not None
         assert (
-            durable.containment_state
-            == OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
+            durable.containment_state == OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
         )
 
 
@@ -1635,12 +1600,8 @@ def test_frozen_gitleaks_bridge_runs_through_supervisor_and_persists_only_safe_r
         app_source=b'CONTROLLED = "' + _CONTROLLED_SECRET + b'"\n',
     )
     try:
-        binding = create_default_gitleaks_binding(
-            _GITLEAKS_EXECUTABLE.resolve(strict=True)
-        )
-        node, created, attempt = _register_running_attempt(
-            environment, SourceAuthority.GITLEAKS
-        )
+        binding = create_default_gitleaks_binding(_GITLEAKS_EXECUTABLE.resolve(strict=True))
+        node, created, attempt = _register_running_attempt(environment, SourceAuthority.GITLEAKS)
         with environment.factory() as session:
             from securescan.jobs.mappers import job_record_from_row
 
@@ -1680,10 +1641,13 @@ def test_frozen_gitleaks_bridge_runs_through_supervisor_and_persists_only_safe_r
             duration_ms=1,
         )
         assert accepted.created is True
-        assert environment.store.read_by_sha256(
-            accepted.artifact_sha256,
-            expected_size_bytes=accepted.artifact_size_bytes,
-        ) == safe_payload
+        assert (
+            environment.store.read_by_sha256(
+                accepted.artifact_sha256,
+                expected_size_bytes=accepted.artifact_size_bytes,
+            )
+            == safe_payload
+        )
 
         fresh_service = SourceScannerAttemptService(
             environment.factory,
@@ -1691,27 +1655,21 @@ def test_frozen_gitleaks_bridge_runs_through_supervisor_and_persists_only_safe_r
             environment.projections,
             clock=lambda: _NOW,
         )
-        assert fresh_service.load_accepted_result(
-            run_id=str(_RUN_ID), node_id=node.node_id
-        ) == native
+        assert (
+            fresh_service.load_accepted_result(run_id=str(_RUN_ID), node_id=node.node_id) == native
+        )
 
         with environment.factory() as session:
-            mapping = session.get(
-                SourceOrchestrationScannerJobRow, created.job_id
-            )
+            mapping = session.get(SourceOrchestrationScannerJobRow, created.job_id)
             durable_attempt = session.get(
                 SourceOrchestrationAttemptRow,
                 (created.job_id, attempt.attempt_number),
             )
             run = session.get(AnalysisRunRow, str(_RUN_ID))
             tools = session.scalars(
-                select(ToolExecutionRow).where(
-                    ToolExecutionRow.job_id == created.job_id
-                )
+                select(ToolExecutionRow).where(ToolExecutionRow.job_id == created.job_id)
             ).all()
-            mappings = session.scalars(
-                select(SourceOrchestrationScannerJobRow)
-            ).all()
+            mappings = session.scalars(select(SourceOrchestrationScannerJobRow)).all()
             assert mapping is not None and durable_attempt is not None
             assert run is not None and run.report_json is None
             assert mapping.selected_attempt_number == attempt.attempt_number
@@ -1754,13 +1712,13 @@ def test_frozen_checkov_bridge_runs_through_attempt_bound_supervisor_and_reloads
               bucket = "securescan-controlled-fixture"
             }
             """
-        ).lstrip().encode(),
+        )
+        .lstrip()
+        .encode(),
     )
     request.addfinalizer(environment.close)
     binding = create_default_checkov_binding(_CHECKOV_EXECUTABLE.resolve(strict=True))
-    node, created, attempt = _register_running_attempt(
-        environment, SourceAuthority.CHECKOV
-    )
+    node, created, attempt = _register_running_attempt(environment, SourceAuthority.CHECKOV)
     with environment.factory() as session:
         from securescan.jobs.mappers import job_record_from_row
 
@@ -1808,9 +1766,7 @@ def test_frozen_checkov_bridge_runs_through_attempt_bound_supervisor_and_reloads
         environment.projections,
         clock=lambda: _NOW,
     )
-    assert fresh_service.load_accepted_result(
-        run_id=str(_RUN_ID), node_id=node.node_id
-    ) == native
+    assert fresh_service.load_accepted_result(run_id=str(_RUN_ID), node_id=node.node_id) == native
     with environment.factory() as session:
         mapping = session.get(SourceOrchestrationScannerJobRow, created.job_id)
         durable_attempt = session.get(
@@ -1945,15 +1901,10 @@ def test_missing_durable_cleanup_receipt_requires_reconciliation(
         attempt_number=attempt.attempt_number,
         receipt_directory=receipt_directory,
     )
-    assert (
-        recovered.containment_state
-        is OrchestrationContainmentState.RECONCILIATION_REQUIRED
-    )
+    assert recovered.containment_state is OrchestrationContainmentState.RECONCILIATION_REQUIRED
 
 
-def test_wrong_durable_receipt_requires_reconciliation(
-    s6b: _Environment, tmp_path: Path
-) -> None:
+def test_wrong_durable_receipt_requires_reconciliation(s6b: _Environment, tmp_path: Path) -> None:
     _node, job, attempt = _register_running_attempt(s6b)
     receipt_directory = tmp_path / "receipts"
     receipt_directory.mkdir(mode=0o700)
@@ -1979,10 +1930,7 @@ def test_wrong_durable_receipt_requires_reconciliation(
         attempt_number=1,
         receipt_directory=receipt_directory,
     )
-    assert (
-        recovered.containment_state
-        is OrchestrationContainmentState.RECONCILIATION_REQUIRED
-    )
+    assert recovered.containment_state is OrchestrationContainmentState.RECONCILIATION_REQUIRED
 
 
 def test_supervisor_kills_term_resistant_descendant(tmp_path: Path) -> None:

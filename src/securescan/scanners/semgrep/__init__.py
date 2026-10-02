@@ -30,6 +30,7 @@ from securescan.scanners.semgrep.ruleset import (
     SEMGREP_RULES_FILENAME,
     TrustedSemgrepRuleset,
     load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.scanners.semgrep.source_binding import (
     DECLARED_SEMGREP_TOOL_VERSION,
@@ -141,6 +142,7 @@ __all__ = [
     "create_production_semgrep_source_binding",
     "create_source_aware_semgrep_trusted_definition",
     "load_baseline_ruleset",
+    "load_source_ruleset",
     "parse_semgrep_output",
     "read_semgrep_result",
 ]

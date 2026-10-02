@@ -54,15 +54,9 @@ from securescan.workspaces.models import repository_content_digest
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _LOCAL_HELPER = _PROJECT_ROOT / "tools/enry-helper/bin/securescan-enry-helper"
-_REGISTRY_GOLDEN_DIGEST = (
-    "9992c01eea13e4d47f51172cfae33ff792ea72fdcf1a8d25a8507bb0e7a0c551"
-)
-_POLICY_GOLDEN_DIGEST = (
-    "6bd523fea58d90c956492b8482293375001b5bcf114014db83a6bfa5ebbd97e0"
-)
-_PLAN_GOLDEN_DIGEST = (
-    "a947fea7b829a2f60c1d4c3e395527c1b4ab149f9ce67f241d458c0d0fbddfca"
-)
+_REGISTRY_GOLDEN_DIGEST = "9992c01eea13e4d47f51172cfae33ff792ea72fdcf1a8d25a8507bb0e7a0c551"
+_POLICY_GOLDEN_DIGEST = "6bd523fea58d90c956492b8482293375001b5bcf114014db83a6bfa5ebbd97e0"
+_PLAN_GOLDEN_DIGEST = "c1645acd842988a94ac0a762a2a4ed4610723ba890b88f13027b2ce3d6a80a2a"
 
 
 def _entry(relative_path: str, content: bytes) -> RepositoryManifestEntry:
@@ -83,9 +77,7 @@ def _record(
     content: bytes = b"content\n",
 ) -> SourceFileRecord:
     content_kind = (
-        FileContentKind.BINARY
-        if SourceFileFlag.BINARY in flags
-        else FileContentKind.TEXT
+        FileContentKind.BINARY if SourceFileFlag.BINARY in flags else FileContentKind.TEXT
     )
     return SourceFileRecord(
         entry=_entry(relative_path, content),
@@ -123,13 +115,9 @@ def _profile(
 ) -> RepositoryProfile:
     sorted_files = tuple(sorted(files, key=lambda file: file.relative_path))
     return RepositoryProfile(
-        repository_digest=repository_content_digest(
-            tuple(file.entry for file in sorted_files)
-        ),
+        repository_digest=repository_content_digest(tuple(file.entry for file in sorted_files)),
         files=sorted_files,
-        components=tuple(
-            sorted(components, key=lambda component: component.component_id)
-        ),
+        components=tuple(sorted(components, key=lambda component: component.component_id)),
         surfaces=tuple(
             sorted(
                 surfaces,
@@ -159,11 +147,7 @@ def _profile_for_capability(
         for index, flags in enumerate(file_flags)
     )
     paths = tuple(file.relative_path for file in files)
-    components = (
-        (_component(component_id, "component"),)
-        if component_id is not None
-        else ()
-    )
+    components = (_component(component_id, "component"),) if component_id is not None else ()
     profiling = AnalysisSurface(
         capability=AnalysisCapability.REPOSITORY_PROFILING,
         support_state=SourceSupportState.DETECTED,
@@ -173,13 +157,9 @@ def _profile_for_capability(
         capability=capability,
         component_id=component_id,
         support_state=support_state,
-        eligible_paths=(
-            () if support_state is SourceSupportState.UNSUPPORTED else paths
-        ),
+        eligible_paths=(() if support_state is SourceSupportState.UNSUPPORTED else paths),
         reason_code=(
-            "CAPABILITY_UNSUPPORTED"
-            if support_state is SourceSupportState.UNSUPPORTED
-            else None
+            "CAPABILITY_UNSUPPORTED" if support_state is SourceSupportState.UNSUPPORTED else None
         ),
     )
     return _profile(files, (profiling, target), components=components)
@@ -204,9 +184,7 @@ def _registry(
     *,
     available: bool = True,
 ) -> TrustedSourceAnalyzerRegistry:
-    return TrustedSourceAnalyzerRegistry(
-        analyzers=(_analyzer(capability, available=available),)
-    )
+    return TrustedSourceAnalyzerRegistry(analyzers=(_analyzer(capability, available=available),))
 
 
 def _policy(
@@ -263,7 +241,15 @@ def _golden_profile() -> RepositoryProfile:
         files=(file,),
         components=(),
     )
-    support_policy = SourceSupportPolicy()
+    support_policy = SourceSupportPolicy(
+        language_rules=(LanguageSupportRule("Python", SourceSupportState.SCANNABLE),),
+        capability_rules=(
+            CapabilitySupportRule(
+                AnalysisCapability.SOURCE_SAST,
+                SourceSupportState.SCANNABLE,
+            ),
+        ),
+    )
     assessment = assess_repository_language_support(inventory, support_policy)
     return build_repository_profile(inventory, assessment, support_policy)
 
@@ -325,8 +311,8 @@ def test_analyzer_requires_sorted_unique_nonempty_capabilities() -> None:
         TrustedSourceAnalyzer(
             "test",
             (
+                AnalysisCapability.SOURCE_SAST,
                 AnalysisCapability.SECRET_DETECTION,
-                AnalysisCapability.PYTHON_SAST,
             ),
             True,
         )
@@ -334,8 +320,8 @@ def test_analyzer_requires_sorted_unique_nonempty_capabilities() -> None:
         TrustedSourceAnalyzer(
             "test",
             (
-                AnalysisCapability.PYTHON_SAST,
-                AnalysisCapability.PYTHON_SAST,
+                AnalysisCapability.SOURCE_SAST,
+                AnalysisCapability.SOURCE_SAST,
             ),
             True,
         )
@@ -366,7 +352,7 @@ def test_registry_rejects_wrong_schema_and_non_tuple() -> None:
 
 def test_registry_requires_sorted_unique_analyzer_ids() -> None:
     first = _analyzer(
-        AnalysisCapability.PYTHON_SAST,
+        AnalysisCapability.SOURCE_SAST,
         analyzer_id="a-analyzer",
     )
     second = _analyzer(
@@ -393,7 +379,7 @@ def test_registry_lookup_is_exact_and_digest_is_deterministic() -> None:
     registry = TrustedSourceAnalyzerRegistry(analyzers=(analyzer,))
 
     assert registry.analyzer_for(AnalysisCapability.SECRET_DETECTION) is analyzer
-    assert registry.analyzer_for(AnalysisCapability.PYTHON_SAST) is None
+    assert registry.analyzer_for(AnalysisCapability.SOURCE_SAST) is None
     assert registry.registry_digest() == registry.registry_digest()
     assert registry.registry_digest() != TrustedSourceAnalyzerRegistry().registry_digest()
     with pytest.raises(InvalidSourcePlanningRequestError):
@@ -404,7 +390,7 @@ def test_default_planning_policy_has_no_exclusions_and_is_golden() -> None:
     policy = SourcePlanningPolicy()
 
     assert policy.path_rules == ()
-    assert policy.excluded_flags_for(AnalysisCapability.PYTHON_SAST) == ()
+    assert policy.excluded_flags_for(AnalysisCapability.SOURCE_SAST) == ()
     assert policy.policy_digest() == _POLICY_GOLDEN_DIGEST
     assert policy.policy_digest() == SourcePlanningPolicy().policy_digest()
 
@@ -423,29 +409,29 @@ def test_path_selection_rule_requires_valid_nonprofiling_capability() -> None:
 def test_path_selection_rule_requires_sorted_unique_flag_tuple() -> None:
     with pytest.raises(InvalidSourcePlanningRequestError):
         CapabilityPathSelectionRule(
-            capability=AnalysisCapability.PYTHON_SAST,
+            capability=AnalysisCapability.SOURCE_SAST,
             excluded_flags=(SourceFileFlag.TEST, SourceFileFlag.GENERATED),
         )
     with pytest.raises(InvalidSourcePlanningRequestError):
         CapabilityPathSelectionRule(
-            capability=AnalysisCapability.PYTHON_SAST,
+            capability=AnalysisCapability.SOURCE_SAST,
             excluded_flags=(SourceFileFlag.TEST, SourceFileFlag.TEST),
         )
     with pytest.raises(InvalidSourcePlanningRequestError):
         CapabilityPathSelectionRule(
-            capability=AnalysisCapability.PYTHON_SAST,
+            capability=AnalysisCapability.SOURCE_SAST,
             excluded_flags=[],  # type: ignore[arg-type]
         )
 
 
 def test_planning_policy_requires_schema_sorted_unique_rules() -> None:
-    python = CapabilityPathSelectionRule(AnalysisCapability.PYTHON_SAST)
+    python = CapabilityPathSelectionRule(AnalysisCapability.SOURCE_SAST)
     secret = CapabilityPathSelectionRule(AnalysisCapability.SECRET_DETECTION)
 
     with pytest.raises(InvalidSourcePlanningRequestError):
         SourcePlanningPolicy(schema_version="0.2.5")
     with pytest.raises(InvalidSourcePlanningRequestError):
-        SourcePlanningPolicy(path_rules=(secret, python))
+        SourcePlanningPolicy(path_rules=(python, secret))
     with pytest.raises(InvalidSourcePlanningRequestError):
         SourcePlanningPolicy(path_rules=(python, python))
     changed = SourcePlanningPolicy(path_rules=(python,))
@@ -494,9 +480,7 @@ def test_plan_entry_rejects_selected_excluded_overlap_and_unsorted_exclusions() 
     arguments = _plan_entry_arguments()
     arguments["surface_paths"] = ("app.py", "test.py")
     arguments["selected_paths"] = ("app.py",)
-    arguments["excluded_paths"] = (
-        SourcePlanPathExclusion("app.py", "EXCLUDED_TEST"),
-    )
+    arguments["excluded_paths"] = (SourcePlanPathExclusion("app.py", "EXCLUDED_TEST"),)
     with pytest.raises(InvalidSourcePlanningRequestError):
         SourceAnalysisPlanEntry(**arguments)  # type: ignore[arg-type]
 
@@ -650,7 +634,7 @@ def test_unavailable_analyzer_skips_without_filtering_or_reason_leakage() -> Non
 
 
 def test_default_policy_retains_generated_vendored_and_test_paths() -> None:
-    capability = AnalysisCapability.PYTHON_SAST
+    capability = AnalysisCapability.SOURCE_SAST
     profile = _profile_for_capability(
         capability,
         SourceSupportState.SCANNABLE,
@@ -710,9 +694,7 @@ def test_custom_path_exclusions_are_explicit(
     )
 
     assert entry.selected_paths == ("file-0.txt",)
-    assert entry.excluded_paths == (
-        SourcePlanPathExclusion("file-1.txt", reason_code),
-    )
+    assert entry.excluded_paths == (SourcePlanPathExclusion("file-1.txt", reason_code),)
     assert set(entry.selected_paths) | {
         exclusion.relative_path for exclusion in entry.excluded_paths
     } == set(entry.surface_paths)
@@ -744,9 +726,7 @@ def test_multiple_excluded_flags_use_fixed_precedence() -> None:
 
     assert entry.action is SourcePlanAction.SKIP
     assert entry.reason_code == "NO_PATHS_AFTER_SELECTION_POLICY"
-    assert entry.excluded_paths == (
-        SourcePlanPathExclusion("file-0.txt", "EXCLUDED_BINARY"),
-    )
+    assert entry.excluded_paths == (SourcePlanPathExclusion("file-0.txt", "EXCLUDED_BINARY"),)
 
 
 def test_all_filtered_paths_produce_explicit_nonrun_entry() -> None:
@@ -865,8 +845,8 @@ def test_component_and_orphan_surface_boundaries_become_separate_entries(
 
 def test_python_and_secret_repository_surfaces_each_plan_once() -> None:
     files = (
-        _record("a.py", capability=AnalysisCapability.PYTHON_SAST),
-        _record("b.py", capability=AnalysisCapability.PYTHON_SAST),
+        _record("a.py", capability=AnalysisCapability.SOURCE_SAST),
+        _record("b.py", capability=AnalysisCapability.SOURCE_SAST),
     )
     paths = tuple(file.relative_path for file in files)
     profile = _profile(
@@ -878,7 +858,7 @@ def test_python_and_secret_repository_surfaces_each_plan_once() -> None:
                 eligible_paths=paths,
             ),
             AnalysisSurface(
-                capability=AnalysisCapability.PYTHON_SAST,
+                capability=AnalysisCapability.SOURCE_SAST,
                 support_state=SourceSupportState.SCANNABLE,
                 eligible_paths=paths,
             ),
@@ -887,17 +867,20 @@ def test_python_and_secret_repository_surfaces_each_plan_once() -> None:
 
     plan = build_source_analysis_plan(
         profile,
-        _registry(AnalysisCapability.PYTHON_SAST),
+        _registry(AnalysisCapability.SOURCE_SAST),
         SourcePlanningPolicy(),
     )
 
-    assert len(
-        tuple(
-            entry
-            for entry in plan.entries
-            if entry.capability is AnalysisCapability.PYTHON_SAST
+    assert (
+        len(
+            tuple(
+                entry
+                for entry in plan.entries
+                if entry.capability is AnalysisCapability.SOURCE_SAST
+            )
         )
-    ) == 1
+        == 1
+    )
 
 
 def test_profile_with_missing_profiling_surface_is_rejected() -> None:
@@ -1198,8 +1181,8 @@ def test_real_enry_source_analysis_planning_pipeline(tmp_path: Path) -> None:
         language_rules=(
             LanguageSupportRule(
                 "JavaScript",
-                SourceSupportState.DETECTED,
-                "JAVASCRIPT_DETECTED_ONLY",
+                SourceSupportState.SCANNABLE,
+                "JAVASCRIPT_SCANNABLE_BY_POLICY",
             ),
             LanguageSupportRule(
                 "Python",
@@ -1224,7 +1207,7 @@ def test_real_enry_source_analysis_planning_pipeline(tmp_path: Path) -> None:
                         SourceSupportState.SCANNABLE,
                     ),
                     CapabilitySupportRule(
-                        AnalysisCapability.PYTHON_SAST,
+                        AnalysisCapability.SOURCE_SAST,
                         SourceSupportState.SCANNABLE,
                     ),
                     CapabilitySupportRule(
@@ -1255,8 +1238,8 @@ def test_real_enry_source_analysis_planning_pipeline(tmp_path: Path) -> None:
                         "PACKAGE_ANALYZER_UNAVAILABLE",
                     ),
                     TrustedSourceAnalyzer(
-                        "python-sast-test",
-                        (AnalysisCapability.PYTHON_SAST,),
+                        "source-sast-test",
+                        (AnalysisCapability.SOURCE_SAST,),
                         True,
                     ),
                     TrustedSourceAnalyzer(
@@ -1275,7 +1258,7 @@ def test_real_enry_source_analysis_planning_pipeline(tmp_path: Path) -> None:
         )
     )
     planning_policy = _policy(
-        AnalysisCapability.PYTHON_SAST,
+        AnalysisCapability.SOURCE_SAST,
         SourceFileFlag.GENERATED,
         SourceFileFlag.VENDORED,
     )
@@ -1301,19 +1284,18 @@ def test_real_enry_source_analysis_planning_pipeline(tmp_path: Path) -> None:
         )
         plan = build_source_analysis_plan(profile, registry, planning_policy)
         components = {
-            component.root_path: component.component_id
-            for component in profile.components
+            component.root_path: component.component_id for component in profile.components
         }
 
         profiling = _target_entry(plan, AnalysisCapability.REPOSITORY_PROFILING)
         assert profiling.action is SourcePlanAction.SATISFIED
         assert profiling.analyzer_id is None
 
-        python = _target_entry(plan, AnalysisCapability.PYTHON_SAST)
-        assert python.action is SourcePlanAction.RUN
-        assert python.analyzer_id == "python-sast-test"
-        assert python.selected_paths == ("src/app.py",)
-        assert python.excluded_paths == (
+        source_sast = _target_entry(plan, AnalysisCapability.SOURCE_SAST)
+        assert source_sast.action is SourcePlanAction.RUN
+        assert source_sast.analyzer_id == "source-sast-test"
+        assert source_sast.selected_paths == ("frontend/src/app.js", "src/app.py")
+        assert source_sast.excluded_paths == (
             SourcePlanPathExclusion(
                 "generated/__generated__/client.py",
                 "EXCLUDED_GENERATED",
@@ -1340,10 +1322,7 @@ def test_real_enry_source_analysis_planning_pipeline(tmp_path: Path) -> None:
             if entry.capability is AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING
         )
         assert advisory_entries
-        assert all(
-            entry.reason_code == "CAPABILITY_DETECTED_ONLY"
-            for entry in advisory_entries
-        )
+        assert all(entry.reason_code == "CAPABILITY_DETECTED_ONLY" for entry in advisory_entries)
 
         docker_entries = tuple(
             entry

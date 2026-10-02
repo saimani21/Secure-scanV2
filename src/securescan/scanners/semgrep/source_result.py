@@ -49,11 +49,12 @@ from securescan.workspaces.models import repository_content_digest
 
 _ADAPTER_ID: Final = "semgrep-ce"
 _ADAPTER_VERSION: Final = "1.0.0"
-_ANALYZER_ID: Final = "python-semgrep-v1"
+_ANALYZER_ID: Final = "semgrep-source-v1"
 _TRUSTED_RULESET_IDENTITIES: Final = frozenset(
     {
         ("securescan-python-baseline-v1", "1"),
         ("securescan-python-baseline-v2", "2"),
+        ("securescan-source-baseline-v3", "3"),
     }
 )
 _SANITIZED_EVIDENCE_FIELDS: Final = frozenset(
@@ -135,12 +136,8 @@ _REQUIRED_RETRYABILITY: Final[dict[JobFailureCategory, bool]] = {
     JobFailureCategory.TIMEOUT: True,
 }
 _PARSER_GAPS: Final[dict[str, str]] = {
-    "SEMGREP_FINDING_REJECTED": (
-        "Semgrep returned a finding that could not be safely normalized"
-    ),
-    "SEMGREP_FINDING_LIMIT": (
-        "Additional Semgrep findings were omitted by the configured limit"
-    ),
+    "SEMGREP_FINDING_REJECTED": ("Semgrep returned a finding that could not be safely normalized"),
+    "SEMGREP_FINDING_LIMIT": ("Additional Semgrep findings were omitted by the configured limit"),
     "SEMGREP_PARSE_ERROR": "Semgrep could not parse part of the repository",
     "SEMGREP_INVALID_TARGET": "Semgrep rejected a repository target",
     "SEMGREP_UNSUPPORTED_LANGUAGE": "Semgrep reported an unsupported language",
@@ -326,9 +323,8 @@ def _observation(
             value.end_line,
             end_column,
         )
-        if (
-            value.fingerprint != expected_fingerprint
-            or value.observation_id != UUID(expected_fingerprint[:32])
+        if value.fingerprint != expected_fingerprint or value.observation_id != UUID(
+            expected_fingerprint[:32]
         ):
             raise ValueError
         return SourceSecurityObservation(
@@ -352,10 +348,7 @@ def _observation(
 
 def _parser_gap(value: AnalysisGap, context: SourceExecutionContext) -> SourceAnalysisGap:
     try:
-        if (
-            value.adapter_id != _ADAPTER_ID
-            or _PARSER_GAPS.get(value.code) != value.message
-        ):
+        if value.adapter_id != _ADAPTER_ID or _PARSER_GAPS.get(value.code) != value.message:
             raise ValueError
         return SourceAnalysisGap(
             code=value.code,
@@ -440,7 +433,7 @@ class SourceSemgrepExecutionAssessmentService:
         except Exception as exc:
             raise SourceExecutionAssessmentIntegrityError from exc
         if (
-            context.capability is not AnalysisCapability.PYTHON_SAST
+            context.capability is not AnalysisCapability.SOURCE_SAST
             or context.source_analyzer_id != _ANALYZER_ID
             or context.core_adapter_id != _ADAPTER_ID
             or job.adapter_id != _ADAPTER_ID
@@ -544,8 +537,7 @@ class SourceSemgrepExecutionAssessmentService:
             or report.target.target_type is not TargetType.SOURCE_REPOSITORY
             or report.target.path != Path(".")
             or report.target.content_digest != expected_target_digest
-            or set(report.target.metadata)
-            != {"file_count", "ruleset_id", "ruleset_version"}
+            or set(report.target.metadata) != {"file_count", "ruleset_id", "ruleset_version"}
             or report.target.metadata["file_count"] != len(context.selected_files)
             or (
                 report.target.metadata["ruleset_id"],
@@ -589,8 +581,7 @@ class SourceSemgrepExecutionAssessmentService:
             or artifact.sanitized is not True
             or artifact.size_bytes < 1
             or _SHA256_PATTERN.fullmatch(artifact.sha256) is None
-            or artifact.storage_path
-            != f"sha256/{artifact.sha256[:2]}/{artifact.sha256}"
+            or artifact.storage_path != f"sha256/{artifact.sha256[:2]}/{artifact.sha256}"
         ):
             raise SourceExecutionAssessmentIntegrityError
         try:
@@ -630,14 +621,10 @@ class SourceSemgrepExecutionAssessmentService:
             job=job,
             context=context,
             execution_status=(
-                SourceExecutionStatus.PARTIAL
-                if is_partial
-                else SourceExecutionStatus.COMPLETE
+                SourceExecutionStatus.PARTIAL if is_partial else SourceExecutionStatus.COMPLETE
             ),
             coverage_status=(
-                CoverageStatus.PARTIAL
-                if is_partial
-                else CoverageStatus.FULL_FOR_DECLARED_SCOPE
+                CoverageStatus.PARTIAL if is_partial else CoverageStatus.FULL_FOR_DECLARED_SCOPE
             ),
             observations=observations,
             gaps=gaps,
@@ -695,9 +682,7 @@ class SourceSemgrepExecutionAssessmentService:
                 if outcome not in _FAILED_OUTCOMES:
                     raise SourceExecutionAssessmentIntegrityError
             gaps = (_cancelled_gap(context),)
-            execution_id = (
-                tool_execution.execution_id if tool_execution is not None else None
-            )
+            execution_id = tool_execution.execution_id if tool_execution is not None else None
         return self._assessment(
             job=job,
             context=context,
@@ -706,9 +691,7 @@ class SourceSemgrepExecutionAssessmentService:
             observations=(),
             gaps=gaps,
             final_tool_execution_id=execution_id,
-            tool_version=(
-                tool_execution.tool_version if tool_execution is not None else None
-            ),
+            tool_version=(tool_execution.tool_version if tool_execution is not None else None),
         )
 
     @staticmethod
@@ -749,13 +732,9 @@ class SourceSemgrepExecutionAssessmentService:
                 execution_status=execution_status,
                 coverage_status=coverage_status,
                 assessment_status=AssessmentStatus.OBSERVATIONS_ONLY,
-                declared_paths=tuple(
-                    item.relative_path for item in context.selected_files
-                ),
+                declared_paths=tuple(item.relative_path for item in context.selected_files),
                 declared_file_count=len(context.selected_files),
-                declared_total_bytes=sum(
-                    item.entry.size_bytes for item in context.selected_files
-                ),
+                declared_total_bytes=sum(item.entry.size_bytes for item in context.selected_files),
                 observations=observations,
                 gaps=gaps,
                 attempt_count=job.attempt_count,

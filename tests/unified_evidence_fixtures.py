@@ -44,7 +44,7 @@ from securescan.scanners.semgrep import (
     PRODUCTION_SEMGREP_IMAGE_REFERENCE,
     TrustedSemgrepSourceBinding,
     create_production_semgrep_source_binding,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.scanners.semgrep.source_execution import SourceProjectionExecutionReference
 from securescan.scanners.syft import (
@@ -96,11 +96,9 @@ def semgrep_binding(*, production: bool = False) -> TrustedSemgrepSourceBinding:
         command_prefix=("semgrep",),
     )
     factory = (
-        create_production_semgrep_source_binding
-        if production
-        else TrustedSemgrepSourceBinding
+        create_production_semgrep_source_binding if production else TrustedSemgrepSourceBinding
     )
-    return factory(definition=definition, ruleset=load_baseline_ruleset())
+    return factory(definition=definition, ruleset=load_source_ruleset())
 
 
 def source_context(
@@ -136,7 +134,7 @@ def source_context(
         binding_digest=binding_digest,
         core_adapter_id=(
             "semgrep-ce"
-            if source_analyzer_id == "python-semgrep-v1"
+            if source_analyzer_id == "semgrep-source-v1"
             else source_analyzer_id.split("-source-v1")[0]
         ),
     )
@@ -154,6 +152,7 @@ def semgrep_native(
     *,
     source_run_id: str = RUN_ID,
     line: int = 7,
+    rule_id: str = "securescan.python.dangerous-eval",
     message: str = "Semgrep matched a trusted SecureScan rule",
     severity: str = "high",
     path: str = "src/app.py",
@@ -167,7 +166,7 @@ def semgrep_native(
 ]:
     binding = binding or semgrep_binding()
     context = source_context(
-        capability=AnalysisCapability.PYTHON_SAST,
+        capability=AnalysisCapability.SOURCE_SAST,
         source_analyzer_id=binding.source_analyzer_id,
         binding_digest=binding.binding_digest(),
         paths=(path,),
@@ -178,7 +177,7 @@ def semgrep_native(
         "\x1f".join(
             (
                 "semgrep-ce",
-                "securescan.python.dangerous-eval",
+                rule_id,
                 path,
                 str(line),
                 "1",
@@ -191,7 +190,7 @@ def semgrep_native(
         observation_id=str(UUID(fingerprint[:32])),
         producer="semgrep-ce",
         observation_type=ObservationType.SOURCE_RULE_MATCH,
-        rule_id="securescan.python.dangerous-eval",
+        rule_id=rule_id,
         message=message,
         native_severity=severity,
         relative_path=path,

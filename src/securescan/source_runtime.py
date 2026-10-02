@@ -79,7 +79,7 @@ from securescan.scanners.semgrep import (
     PRODUCTION_SEMGREP_IMAGE_REFERENCE,
     create_production_semgrep_source_binding,
     create_semgrep_trusted_definition,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.scanners.syft import create_default_syft_binding
 from securescan.source.projection import SourceProjectionManager
@@ -593,7 +593,7 @@ def create_source_runtime(
             trusted_settings.source_runtime_receipt_root / "osv",
         )
         phase = "scanner_configuration"
-        ruleset = load_baseline_ruleset()
+        ruleset = load_source_ruleset()
         definition = create_semgrep_trusted_definition(
             image_reference=PRODUCTION_SEMGREP_IMAGE_REFERENCE,
             tool_version=DECLARED_SEMGREP_TOOL_VERSION,

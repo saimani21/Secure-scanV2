@@ -52,7 +52,7 @@ from securescan.scanners.semgrep import (
     TrustedSemgrepSourceBinding,
     build_semgrep_source_execution_context,
     create_production_semgrep_source_binding,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.source import (
     AnalysisCapability,
@@ -79,9 +79,7 @@ from securescan.workspaces.models import repository_content_digest
 IMAGE = "registry.example/securescan/semgrep@sha256:" + "5" * 64
 RUN_ID = str(UUID("00000000-0000-4000-8000-000000003c01"))
 JOB_ID = str(UUID("00000000-0000-4000-8000-000000003c02"))
-GOLDEN_CONTEXT_DIGEST = (
-    "768933ff11729f8148fe58c6117b782c6e26e1306c39fd69252e340c95e54446"
-)
+GOLDEN_CONTEXT_DIGEST = "34c04c32010ee5b37776c4380a8f1ffcc9ebe157061b2c061b0cee519ee1e819"
 
 
 def _definition(
@@ -112,7 +110,7 @@ def _binding(
             tool_version=tool_version,
             image_reference=image_reference,
         ),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
     )
 
 
@@ -136,8 +134,8 @@ def _trusted_inputs(*, binding: TrustedSemgrepSourceBinding | None = None):
             content_kind=FileContentKind.TEXT,
             role=SourceFileRole.SOURCE,
             eligible_capabilities=(
-                AnalysisCapability.PYTHON_SAST,
                 AnalysisCapability.REPOSITORY_PROFILING,
+                AnalysisCapability.SOURCE_SAST,
             ),
         ),
         SourceFileRecord(
@@ -146,8 +144,8 @@ def _trusted_inputs(*, binding: TrustedSemgrepSourceBinding | None = None):
             role=SourceFileRole.SOURCE,
             component_id=component_id,
             eligible_capabilities=(
-                AnalysisCapability.PYTHON_SAST,
                 AnalysisCapability.REPOSITORY_PROFILING,
+                AnalysisCapability.SOURCE_SAST,
             ),
         ),
     )
@@ -171,7 +169,7 @@ def _trusted_inputs(*, binding: TrustedSemgrepSourceBinding | None = None):
                         eligible_paths=paths,
                     ),
                     AnalysisSurface(
-                        capability=AnalysisCapability.PYTHON_SAST,
+                        capability=AnalysisCapability.SOURCE_SAST,
                         support_state=SourceSupportState.SCANNABLE,
                         eligible_paths=paths,
                     ),
@@ -183,8 +181,8 @@ def _trusted_inputs(*, binding: TrustedSemgrepSourceBinding | None = None):
     registry = TrustedSourceAnalyzerRegistry(
         analyzers=(
             TrustedSourceAnalyzer(
-                analyzer_id="python-semgrep-v1",
-                capabilities=(AnalysisCapability.PYTHON_SAST,),
+                analyzer_id="semgrep-source-v1",
+                capabilities=(AnalysisCapability.SOURCE_SAST,),
                 available=True,
             ),
         )
@@ -193,7 +191,7 @@ def _trusted_inputs(*, binding: TrustedSemgrepSourceBinding | None = None):
     entry = next(
         candidate
         for candidate in plan.entries
-        if candidate.capability is AnalysisCapability.PYTHON_SAST
+        if candidate.capability is AnalysisCapability.SOURCE_SAST
     )
     return profile, plan, entry, binding or _binding()
 
@@ -213,11 +211,13 @@ def _context() -> SourceExecutionContext:
 @pytest.fixture
 def durable_services(
     tmp_path: Path,
-) -> Iterator[tuple[
-    sessionmaker[Session],
-    ContentAddressedArtifactStore,
-    str,
-]]:
+) -> Iterator[
+    tuple[
+        sessionmaker[Session],
+        ContentAddressedArtifactStore,
+        str,
+    ]
+]:
     settings = Settings(
         database_url=f"sqlite:///{tmp_path / 'source-context.db'}",
         artifact_root=tmp_path / "artifacts",
@@ -253,7 +253,7 @@ def test_context_retains_trusted_identities_and_selected_file_facts() -> None:
     assert context.profile_digest == profile.profile_digest()
     assert context.plan_digest == plan.plan_digest()
     assert context.source_analyzer_id == entry.analyzer_id == binding.source_analyzer_id
-    assert context.capability is AnalysisCapability.PYTHON_SAST
+    assert context.capability is AnalysisCapability.SOURCE_SAST
     assert context.core_adapter_id == binding.core_adapter_id == "semgrep-ce"
     assert context.binding_digest == binding.binding_digest()
     assert tuple(file.relative_path for file in context.selected_files) == entry.selected_paths
@@ -322,8 +322,8 @@ def test_builder_rejects_nonrun_and_non_python_entries() -> None:
     unavailable = TrustedSourceAnalyzerRegistry(
         analyzers=(
             TrustedSourceAnalyzer(
-                analyzer_id="python-semgrep-v1",
-                capabilities=(AnalysisCapability.PYTHON_SAST,),
+                analyzer_id="semgrep-source-v1",
+                capabilities=(AnalysisCapability.SOURCE_SAST,),
                 available=False,
                 unavailable_reason_code="SEMGREP_UNAVAILABLE",
             ),
@@ -337,7 +337,7 @@ def test_builder_rejects_nonrun_and_non_python_entries() -> None:
     skipped_entry = next(
         entry
         for entry in skipped_plan.entries
-        if entry.capability is AnalysisCapability.PYTHON_SAST
+        if entry.capability is AnalysisCapability.SOURCE_SAST
     )
     with pytest.raises(InvalidSourceSemgrepExecutionRequestError):
         build_semgrep_source_execution_context(
@@ -450,9 +450,7 @@ def _submit(
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager.initialize_base_directory(
-            store.root.parent / "source-projections"
-        ),
+        SourceProjectionManager.initialize_base_directory(store.root.parent / "source-projections"),
         run_id_factory=lambda: UUID(RUN_ID),
         job_id_factory=lambda: UUID(JOB_ID),
     )
@@ -508,11 +506,7 @@ def _submission_workspace(
 
 
 def _artifact_files(store: ContentAddressedArtifactStore) -> set[Path]:
-    return {
-        path.relative_to(store.root)
-        for path in store.root.rglob("*")
-        if path.is_file()
-    }
+    return {path.relative_to(store.root) for path in store.root.rglob("*") if path.is_file()}
 
 
 def _projection_directories(store: ContentAddressedArtifactStore) -> tuple[Path, ...]:
@@ -534,26 +528,20 @@ def test_identical_retry_returns_existing_job_and_stable_context(
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager.initialize_base_directory(
-            store.root.parent / "source-projections"
-        ),
+        SourceProjectionManager.initialize_base_directory(store.root.parent / "source-projections"),
     )
 
     first = service.submit(request)
     first_job = JobRepository(session_factory).get_job(first.job_id)
     assert first_job is not None
-    first_context = SourceSemgrepExecutionContextResolver(store, binding).resolve(
-        first_job
-    )
+    first_context = SourceSemgrepExecutionContextResolver(store, binding).resolve(first_job)
     first_envelope = first_job.payload_json
     first_artifacts = _artifact_files(store)
 
     second = service.submit(request)
     second_job = JobRepository(session_factory).get_job(second.job_id)
     assert second_job is not None
-    second_context = SourceSemgrepExecutionContextResolver(store, binding).resolve(
-        second_job
-    )
+    second_context = SourceSemgrepExecutionContextResolver(store, binding).resolve(second_job)
 
     assert first.created is True
     assert second.created is False
@@ -561,9 +549,7 @@ def test_identical_retry_returns_existing_job_and_stable_context(
     assert second.job_id == first.job_id
     assert second_job.payload_json == first_envelope
     assert second_context == first_context
-    first_reference = SourceExecutionEnvelope.from_payload_json(
-        first_envelope
-    ).projection_reference
+    first_reference = SourceExecutionEnvelope.from_payload_json(first_envelope).projection_reference
     second_reference = SourceExecutionEnvelope.from_payload_json(
         second_job.payload_json
     ).projection_reference
@@ -571,9 +557,7 @@ def test_identical_retry_returns_existing_job_and_stable_context(
     assert second_reference.context_digest == second_context.context_digest()
     assert _artifact_files(store) == first_artifacts
     assert len(first_artifacts) == 1
-    assert [path.name for path in _projection_directories(store)] == [
-        first_reference.projection_id
-    ]
+    assert [path.name for path in _projection_directories(store)] == [first_reference.projection_id]
     with session_factory() as session:
         assert session.query(AnalysisRunRow).count() == 1
         assert session.query(JobRow).count() == 1
@@ -587,9 +571,7 @@ def test_identical_retry_with_fresh_services_uses_durable_identity(
     first_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager.initialize_base_directory(
-            store.root.parent / "source-projections"
-        ),
+        SourceProjectionManager.initialize_base_directory(store.root.parent / "source-projections"),
     )
     first = first_service.submit(first_request)
     artifact_root = store.root
@@ -621,9 +603,7 @@ def test_identical_retry_with_fresh_services_uses_durable_identity(
     assert context.source_run_id == first.run_id
     assert context.job_id == first.job_id
     assert reference.context_digest == context.context_digest()
-    assert [path.name for path in _projection_directories(fresh_store)] == [
-        reference.projection_id
-    ]
+    assert [path.name for path in _projection_directories(fresh_store)] == [reference.projection_id]
     assert len(_artifact_files(fresh_store)) == 1
 
 
@@ -635,9 +615,7 @@ def test_same_key_with_different_source_semantics_remains_a_conflict(
     service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager.initialize_base_directory(
-            store.root.parent / "source-projections"
-        ),
+        SourceProjectionManager.initialize_base_directory(store.root.parent / "source-projections"),
     )
     first = service.submit(request)
 
@@ -661,9 +639,7 @@ def test_same_key_with_different_source_semantics_remains_a_conflict(
     first_reference = SourceExecutionEnvelope.from_payload_json(
         first_job.payload_json
     ).projection_reference
-    assert [path.name for path in _projection_directories(store)] == [
-        first_reference.projection_id
-    ]
+    assert [path.name for path in _projection_directories(store)] == [first_reference.projection_id]
 
 
 def test_server_owned_integrity_error_recovery_returns_existing_submission(
@@ -675,9 +651,7 @@ def test_server_owned_integrity_error_recovery_returns_existing_submission(
     first_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
-        SourceProjectionManager.initialize_base_directory(
-            store.root.parent / "source-projections"
-        ),
+        SourceProjectionManager.initialize_base_directory(store.root.parent / "source-projections"),
     )
     first = first_service.submit(request)
     original_find = job_submission_module._find_submission
@@ -694,9 +668,7 @@ def test_server_owned_integrity_error_recovery_returns_existing_submission(
     recovery_service = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         ContentAddressedArtifactStore(store.root),
-        SourceProjectionManager.initialize_base_directory(
-            store.root.parent / "source-projections"
-        ),
+        SourceProjectionManager.initialize_base_directory(store.root.parent / "source-projections"),
     )
     recovered = recovery_service.submit(_submission_request(target_id, store)[0])
 
@@ -738,12 +710,8 @@ def test_projection_publication_race_reopens_the_valid_competing_projection(
 
     assert result.created is True
     assert job is not None
-    reference = SourceExecutionEnvelope.from_payload_json(
-        job.payload_json
-    ).projection_reference
-    assert [path.name for path in _projection_directories(store)] == [
-        reference.projection_id
-    ]
+    reference = SourceExecutionEnvelope.from_payload_json(job.payload_json).projection_reference
+    assert [path.name for path in _projection_directories(store)] == [reference.projection_id]
 
 
 def test_server_submission_derives_adapter_and_persists_tiny_envelope(
@@ -777,9 +745,7 @@ def test_server_submission_derives_adapter_and_persists_tiny_envelope(
     assert "source_directory" not in json.dumps(envelope)
     assert "image" not in envelope
     assert "command" not in envelope
-    assert "adapter_id" not in {
-        field.name for field in fields(SourceSemgrepSubmissionRequest)
-    }
+    assert "adapter_id" not in {field.name for field in fields(SourceSemgrepSubmissionRequest)}
 
 
 def test_server_submission_correlates_target_digest_before_creating_rows(
@@ -826,12 +792,7 @@ def test_artifact_corruption_is_rejected(durable_services) -> None:
     job = JobRepository(session_factory).get_job(result.job_id)
     assert job is not None
     envelope = SourceExecutionEnvelope.from_payload_json(job.payload_json)
-    artifact_path = (
-        store.root
-        / "sha256"
-        / envelope.artifact_sha256[:2]
-        / envelope.artifact_sha256
-    )
+    artifact_path = store.root / "sha256" / envelope.artifact_sha256[:2] / envelope.artifact_sha256
     original = artifact_path.read_bytes()
     artifact_path.write_bytes(bytes((original[0] ^ 1,)) + original[1:])
 
@@ -910,9 +871,7 @@ def test_context_content_tampering_is_rejected(
     )
     tampered_job = replace(job, payload_json=changed_envelope.payload_json())
 
-    with pytest.raises(
-        (InvalidSourceExecutionContextError, SourceExecutionBindingMismatchError)
-    ):
+    with pytest.raises((InvalidSourceExecutionContextError, SourceExecutionBindingMismatchError)):
         SourceSemgrepExecutionContextResolver(store, binding).resolve(tampered_job)
 
 
@@ -1022,7 +981,7 @@ def test_old_placeholder_context_cannot_pair_with_current_production_binding(
     assert job is not None
     production_binding = create_production_semgrep_source_binding(
         definition=_definition(image_reference=PRODUCTION_SEMGREP_IMAGE_REFERENCE),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
     )
 
     with pytest.raises(SourceExecutionBindingMismatchError):
@@ -1035,7 +994,7 @@ def test_current_production_context_cannot_pair_with_old_placeholder_binding(
     session_factory, store, _ = durable_services
     production_binding = create_production_semgrep_source_binding(
         definition=_definition(image_reference=PRODUCTION_SEMGREP_IMAGE_REFERENCE),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
     )
     result, _ = _submit(durable_services, binding=production_binding)
     job = JobRepository(session_factory).get_job(result.job_id)

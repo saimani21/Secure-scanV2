@@ -82,7 +82,7 @@ from securescan.scanners.semgrep import (
     build_semgrep_source_analyzer_snapshot,
     create_production_semgrep_source_binding,
     create_semgrep_trusted_definition,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.scanners.syft import (
     apply_syft_source_applicability,
@@ -119,6 +119,8 @@ from securescan.workspaces import (
 )
 
 _HEX_CHARACTERS = frozenset("0123456789abcdef")
+
+
 class SourceCliError(RuntimeError):
     def __init__(self, code: str, message: str, exit_code: int) -> None:
         self.code = code
@@ -226,18 +228,28 @@ class SourceRepositoryProfilePlanner:
         policy = SourceSupportPolicy(
             language_rules=(
                 LanguageSupportRule(
+                    "JavaScript",
+                    SourceSupportState.SCANNABLE,
+                    "JAVASCRIPT_SCANNABLE_BY_POLICY",
+                ),
+                LanguageSupportRule(
                     "Python",
                     SourceSupportState.SCANNABLE,
                     "PYTHON_SCANNABLE_BY_POLICY",
                 ),
+                LanguageSupportRule(
+                    "TypeScript",
+                    SourceSupportState.SCANNABLE,
+                    "TYPESCRIPT_SCANNABLE_BY_POLICY",
+                ),
             ),
             capability_rules=(
                 CapabilitySupportRule(
-                    AnalysisCapability.PYTHON_SAST,
+                    AnalysisCapability.SOURCE_SAST,
                     SourceSupportState.SCANNABLE,
-                    "PYTHON_SCANNABLE_BY_POLICY",
+                    "SOURCE_SAST_SCANNABLE_BY_POLICY",
                 ),
-            )
+            ),
         )
         policy = with_gitleaks_source_support(policy)
         policy = with_syft_source_support(policy)
@@ -252,17 +264,11 @@ class SourceRepositoryProfilePlanner:
         self, workspace: PreparedRepositoryWorkspace
     ) -> tuple[RepositoryProfile, SourceAnalysisPlan]:
         inventory = build_repository_inventory(workspace)
-        languages = profile_repository_languages(
-            workspace, inventory, self._enry_client_factory()
-        )
+        languages = profile_repository_languages(workspace, inventory, self._enry_client_factory())
         enriched = enrich_repository_inventory(inventory, languages)
         componentized = detect_repository_components(enriched)
-        assessment = assess_repository_language_support(
-            componentized, self._support_policy
-        )
-        profile = build_repository_profile(
-            componentized, assessment, self._support_policy
-        )
+        assessment = assess_repository_language_support(componentized, self._support_policy)
+        profile = build_repository_profile(componentized, assessment, self._support_policy)
         # The frozen Syft overlay owns repository-wide PACKAGE_INVENTORY scope.
         # Generic coverage construction may have emitted component-grouped
         # package surfaces, so remove those provisional surfaces before asking
@@ -275,22 +281,16 @@ class SourceRepositoryProfilePlanner:
                 if surface.capability is not AnalysisCapability.PACKAGE_INVENTORY
             ),
         )
-        profile = apply_gitleaks_source_applicability(
-            profile, self._support_policy
-        )
+        profile = apply_gitleaks_source_applicability(profile, self._support_policy)
         profile = apply_syft_source_applicability(profile, self._support_policy)
         profile = apply_checkov_source_applicability(profile, self._support_policy)
-        plan = build_source_analysis_plan(
-            profile, self._registry_factory(), self._planning_policy
-        )
+        plan = build_source_analysis_plan(profile, self._registry_factory(), self._planning_policy)
         return profile, plan
 
 
 def _enry_client(settings: Settings) -> EnryClient:
     if settings.source_enry_helper_sha256 is None:
-        raise SourceCliError(
-            "SUBMISSION_UNAVAILABLE", "Source scan submission is unavailable", 5
-        )
+        raise SourceCliError("SUBMISSION_UNAVAILABLE", "Source scan submission is unavailable", 5)
     return EnryClient(
         TrustedEnryHelper(
             helper_path=settings.source_enry_helper_path,
@@ -307,7 +307,7 @@ def _analyzer_registry(
     """Take the existing read-only availability snapshots used by Source planning."""
 
     docker = DockerSandboxExecutor()
-    ruleset = load_baseline_ruleset()
+    ruleset = load_source_ruleset()
     definition = create_semgrep_trusted_definition(
         image_reference=PRODUCTION_SEMGREP_IMAGE_REFERENCE,
         tool_version=DECLARED_SEMGREP_TOOL_VERSION,
@@ -334,9 +334,7 @@ def _analyzer_registry(
     analyzers = (
         checkov,
         build_gitleaks_source_analyzer_snapshot(
-            create_default_gitleaks_binding(
-                settings.source_gitleaks_executable_path
-            )
+            create_default_gitleaks_binding(settings.source_gitleaks_executable_path)
         ),
         build_osv_source_analyzer_snapshot(available=True),
         build_semgrep_source_analyzer_snapshot(
@@ -349,18 +347,13 @@ def _analyzer_registry(
         ),
     )
     roster = frozen_source_v1_authority_roster()
-    expected = {
-        authority.capability: authority.analyzer_id
-        for authority in roster.authorities
-    }
+    expected = {authority.capability: authority.analyzer_id for authority in roster.authorities}
     if {
         capability: analyzer.analyzer_id
         for analyzer in analyzers
         for capability in analyzer.capabilities
     } != expected:
-        raise SourceCliError(
-            "SUBMISSION_UNAVAILABLE", "Source scan submission is unavailable", 5
-        )
+        raise SourceCliError("SUBMISSION_UNAVAILABLE", "Source scan submission is unavailable", 5)
     return TrustedSourceAnalyzerRegistry(
         analyzers=tuple(sorted(analyzers, key=lambda analyzer: analyzer.analyzer_id))
     )
@@ -381,9 +374,7 @@ def create_source_cli_services() -> Iterator[SourceCliServices]:
         workspaces = RepositoryWorkspaceManager(settings.source_workspace_root)
         yield SourceCliServices(
             workspace_manager=workspaces,
-            submissions=SourceScanSubmissionService(
-                session_factory, artifacts, workspaces
-            ),
+            submissions=SourceScanSubmissionService(session_factory, artifacts, workspaces),
             queries=SourceScanQueryService(session_factory, artifacts),
             profile_planner=SourceRepositoryProfilePlanner(
                 lambda: _enry_client(settings),
@@ -434,9 +425,7 @@ def _deadline(clock: Callable[[], datetime], seconds: int) -> datetime:
         )
     now = clock()
     if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() is None:
-        raise SourceCliError(
-            "SUBMISSION_UNAVAILABLE", "Source scan submission is unavailable", 5
-        )
+        raise SourceCliError("SUBMISSION_UNAVAILABLE", "Source scan submission is unavailable", 5)
     return now.astimezone(UTC) + timedelta(seconds=seconds)
 
 
@@ -471,9 +460,7 @@ def submit_local_scan(
     key = _idempotency_key(services.idempotency_key_factory)
     deadline = _deadline(
         services.clock,
-        services.default_deadline_seconds
-        if deadline_seconds is None
-        else deadline_seconds,
+        services.default_deadline_seconds if deadline_seconds is None else deadline_seconds,
     )
 
     workspace: PreparedRepositoryWorkspace | None = None
@@ -482,9 +469,7 @@ def submit_local_scan(
         workspace = services.workspace_manager.prepare_repository(source)
         profile, plan = services.profile_planner.build(workspace)
         if lineage is None:
-            lineage = services.submissions.create_lineage(
-                project_id=project
-            ).lineage_id
+            lineage = services.submissions.create_lineage(project_id=project).lineage_id
         submission_started = True
         submission = services.submissions.submit_prepared(
             SourcePreparedScanRequest(
@@ -534,9 +519,7 @@ def create_project(services: SourceCliServices, *, name: str) -> SourceProject:
         ) from None
 
 
-def list_projects(
-    services: SourceCliServices, *, limit: int, offset: int
-) -> SourceProjectPage:
+def list_projects(services: SourceCliServices, *, limit: int, offset: int) -> SourceProjectPage:
     if services.projects is None:
         raise SourceCliError("PROJECT_UNAVAILABLE", "Source project service is unavailable", 5)
     try:
@@ -550,28 +533,20 @@ def list_projects(
             "PROJECT_UNAVAILABLE", "Source project service is unavailable", 5
         ) from None
     except SourceProjectError:
-        raise SourceCliError(
-            "INVALID_PROJECT", "Project list request is invalid", 2
-        ) from None
+        raise SourceCliError("INVALID_PROJECT", "Project list request is invalid", 2) from None
 
 
 def translate_query_error(exc: SourceScanQueryError) -> SourceCliError:
     if isinstance(exc, ScanNotFoundError):
         return SourceCliError("SCAN_NOT_FOUND", "Source scan was not found", 3)
     if isinstance(exc, ScanNotPublishedError):
-        return SourceCliError(
-            "SCAN_NOT_PUBLISHED", "Source scan report is not published", 3
-        )
+        return SourceCliError("SCAN_NOT_PUBLISHED", "Source scan report is not published", 3)
     if isinstance(exc, ProductCoreNotReadyError):
-        return SourceCliError(
-            "PRODUCT_CORE_NOT_READY", "Source Product Core data is not ready", 3
-        )
+        return SourceCliError("PRODUCT_CORE_NOT_READY", "Source Product Core data is not ready", 3)
     if isinstance(exc, (InvalidScanFilterError, InvalidScanPaginationError)):
         return SourceCliError(exc.code.value, str(exc), 2)
     if isinstance(exc, SourceScanQueryPersistenceError):
-        return SourceCliError(
-            "QUERY_UNAVAILABLE", "Source scan query is unavailable", 5
-        )
+        return SourceCliError("QUERY_UNAVAILABLE", "Source scan query is unavailable", 5)
     return SourceCliError("QUERY_UNAVAILABLE", "Source scan query is unavailable", 5)
 
 
@@ -613,9 +588,7 @@ def query_findings(
 
 def query_report(services: SourceCliServices, run_id: str) -> SourcePublishedReport:
     try:
-        return services.queries.get_report(
-            _canonical_uuid(run_id, code="SCAN_NOT_FOUND")
-        )
+        return services.queries.get_report(_canonical_uuid(run_id, code="SCAN_NOT_FOUND"))
     except SourceCliError:
         raise
     except SourceScanQueryError as exc:
@@ -674,9 +647,7 @@ def report_data(report: SourcePublishedReport) -> dict[str, Any]:
     return {"report": _plain(report.report), "run_id": report.run_id}
 
 
-def canonical_json(
-    value: object, *, pretty: bool = False, ensure_ascii: bool = False
-) -> str:
+def canonical_json(value: object, *, pretty: bool = False, ensure_ascii: bool = False) -> str:
     return json.dumps(
         value,
         allow_nan=False,

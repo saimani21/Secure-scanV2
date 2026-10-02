@@ -89,7 +89,7 @@ _ANALYZERS = {
     AnalysisCapability.CONFIGURATION_SECURITY: "checkov-source-v1",
     AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING: "osv-dependency-advisory-v1",
     AnalysisCapability.PACKAGE_INVENTORY: "syft-source-v1",
-    AnalysisCapability.PYTHON_SAST: "python-semgrep-v1",
+    AnalysisCapability.SOURCE_SAST: "semgrep-source-v1",
     AnalysisCapability.SECRET_DETECTION: "gitleaks-source-v1",
 }
 
@@ -111,8 +111,8 @@ def _fixture_profile() -> RepositoryProfile:
             language="Python",
             component_id="application",
             eligible_capabilities=_capabilities(
-                AnalysisCapability.PYTHON_SAST,
                 AnalysisCapability.REPOSITORY_PROFILING,
+                AnalysisCapability.SOURCE_SAST,
                 AnalysisCapability.SECRET_DETECTION,
             ),
         ),
@@ -139,39 +139,44 @@ def _fixture_profile() -> RepositoryProfile:
             ),
         ),
     )
-    surfaces = (
-        AnalysisSurface(
-            capability=AnalysisCapability.CONFIGURATION_SECURITY,
-            support_state=SourceSupportState.SCANNABLE,
-            eligible_paths=("infra/main.tf",),
-        ),
-        AnalysisSurface(
-            capability=AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING,
-            component_id="application",
-            support_state=SourceSupportState.SCANNABLE,
-            eligible_paths=("requirements.lock",),
-        ),
-        AnalysisSurface(
-            capability=AnalysisCapability.PACKAGE_INVENTORY,
-            support_state=SourceSupportState.SCANNABLE,
-            eligible_paths=("requirements.lock",),
-        ),
-        AnalysisSurface(
-            capability=AnalysisCapability.PYTHON_SAST,
-            component_id="application",
-            support_state=SourceSupportState.SCANNABLE,
-            eligible_paths=("app.py",),
-        ),
-        AnalysisSurface(
-            capability=AnalysisCapability.REPOSITORY_PROFILING,
-            support_state=SourceSupportState.DETECTED,
-            eligible_paths=("app.py", "infra/main.tf", "requirements.lock"),
-        ),
-        AnalysisSurface(
-            capability=AnalysisCapability.SECRET_DETECTION,
-            support_state=SourceSupportState.SCANNABLE,
-            eligible_paths=("app.py", "infra/main.tf", "requirements.lock"),
-        ),
+    surfaces = tuple(
+        sorted(
+            (
+                AnalysisSurface(
+                    capability=AnalysisCapability.CONFIGURATION_SECURITY,
+                    support_state=SourceSupportState.SCANNABLE,
+                    eligible_paths=("infra/main.tf",),
+                ),
+                AnalysisSurface(
+                    capability=AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING,
+                    component_id="application",
+                    support_state=SourceSupportState.SCANNABLE,
+                    eligible_paths=("requirements.lock",),
+                ),
+                AnalysisSurface(
+                    capability=AnalysisCapability.PACKAGE_INVENTORY,
+                    support_state=SourceSupportState.SCANNABLE,
+                    eligible_paths=("requirements.lock",),
+                ),
+                AnalysisSurface(
+                    capability=AnalysisCapability.SOURCE_SAST,
+                    component_id="application",
+                    support_state=SourceSupportState.SCANNABLE,
+                    eligible_paths=("app.py",),
+                ),
+                AnalysisSurface(
+                    capability=AnalysisCapability.REPOSITORY_PROFILING,
+                    support_state=SourceSupportState.DETECTED,
+                    eligible_paths=("app.py", "infra/main.tf", "requirements.lock"),
+                ),
+                AnalysisSurface(
+                    capability=AnalysisCapability.SECRET_DETECTION,
+                    support_state=SourceSupportState.SCANNABLE,
+                    eligible_paths=("app.py", "infra/main.tf", "requirements.lock"),
+                ),
+            ),
+            key=lambda surface: (surface.capability.value, surface.component_id or ""),
+        )
     )
     return RepositoryProfile(
         repository_digest=repository_content_digest(tuple(file.entry for file in files)),
@@ -289,19 +294,13 @@ def test_frozen_roster_is_exact_and_deterministic() -> None:
     assert first == second
     assert first.roster_digest() == second.roster_digest()
     assert first.roster_digest() == SOURCE_V1_AUTHORITY_ROSTER_DIGEST
-    semgrep = next(
-        item for item in first.authorities if item.authority is SourceAuthority.SEMGREP
-    )
+    semgrep = next(item for item in first.authorities if item.authority is SourceAuthority.SEMGREP)
     assert semgrep.contract_digest == PRODUCTION_SEMGREP_BINDING_DIGEST
 
 
 def test_old_placeholder_semgrep_contract_is_not_a_current_roster_identity() -> None:
-    semgrep = frozen_source_v1_authority_roster().for_capability(
-        AnalysisCapability.PYTHON_SAST
-    )
-    old_binding_digest = (
-        "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a"
-    )
+    semgrep = frozen_source_v1_authority_roster().for_capability(AnalysisCapability.SOURCE_SAST)
+    old_binding_digest = "90876e4088e2b397bc37d310a0eba5eb4d61b7263fbdb72136c73557a100e59a"
 
     with pytest.raises(SourceOrchestrationIntegrityError):
         replace(semgrep, contract_digest=old_binding_digest)
@@ -460,14 +459,14 @@ def test_node_id_uses_only_frozen_identity_material(orchestration_context: _Cont
     assert semgrep.node_id == source_node_id(
         str(_RUN_ID),
         SourceAuthority.SEMGREP,
-        AnalysisCapability.PYTHON_SAST,
+        AnalysisCapability.SOURCE_SAST,
         "application",
     )
     assert (
         source_node_id(
             str(_SECOND_RUN_ID),
             SourceAuthority.SEMGREP,
-            AnalysisCapability.PYTHON_SAST,
+            AnalysisCapability.SOURCE_SAST,
             "application",
         )
         != semgrep.node_id
@@ -574,7 +573,7 @@ def test_plan_profile_scope_tampering_fails_closed(
     index = next(
         index
         for index, entry in enumerate(entries)
-        if entry.capability is AnalysisCapability.PYTHON_SAST
+        if entry.capability is AnalysisCapability.SOURCE_SAST
     )
     if mutation == "missing-selected":
         with pytest.raises(ValueError):
@@ -1119,9 +1118,7 @@ def _assert_s6a_schema_contract(signature: dict[str, object]) -> None:
         "terminal_disposition",
     }
     assert not any(nullable for _name, _type, nullable in dependencies["columns"])
-    assert orchestrations["foreign_keys"] == (
-        (("run_id",), "analysis_runs", ("id",), "CASCADE"),
-    )
+    assert orchestrations["foreign_keys"] == ((("run_id",), "analysis_runs", ("id",), "CASCADE"),)
     assert authorities["foreign_keys"] == (
         (("run_id",), "source_orchestrations", ("run_id",), "CASCADE"),
     )
@@ -1324,11 +1321,11 @@ def test_postgres_concurrent_state_version_transition_has_exactly_one_winner(
         second_observed = second_service.load(active.run_id)
         assert first_observed.state_version == second_observed.state_version
         first, second = _race_operations(
-            lambda observed=first_observed, service=first_service: (
-                service.request_cancellation(observed.run_id, observed.state_version)
+            lambda observed=first_observed, service=first_service: service.request_cancellation(
+                observed.run_id, observed.state_version
             ),
-            lambda observed=second_observed, service=second_service: (
-                service.request_cancellation(observed.run_id, observed.state_version)
+            lambda observed=second_observed, service=second_service: service.request_cancellation(
+                observed.run_id, observed.state_version
             ),
         )
         outcomes = (first, second)
@@ -1357,8 +1354,8 @@ def test_postgres_activation_vs_cancellation_has_one_legal_database_ordering(
         cancellation_observed = cancellation_service.load(created.run_id)
         assert activation_observed.state_version == cancellation_observed.state_version
         activated, cancelled = _race_operations(
-            lambda observed=activation_observed, service=activation_service: (
-                service.activate(observed.run_id, observed.state_version)
+            lambda observed=activation_observed, service=activation_service: service.activate(
+                observed.run_id, observed.state_version
             ),
             lambda observed=cancellation_observed, service=cancellation_service: (
                 service.request_cancellation(observed.run_id, observed.state_version)
@@ -1492,9 +1489,7 @@ def test_postgres_rejects_hostile_topology_writes(
 
     second = None
     if hostile_write == "cross-run-dependency":
-        second = context.service().create(
-            replace(context.request, idempotency_key="b" * 64)
-        )
+        second = context.service().create(replace(context.request, idempotency_key="b" * 64))
 
     with pytest.raises(IntegrityError), context.factory.begin() as session:
         if hostile_write == "duplicate-authority":
@@ -1625,9 +1620,7 @@ def test_postgres_losing_create_transaction_leaves_only_complete_database_topolo
     )
     assert payload == committed.snapshot.canonical_json()
     cas_objects = tuple(
-        path
-        for path in (context.artifact_root / "sha256").glob("*/*")
-        if path.is_file()
+        path for path in (context.artifact_root / "sha256").glob("*/*") if path.is_file()
     )
     assert len(cas_objects) == 2
 
@@ -1662,8 +1655,7 @@ def test_postgres_restart_reconstructs_exact_canonical_orchestration(
         assert reloaded.state_version == active.state_version
         assert reloaded.idempotency_key == active.idempotency_key
         assert (
-            reloaded.snapshot.profile.profile_digest()
-            == active.snapshot.profile.profile_digest()
+            reloaded.snapshot.profile.profile_digest() == active.snapshot.profile.profile_digest()
         )
         assert reloaded.snapshot.plan.plan_digest() == active.snapshot.plan.plan_digest()
     finally:

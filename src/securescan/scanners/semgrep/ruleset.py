@@ -23,9 +23,7 @@ def _bounded_text(value: object, maximum: int) -> bool:
         isinstance(value, str)
         and value == value.strip()
         and 1 <= len(value) <= maximum
-        and not any(
-            unicodedata.category(character).startswith("C") for character in value
-        )
+        and not any(unicodedata.category(character).startswith("C") for character in value)
     )
 
 
@@ -55,11 +53,7 @@ class TrustedSemgrepRuleset:
     def materialize(self, output_directory: Path) -> Path:
         try:
             output = output_directory.resolve(strict=True)
-            if (
-                not output.is_dir()
-                or output.is_symlink()
-                or output_directory != output
-            ):
+            if not output.is_dir() or output.is_symlink() or output_directory != output:
                 raise OSError
             rules_path = output / _RULES_FILENAME
             results_path = output / _RESULTS_FILENAME
@@ -107,6 +101,25 @@ def load_baseline_ruleset() -> TrustedSemgrepRuleset:
         ruleset_id="securescan-python-baseline-v2",
         display_name="SecureScan Python Baseline v2",
         version="2",
+        content=content,
+        sha256=hashlib.sha256(content).hexdigest(),
+    )
+
+
+def load_source_ruleset() -> TrustedSemgrepRuleset:
+    package = files("securescan.scanners.semgrep")
+    python_rules = package.joinpath("rules", "securescan-python-baseline-v2.yml").read_bytes()
+    javascript_rules = package.joinpath(
+        "rules", "securescan-javascript-typescript-v1.yml"
+    ).read_bytes()
+    prefix = b"rules:\n"
+    if not javascript_rules.startswith(prefix):
+        raise InvalidSemgrepRulesetError
+    content = python_rules.rstrip() + b"\n\n" + javascript_rules.removeprefix(prefix)
+    return TrustedSemgrepRuleset(
+        ruleset_id="securescan-source-baseline-v3",
+        display_name="SecureScan Source Baseline v3",
+        version="3",
         content=content,
         sha256=hashlib.sha256(content).hexdigest(),
     )

@@ -54,9 +54,7 @@ from securescan.workspaces.models import (
     repository_content_digest,
 )
 
-SOURCE_EXECUTION_PAYLOAD_KEY = (
-    f"{RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX}source_execution__"
-)
+SOURCE_EXECUTION_PAYLOAD_KEY = f"{RESERVED_INTERNAL_JOB_PAYLOAD_PREFIX}source_execution__"
 _ENVELOPE_FIELDS = frozenset(
     {
         "artifact_kind",
@@ -176,9 +174,7 @@ class SourceProjectionExecutionReference:
         payload: object,
     ) -> SourceProjectionExecutionReference:
         try:
-            if not isinstance(payload, dict) or set(payload) != (
-                _PROJECTION_REFERENCE_FIELDS
-            ):
+            if not isinstance(payload, dict) or set(payload) != (_PROJECTION_REFERENCE_FIELDS):
                 raise ValueError
             reference = cls(
                 projection_id=payload["projection_id"],
@@ -227,9 +223,7 @@ class SourceExecutionEnvelope:
                 "artifact_sha256": self.artifact_sha256,
                 "artifact_size_bytes": self.artifact_size_bytes,
                 "context_digest": self.context_digest,
-                "projection_reference": (
-                    self.projection_reference.canonical_data()
-                ),
+                "projection_reference": (self.projection_reference.canonical_data()),
                 "schema_version": self.schema_version,
             }
         }
@@ -237,16 +231,13 @@ class SourceExecutionEnvelope:
     @classmethod
     def from_payload_json(cls, payload: object) -> SourceExecutionEnvelope:
         try:
-            if not isinstance(payload, dict) or set(payload) != {
-                SOURCE_EXECUTION_PAYLOAD_KEY
-            }:
+            if not isinstance(payload, dict) or set(payload) != {SOURCE_EXECUTION_PAYLOAD_KEY}:
                 raise ValueError
             value = payload[SOURCE_EXECUTION_PAYLOAD_KEY]
             if not isinstance(value, dict) or set(value) != _ENVELOPE_FIELDS:
                 raise ValueError
             if (
-                value["artifact_kind"]
-                != ArtifactKind.SOURCE_EXECUTION_CONTEXT.value
+                value["artifact_kind"] != ArtifactKind.SOURCE_EXECUTION_CONTEXT.value
                 or value["artifact_media_type"] != _ARTIFACT_MEDIA_TYPE
                 or value["artifact_sanitized"] is not False
             ):
@@ -275,10 +266,7 @@ def _validated_profile(profile: object) -> RepositoryProfile:
     try:
         if not isinstance(profile, RepositoryProfile):
             raise TypeError
-        files = tuple(
-            replace(file, entry=replace(file.entry))
-            for file in profile.files
-        )
+        files = tuple(replace(file, entry=replace(file.entry)) for file in profile.files)
         validated = replace(
             profile,
             files=files,
@@ -300,9 +288,7 @@ def _validated_plan(plan: object) -> SourceAnalysisPlan:
         entries = tuple(
             replace(
                 entry,
-                excluded_paths=tuple(
-                    replace(exclusion) for exclusion in entry.excluded_paths
-                ),
+                excluded_paths=tuple(replace(exclusion) for exclusion in entry.excluded_paths),
             )
             for entry in plan.entries
         )
@@ -320,9 +306,7 @@ def _validated_entry(entry: object) -> SourceAnalysisPlanEntry:
             raise TypeError
         validated = replace(
             entry,
-            excluded_paths=tuple(
-                replace(exclusion) for exclusion in entry.excluded_paths
-            ),
+            excluded_paths=tuple(replace(exclusion) for exclusion in entry.excluded_paths),
         )
     except Exception as exc:
         raise InvalidSourceSemgrepExecutionRequestError from exc
@@ -354,17 +338,14 @@ def build_semgrep_source_execution_context(
             or trusted_plan.profile_digest != profile_digest
             or trusted_entry not in trusted_plan.entries
             or trusted_entry.action is not SourcePlanAction.RUN
-            or trusted_entry.capability is not AnalysisCapability.PYTHON_SAST
+            or trusted_entry.capability is not AnalysisCapability.SOURCE_SAST
             or trusted_entry.analyzer_id != binding.source_analyzer_id
-            or binding.capability is not AnalysisCapability.PYTHON_SAST
+            or binding.capability is not AnalysisCapability.SOURCE_SAST
             or not trusted_entry.selected_paths
         ):
             raise ValueError
 
-        files_by_path = {
-            file.relative_path: file
-            for file in trusted_profile.files
-        }
+        files_by_path = {file.relative_path: file for file in trusted_profile.files}
         selected_files: list[SourceExecutionSelectedFile] = []
         for relative_path in trusted_entry.selected_paths:
             file = files_by_path.get(relative_path)
@@ -455,15 +436,12 @@ class SourceSemgrepExecutionContextResolver:
         artifact_store: ContentAddressedArtifactStore,
         binding: TrustedSemgrepSourceBinding,
     ) -> None:
-        if (
-            not isinstance(artifact_store, ContentAddressedArtifactStore)
-            or not isinstance(binding, TrustedSemgrepSourceBinding)
+        if not isinstance(artifact_store, ContentAddressedArtifactStore) or not isinstance(
+            binding, TrustedSemgrepSourceBinding
         ):
             raise InvalidSourceSemgrepExecutionRequestError
         binding._validate_state()
-        self._integrity_resolver = SourceSemgrepExecutionContextIntegrityResolver(
-            artifact_store
-        )
+        self._integrity_resolver = SourceSemgrepExecutionContextIntegrityResolver(artifact_store)
         self._binding = binding
 
     def resolve(self, job: JobRecord) -> SourceExecutionContext:
@@ -509,10 +487,7 @@ class SourceSemgrepExecutionResolver:
         job: JobRecord,
         definition: TrustedAdapterDefinition,
     ) -> SemgrepExecutionInput:
-        if (
-            not isinstance(job, JobRecord)
-            or not isinstance(definition, TrustedAdapterDefinition)
-        ):
+        if not isinstance(job, JobRecord) or not isinstance(definition, TrustedAdapterDefinition):
             raise InvalidSourceSemgrepExecutionRequestError
         envelope = SourceExecutionEnvelope.from_payload_json(job.payload_json)
         context = self._context_resolver.resolve(job)
@@ -525,8 +500,8 @@ class SourceSemgrepExecutionResolver:
             not definition_matches
             or definition.adapter_id != "semgrep-ce"
             or job.adapter_id != "semgrep-ce"
-            or context.source_analyzer_id != "python-semgrep-v1"
-            or context.capability is not AnalysisCapability.PYTHON_SAST
+            or context.source_analyzer_id != "semgrep-source-v1"
+            or context.capability is not AnalysisCapability.SOURCE_SAST
             or context.core_adapter_id != definition.adapter_id
         ):
             raise SourceExecutionAdapterMismatchError
@@ -537,12 +512,9 @@ class SourceSemgrepExecutionResolver:
             expected_context_digest=reference.context_digest,
             expected_projection_digest=reference.projection_digest,
         )
-        selected_entries = tuple(
-            replace(selected.entry) for selected in context.selected_files
-        )
+        selected_entries = tuple(replace(selected.entry) for selected in context.selected_files)
         if any(
-            entry.relative_path.rsplit("/", 1)[-1]
-            in _TARGET_CONTROLLED_IGNORE_FILES
+            entry.relative_path.rsplit("/", 1)[-1] in _TARGET_CONTROLLED_IGNORE_FILES
             for entry in selected_entries
         ):
             raise SourceExecutionProjectionMismatchError
@@ -573,12 +545,9 @@ class SourceAwareSemgrepJobInputResolver:
         source_resolver: SemgrepSourceResolver,
         source_execution_resolver: SourceSemgrepExecutionResolver,
     ) -> None:
-        if (
-            not callable(source_resolver)
-            or not isinstance(
-                source_execution_resolver,
-                SourceSemgrepExecutionResolver,
-            )
+        if not callable(source_resolver) or not isinstance(
+            source_execution_resolver,
+            SourceSemgrepExecutionResolver,
         ):
             raise InvalidSourceSemgrepExecutionRequestError
         self._source_resolver = source_resolver
@@ -590,10 +559,7 @@ class SourceAwareSemgrepJobInputResolver:
         definition: TrustedAdapterDefinition,
     ) -> SemgrepExecutionInput:
         payload = job.payload_json
-        is_source = (
-            isinstance(payload, dict)
-            and SOURCE_EXECUTION_PAYLOAD_KEY in payload
-        )
+        is_source = isinstance(payload, dict) and SOURCE_EXECUTION_PAYLOAD_KEY in payload
         if not is_source:
             source_directory = self._source_resolver(job.run_id)
             if not isinstance(source_directory, Path):
@@ -646,11 +612,7 @@ class SourceSemgrepSubmissionService:
         try:
             # UUIDv5 is used only for stable, domain-separated identifiers.
             # Authorization remains the validated context and trusted binding.
-            value = (
-                uuid5(namespace, idempotency_key)
-                if factory is None
-                else factory()
-            )
+            value = uuid5(namespace, idempotency_key) if factory is None else factory()
             if not isinstance(value, UUID):
                 raise TypeError
             return str(value)
@@ -672,9 +634,7 @@ class SourceSemgrepSubmissionService:
     ) -> tuple[PreparedSourceProjection, bool]:
         suffix = self._projection_suffix(context)
         projection_id = f"securescan-source-projection-{suffix}"
-        selected_entries = tuple(
-            replace(selected.entry) for selected in context.selected_files
-        )
+        selected_entries = tuple(replace(selected.entry) for selected in context.selected_files)
         expected_projection_digest = repository_content_digest(selected_entries)
         try:
             projection = self._projection_manager.reopen_projection(

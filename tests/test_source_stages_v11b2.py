@@ -138,7 +138,7 @@ def _stage(nodes, *, authority: str = "semgrep-ce", coverage_states=None):
 
     return SourceScanQueryService._stage_summary(
         authority=authority,
-        capability="python_sast",
+        capability="source_sast",
         nodes=tuple(nodes),
         coverage_states=coverage_states,
     )
@@ -273,7 +273,7 @@ def test_live_projection_has_complete_roster_waiting_osv_and_null_coverage(
         ("checkov", "configuration_security"),
         ("gitleaks", "secret_detection"),
         ("osv.dev", "dependency_advisory_matching"),
-        ("semgrep-ce", "python_sast"),
+        ("semgrep-ce", "source_sast"),
         ("syft", "package_inventory"),
     )
     assert len(set(pairs)) == len(pairs) == 5
@@ -306,7 +306,7 @@ def test_published_projection_preserves_sorted_distinct_exact_coverage_states(
         },
         {
             "authority": "semgrep-ce",
-            "capability": "python_sast",
+            "capability": "source_sast",
             "state": "COMPLETE_WITH_FINDINGS",
         },
     ]
@@ -360,7 +360,7 @@ def _omit_semgrep_from_planning(context: _Context) -> None:
         environment.profile,
         surfaces=tuple(
             replace(item, support_state=SourceSupportState.DETECTED)
-            if item.capability is AnalysisCapability.PYTHON_SAST
+            if item.capability is AnalysisCapability.SOURCE_SAST
             else item
             for item in environment.profile.surfaces
         ),
@@ -378,7 +378,7 @@ def _omit_semgrep_from_planning(context: _Context) -> None:
                 selected_paths=(),
                 excluded_paths=(),
             )
-            if item.capability is AnalysisCapability.PYTHON_SAST
+            if item.capability is AnalysisCapability.SOURCE_SAST
             else item
             for item in environment.plan.entries
         ),
@@ -539,7 +539,7 @@ def _add_second_semgrep_component(context: _Context) -> None:
         surfaces.append(surface)
     surfaces.append(
         AnalysisSurface(
-            capability=AnalysisCapability.PYTHON_SAST,
+            capability=AnalysisCapability.SOURCE_SAST,
             component_id="secondary",
             support_state=SourceSupportState.SCANNABLE,
             eligible_paths=(secondary_path,),
@@ -584,7 +584,7 @@ def _add_second_semgrep_component(context: _Context) -> None:
     semgrep = next(
         item
         for item in environment.plan.entries
-        if item.capability is AnalysisCapability.PYTHON_SAST
+        if item.capability is AnalysisCapability.SOURCE_SAST
     )
     entries.append(
         replace(

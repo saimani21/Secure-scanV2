@@ -123,11 +123,9 @@ _SOURCE_ASSEMBLY_FAILURE_CODES = frozenset(
 )
 _SOURCE_ASSEMBLY_FAILURE_PHASES = frozenset({"ASSEMBLY", "PUBLICATION"})
 
-_SEMGREP_RULESET_ID = "securescan-python-baseline-v2"
-_SEMGREP_RULESET_VERSION = "2"
-_SEMGREP_RULESET_SHA256 = (
-    "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5"
-)
+_SEMGREP_RULESET_ID = "securescan-source-baseline-v3"
+_SEMGREP_RULESET_VERSION = "3"
+_SEMGREP_RULESET_SHA256 = "f1e345926ebf308cda8bf8caa02c0d4ffc1eb6698cf64cd46aa191a6c3a8b56d"
 _SEMGREP_MESSAGE = "Semgrep rule match"
 _SEMGREP_ARTIFACT_NAMESPACE = UUID("ed9b5c66-e03c-53c8-8b17-611dffaf5743")
 
@@ -236,9 +234,7 @@ def _repository_fragment(snapshot: SourcePlanningSnapshot) -> SecureScanEvidence
         root = "" if component.root_path == "." else component.root_path
         components.append(
             SecureScanComponent(
-                component_ref=build_component_ref(
-                    ComponentKind.REPOSITORY, component.component_id
-                ),
+                component_ref=build_component_ref(ComponentKind.REPOSITORY, component.component_id),
                 component_kind=ComponentKind.REPOSITORY,
                 native_component_identity=component.component_id,
                 payload=RepositoryComponentPayload(
@@ -398,9 +394,7 @@ def _checkov_fragment(
                     authority=EvidenceAuthority.CHECKOV,
                     native_identity_schema=CHECKOV_NATIVE_IDENTITY_SCHEMA,
                     native_finding_identity=identity,
-                    subject=ConfigurationResourceSubject(
-                        item["framework"], item["resource"]
-                    ),
+                    subject=ConfigurationResourceSubject(item["framework"], item["resource"]),
                     locations=location,
                     primary_evidence_refs=(evidence_id,),
                     severity=(
@@ -444,9 +438,7 @@ def _checkov_fragment(
         native = _identity(item)
         gaps.append(
             SecureScanGap(
-                gap_id=gap_id(
-                    EvidenceAuthority.CHECKOV, CHECKOV_GAP_IDENTITY_SCHEMA, native
-                ),
+                gap_id=gap_id(EvidenceAuthority.CHECKOV, CHECKOV_GAP_IDENTITY_SCHEMA, native),
                 authority=EvidenceAuthority.CHECKOV,
                 native_identity_schema=CHECKOV_GAP_IDENTITY_SCHEMA,
                 native_identity=native,
@@ -490,9 +482,7 @@ def _checkov_fragment(
                     finding_count=item["failed_count"],
                     suppression_count=item["suppressed_count"],
                     gap_count=item["parsing_gap_count"],
-                    reason_code=(
-                        "CHECKOV_PARSE_GAP" if item["parsing_gap_count"] else None
-                    ),
+                    reason_code=("CHECKOV_PARSE_GAP" if item["parsing_gap_count"] else None),
                 )
             )
         except (KeyError, TypeError, ValueError):
@@ -523,8 +513,7 @@ def _semgrep_fragment(
     data = _native_dict(result.native_data)
     if (
         set(data) != {"results", "ruleset", "scanner_id", "schema_version", "summary"}
-        or data["ruleset"]
-        != {"id": _SEMGREP_RULESET_ID, "version": _SEMGREP_RULESET_VERSION}
+        or data["ruleset"] != {"id": _SEMGREP_RULESET_ID, "version": _SEMGREP_RULESET_VERSION}
         or data["scanner_id"] != EvidenceAuthority.SEMGREP.value
         or data["summary"].get("accepted_findings") != len(data["results"])
     ):
@@ -547,9 +536,7 @@ def _semgrep_fragment(
         artifact.sha256 != artifact_sha
         or artifact.size_bytes != len(sanitized)
         or artifact.storage_path != f"sha256/{artifact_sha[:2]}/{artifact_sha}"
-        or artifact_store.read_by_sha256(
-            artifact_sha, expected_size_bytes=len(sanitized)
-        )
+        or artifact_store.read_by_sha256(artifact_sha, expected_size_bytes=len(sanitized))
         != sanitized
     ):
         raise SourceResultAssemblyError
@@ -567,15 +554,19 @@ def _semgrep_fragment(
     selected = {item.relative_path for item in context.selected_files}
     for item in data["results"]:
         try:
-            if set(item) != {
-                "end",
-                "fingerprint",
-                "metadata",
-                "path",
-                "rule_id",
-                "severity",
-                "start",
-            } or item["path"] not in selected:
+            if (
+                set(item)
+                != {
+                    "end",
+                    "fingerprint",
+                    "metadata",
+                    "path",
+                    "rule_id",
+                    "severity",
+                    "start",
+                }
+                or item["path"] not in selected
+            ):
                 raise ValueError
             location = SourceSpanLocation(
                 item["path"],
@@ -657,9 +648,7 @@ def _semgrep_fragment(
                 authority=EvidenceAuthority.SEMGREP,
                 capability=context.capability.value,
                 state=(
-                    CoverageState.COMPLETE_WITH_FINDINGS
-                    if findings
-                    else CoverageState.COMPLETE
+                    CoverageState.COMPLETE_WITH_FINDINGS if findings else CoverageState.COMPLETE
                 ),
                 framework=None,
                 component_ref=component_ref,
@@ -698,16 +687,17 @@ class SourceResultAssemblyService:
                 media_type=SOURCE_FINAL_RESULT_MEDIA_TYPE,
                 sanitized=True,
             )
-            if self._artifacts.read_by_sha256(
-                artifact.sha256, expected_size_bytes=artifact.size_bytes
-            ) != payload:
+            if (
+                self._artifacts.read_by_sha256(
+                    artifact.sha256, expected_size_bytes=artifact.size_bytes
+                )
+                != payload
+            ):
                 raise SourceResultAssemblyError
         except SourceResultAssemblyError:
             raise
         except OSError:
-            raise SourceResultAssemblyError(
-                "ASSEMBLY_ARTIFACT_IO_FAILED", retryable=True
-            ) from None
+            raise SourceResultAssemblyError("ASSEMBLY_ARTIFACT_IO_FAILED", retryable=True) from None
         now = self._now()
         try:
             with self._sessions.begin() as session:
@@ -736,9 +726,7 @@ class SourceResultAssemblyService:
         except SourceResultAssemblyError:
             raise
         except SQLAlchemyError:
-            raise SourceResultAssemblyError(
-                "ASSEMBLY_DATABASE_FAILED", retryable=True
-            ) from None
+            raise SourceResultAssemblyError("ASSEMBLY_DATABASE_FAILED", retryable=True) from None
 
     def publish(self, run_id: str) -> SourceAssemblyRecord:
         now = self._now()
@@ -800,8 +788,7 @@ class SourceResultAssemblyService:
                     raise SourceResultAssemblyError
                 if (
                     parent.lifecycle_state == OrchestrationLifecycleState.TERMINAL.value
-                    and parent.terminal_outcome
-                    == OrchestrationTerminalOutcome.FAILED.value
+                    and parent.terminal_outcome == OrchestrationTerminalOutcome.FAILED.value
                     and parent.assembly_failure_code is not None
                 ):
                     return SourceAssemblyFailureRecord(
@@ -866,9 +853,7 @@ class SourceResultAssemblyService:
         session: Session | None = None,
     ) -> SecureScanEvidenceReport:
         try:
-            session_context = (
-                self._sessions() if session is None else nullcontext(session)
-            )
+            session_context = self._sessions() if session is None else nullcontext(session)
             with session_context as read_session:
                 parent = read_session.get(SourceOrchestrationRow, run_id)
                 if (
@@ -890,9 +875,7 @@ class SourceResultAssemblyService:
                         .order_by(SourceOrchestrationNodeRow.node_id)
                     )
                 )
-                expected_nodes = {
-                    item.node_id: item.canonical_data() for item in snapshot.nodes
-                }
+                expected_nodes = {item.node_id: item.canonical_data() for item in snapshot.nodes}
                 durable_nodes = {
                     item.node_id: {
                         "analyzer_id": item.analyzer_id,
@@ -900,9 +883,7 @@ class SourceResultAssemblyService:
                         "capability": item.capability,
                         "component_id": item.component_id,
                         "contract_digest": item.contract_digest,
-                        "initial_state": expected_nodes.get(item.node_id, {}).get(
-                            "initial_state"
-                        ),
+                        "initial_state": expected_nodes.get(item.node_id, {}).get("initial_state"),
                         "node_id": item.node_id,
                         "plan_entry_keys": item.plan_entry_keys_json,
                         "scope_digest": item.scope_digest,
@@ -926,22 +907,16 @@ class SourceResultAssemblyService:
                     parent.profile_digest,
                     parent.plan_digest,
                 )
-                fragments: list[SecureScanEvidenceFragment] = [
-                    _repository_fragment(snapshot)
-                ]
+                fragments: list[SecureScanEvidenceFragment] = [_repository_fragment(snapshot)]
                 for node in nodes:
-                    fragments.append(
-                        self._node_fragment(read_session, snapshot, scope, node)
-                    )
+                    fragments.append(self._node_fragment(read_session, snapshot, scope, node))
                 report = build_report(scope, *fragments)
                 report.canonical_json()
                 return report
         except SourceResultAssemblyError:
             raise
         except OSError:
-            raise SourceResultAssemblyError(
-                "ASSEMBLY_ARTIFACT_IO_FAILED", retryable=True
-            ) from None
+            raise SourceResultAssemblyError("ASSEMBLY_ARTIFACT_IO_FAILED", retryable=True) from None
         except Exception:
             raise SourceResultAssemblyError from None
 
@@ -1025,9 +1000,7 @@ class SourceResultAssemblyService:
         node: SourceOrchestrationNodeRow,
         result: SafeSourceOsvResult,
     ) -> SecureScanEvidenceFragment:
-        row = session.get(
-            SourceOrchestrationDependencyEvaluationRow, (node.run_id, node.node_id)
-        )
+        row = session.get(SourceOrchestrationDependencyEvaluationRow, (node.run_id, node.node_id))
         if row is None:
             raise SourceResultAssemblyError
         payload = self._artifacts.read_by_sha256(
@@ -1054,14 +1027,10 @@ class SourceResultAssemblyService:
                     "reason_code": native_gap.reason_code,
                 }
             )
-            component_ref = build_component_ref(
-                ComponentKind.PACKAGE, native_gap.package_key
-            )
+            component_ref = build_component_ref(ComponentKind.PACKAGE, native_gap.package_key)
             extra_gaps.append(
                 SecureScanGap(
-                    gap_id=gap_id(
-                        EvidenceAuthority.OSV, OSV_GAP_IDENTITY_SCHEMA, native
-                    ),
+                    gap_id=gap_id(EvidenceAuthority.OSV, OSV_GAP_IDENTITY_SCHEMA, native),
                     authority=EvidenceAuthority.OSV,
                     native_identity_schema=OSV_GAP_IDENTITY_SCHEMA,
                     native_identity=native,
@@ -1085,11 +1054,7 @@ class SourceResultAssemblyService:
             return base
         paths = tuple(
             sorted(
-                {
-                    path
-                    for candidate in result.analysis.candidates
-                    for path in candidate.locations
-                }
+                {path for candidate in result.analysis.candidates for path in candidate.locations}
                 | {
                     path
                     for gap in (*evaluation.mixed_scope_gaps, *evaluation.coordinate_gaps)
@@ -1149,10 +1114,7 @@ class SourceResultAssemblyService:
                 replace(
                     outcome,
                     state=CoverageState.PARTIAL,
-                    gap_count=sum(
-                        self._gap_matches_outcome(item, outcome)
-                        for item in gaps
-                    ),
+                    gap_count=sum(self._gap_matches_outcome(item, outcome) for item in gaps),
                     reason_code=reason,
                 )
             )
@@ -1183,11 +1145,7 @@ class SourceResultAssemblyService:
         reason = node.terminal_reason_code or disposition.value
         gaps = ()
         if state is CoverageState.FAILED:
-            gaps = (
-                self._engine_gap(
-                    authority, node.capability, reason, component_ref, None
-                ),
-            )
+            gaps = (self._engine_gap(authority, node.capability, reason, component_ref, None),)
         return SecureScanEvidenceFragment(
             scope=scope,
             gaps=gaps,
@@ -1245,25 +1203,17 @@ class SourceResultAssemblyService:
         )
 
     @staticmethod
-    def _gap_matches_outcome(
-        gap: SecureScanGap, outcome: SecureScanCoverageOutcome
-    ) -> int:
+    def _gap_matches_outcome(gap: SecureScanGap, outcome: SecureScanCoverageOutcome) -> int:
         if gap.authority is not outcome.authority:
             return 0
         if gap.scope.kind is GapScopeKind.FRAMEWORK:
             return int(gap.scope.value == outcome.framework)
         return int(
-            gap.scope.kind is not GapScopeKind.CAPABILITY
-            or gap.scope.value == outcome.capability
+            gap.scope.kind is not GapScopeKind.CAPABILITY or gap.scope.value == outcome.capability
         )
 
-    def _load_context(
-        self, mapping: SourceOrchestrationScannerJobRow
-    ) -> SourceExecutionContext:
-        if (
-            mapping.context_artifact_sha256 is None
-            or mapping.context_artifact_size_bytes is None
-        ):
+    def _load_context(self, mapping: SourceOrchestrationScannerJobRow) -> SourceExecutionContext:
+        if mapping.context_artifact_sha256 is None or mapping.context_artifact_size_bytes is None:
             raise SourceResultAssemblyError
         payload = self._artifacts.read_by_sha256(
             mapping.context_artifact_sha256,
@@ -1337,9 +1287,7 @@ class SourceResultAssemblyService:
         return document
 
     @staticmethod
-    def _terminal_outcome(
-        session: Session, run_id: str
-    ) -> OrchestrationTerminalOutcome:
+    def _terminal_outcome(session: Session, run_id: str) -> OrchestrationTerminalOutcome:
         dispositions = tuple(
             OrchestrationNodeDisposition(value)
             for value in session.scalars(
@@ -1397,13 +1345,8 @@ class SourceResultAssemblyService:
         ):
             raise SourceResultAssemblyError
 
-    def _record(
-        self, parent: SourceOrchestrationRow, *, assembled: bool
-    ) -> SourceAssemblyRecord:
-        if (
-            parent.assembly_artifact_sha256 is None
-            or parent.assembly_artifact_size_bytes is None
-        ):
+    def _record(self, parent: SourceOrchestrationRow, *, assembled: bool) -> SourceAssemblyRecord:
+        if parent.assembly_artifact_sha256 is None or parent.assembly_artifact_size_bytes is None:
             raise SourceResultAssemblyError
         outcome = (
             None

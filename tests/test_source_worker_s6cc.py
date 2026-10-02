@@ -51,7 +51,7 @@ from securescan.persistence.database import (
 )
 from securescan.scanners.checkov import create_default_checkov_binding
 from securescan.scanners.gitleaks import create_default_gitleaks_binding
-from securescan.scanners.semgrep import load_baseline_ruleset
+from securescan.scanners.semgrep import load_source_ruleset
 from securescan.scanners.syft import create_default_syft_binding
 from tests.test_source_orchestration_s6b import (
     _LEASE_TOKEN,
@@ -135,8 +135,7 @@ def test_per_run_default_allows_only_two_active_leases(
     ):
         environment.create(authority)
     tokens = iter(
-        __import__("uuid").UUID(f"99999999-9999-4999-8999-{value:012d}")
-        for value in range(1, 5)
+        __import__("uuid").UUID(f"99999999-9999-4999-8999-{value:012d}") for value in range(1, 5)
     )
     leasing = SourceMappedJobLeasingService(
         environment.factory,
@@ -222,12 +221,8 @@ def _production_dispatcher(
     docker_runner=None,
     semgrep_image: str | None = None,
 ):
-    evaluations = SourceDependencyEvaluationService(
-        environment.factory, environment.store
-    )
-    osv_jobs = SourceOsvJobService(
-        environment.factory, environment.store, evaluations
-    )
+    evaluations = SourceDependencyEvaluationService(environment.factory, environment.store)
+    osv_jobs = SourceOsvJobService(environment.factory, environment.store, evaluations)
     osv_helper = SourceOsvHelperExecutionService(
         environment.factory,
         osv_jobs,
@@ -254,7 +249,7 @@ def _production_dispatcher(
             ),
             osv_helper=osv_helper,
             semgrep_binding=semgrep_binding,
-            semgrep_ruleset=load_baseline_ruleset(),
+            semgrep_ruleset=load_source_ruleset(),
             gitleaks_binding=create_default_gitleaks_binding(
                 Path.home() / ".local/securescan-tools/gitleaks/8.30.1/gitleaks"
             ),
@@ -277,8 +272,7 @@ def test_production_composition_binds_all_five_frozen_execution_paths(
     dispatcher = _production_dispatcher(worker_environment, tmp_path)
 
     assert {
-        authority: type(runner).__name__
-        for authority, runner in dispatcher._runners.items()
+        authority: type(runner).__name__ for authority, runner in dispatcher._runners.items()
     } == {
         SourceAuthority.SEMGREP: "_SemgrepRunner",
         SourceAuthority.GITLEAKS: "_LocalBridgeRunner",
@@ -291,7 +285,7 @@ def test_production_composition_binds_all_five_frozen_execution_paths(
     assert dispatcher._runners[SourceAuthority.CHECKOV]._bridge.start_checkov
     assert dispatcher._runners[SourceAuthority.OSV]._service.execute
     assert dispatcher._runners[SourceAuthority.SEMGREP]._binding.core_adapter_id == "semgrep-ce"
-    assert dispatcher._runners[SourceAuthority.SEMGREP]._ruleset == load_baseline_ruleset()
+    assert dispatcher._runners[SourceAuthority.SEMGREP]._ruleset == load_source_ruleset()
 
 
 def test_production_dispatcher_rejects_old_placeholder_semgrep_binding(
@@ -323,9 +317,7 @@ def test_production_local_handlers_use_existing_job_attempt_and_guarded_acceptan
     bridge_method: str,
 ) -> None:
     environment = worker_environment
-    node, created, attempt = _register_running_attempt(
-        environment, authority
-    )
+    node, created, attempt = _register_running_attempt(environment, authority)
     native = environment.native_result(node, created)
 
     class Handle:
@@ -367,9 +359,7 @@ def test_production_local_handlers_use_existing_job_attempt_and_guarded_acceptan
         calls.append((job.id, attempt.attempt_number))
         return Handle()
 
-    monkeypatch.setattr(
-        SourceLocalBridgeExecutionService, bridge_method, start_bridge
-    )
+    monkeypatch.setattr(SourceLocalBridgeExecutionService, bridge_method, start_bridge)
     dispatcher = _production_dispatcher(environment, tmp_path)
     with environment.factory() as session:
         from securescan.jobs.mappers import job_record_from_row
@@ -396,13 +386,9 @@ def test_production_semgrep_handler_uses_attempt_bound_frozen_docker_adapter(
     tmp_path: Path,
 ) -> None:
     environment = worker_environment
-    _node, created, attempt = _register_running_attempt(
-        environment, SourceAuthority.SEMGREP
-    )
+    _node, created, attempt = _register_running_attempt(environment, SourceAuthority.SEMGREP)
     docker_runner = _SandboxRunner(semgrep_result=_SEMGREP_FIXTURE.read_bytes())
-    dispatcher = _production_dispatcher(
-        environment, tmp_path, docker_runner=docker_runner
-    )
+    dispatcher = _production_dispatcher(environment, tmp_path, docker_runner=docker_runner)
     with environment.factory() as session:
         from securescan.jobs.mappers import job_record_from_row
 
@@ -466,9 +452,7 @@ def test_production_handler_rejects_parent_boundary_before_bridge_dispatch(
     boundary: str,
 ) -> None:
     environment = worker_environment
-    _node, created, attempt = _register_running_attempt(
-        environment, SourceAuthority.GITLEAKS
-    )
+    _node, created, attempt = _register_running_attempt(environment, SourceAuthority.GITLEAKS)
     with environment.factory.begin() as session:
         parent = session.get(SourceOrchestrationRow, str(_RUN_ID))
         assert parent is not None
@@ -498,9 +482,7 @@ def test_production_handler_rejects_wrong_authority_and_node_identity(
     tmp_path: Path,
 ) -> None:
     environment = worker_environment
-    _node, created, attempt = _register_running_attempt(
-        environment, SourceAuthority.GITLEAKS
-    )
+    _node, created, attempt = _register_running_attempt(environment, SourceAuthority.GITLEAKS)
     dispatcher = _production_dispatcher(environment, tmp_path)
     with environment.factory() as session:
         from securescan.jobs.mappers import job_record_from_row

@@ -41,7 +41,7 @@ from securescan.scanners.semgrep import (
     SourceSemgrepExecutionContextIntegrityResolver,
     SourceSemgrepExecutionContextResolver,
     TrustedSemgrepSourceBinding,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.source import (
     AnalysisCapability,
@@ -72,11 +72,7 @@ def _run_terminal(
     *,
     cleanup: bool = False,
 ):
-    observer = (
-        SourceProjectionTerminalObserver(_lifecycle(environment))
-        if cleanup
-        else None
-    )
+    observer = SourceProjectionTerminalObserver(_lifecycle(environment)) if cleanup else None
     return _cycle(
         environment,
         output_root,
@@ -123,9 +119,7 @@ def _replace_durable_context(environment, **changes) -> None:
 
 
 def _fixed_assessment() -> SourceCapabilityExecutionAssessment:
-    fingerprint = (
-        "496693dc786c75757e5978a1c32b1d4108bb81564078b87e41a04bbc7f47e912"
-    )
+    fingerprint = "496693dc786c75757e5978a1c32b1d4108bb81564078b87e41a04bbc7f47e912"
     observation = SourceSecurityObservation(
         observation_id="496693dc-786c-7575-7e59-78a1c32b1d41",
         producer="semgrep-ce",
@@ -147,8 +141,8 @@ def _fixed_assessment() -> SourceCapabilityExecutionAssessment:
         repository_digest="1" * 64,
         profile_digest="2" * 64,
         plan_digest="3" * 64,
-        source_analyzer_id="python-semgrep-v1",
-        capability=AnalysisCapability.PYTHON_SAST,
+        source_analyzer_id="semgrep-source-v1",
+        capability=AnalysisCapability.SOURCE_SAST,
         component_id=None,
         binding_digest="4" * 64,
         core_adapter_id="semgrep-ce",
@@ -196,9 +190,10 @@ def test_success_assessment_survives_cleanup_and_fresh_restart(tmp_path: Path) -
     del first
     restarted = _service(environment).assess_job(environment.job.id)
     assert restarted.assessment_digest() == first_digest
-    assert restarted.canonical_json() == _service(environment).assess_job(
-        environment.job.id
-    ).canonical_json()
+    assert (
+        restarted.canonical_json()
+        == _service(environment).assess_job(environment.job.id).canonical_json()
+    )
 
 
 def test_zero_observations_is_complete_without_a_security_claim(tmp_path: Path) -> None:
@@ -338,9 +333,7 @@ def test_retry_then_success_uses_only_final_attempt_truth(tmp_path: Path) -> Non
     assert assessment.attempt_count == 2
     assert assessment.gaps == ()
     with environment.session_factory() as session:
-        rows = session.query(ToolExecutionRow).order_by(
-            ToolExecutionRow.attempt_number
-        ).all()
+        rows = session.query(ToolExecutionRow).order_by(ToolExecutionRow.attempt_number).all()
         assert [row.attempt_number for row in rows] == [1, 2]
         assert assessment.final_tool_execution_id == rows[1].id
 
@@ -368,9 +361,7 @@ def test_retry_then_terminal_failure_uses_final_failure(tmp_path: Path) -> None:
     assert assessment.attempt_count == 2
     assert assessment.gaps[0].code == "EXECUTION_INFRASTRUCTURE_FAILED"
     with environment.session_factory() as session:
-        rows = session.query(ToolExecutionRow).order_by(
-            ToolExecutionRow.attempt_number
-        ).all()
+        rows = session.query(ToolExecutionRow).order_by(ToolExecutionRow.attempt_number).all()
         assert assessment.final_tool_execution_id == rows[1].id
 
 
@@ -384,7 +375,7 @@ def test_historical_assessment_does_not_require_current_binding(tmp_path: Path) 
             environment.definition(tmp_path / "changed", _DockerExecutor()),
             tool_version="9.9.9",
         ),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
     )
     durable_job = JobRepository(environment.session_factory).get_job(environment.job.id)
     assert durable_job is not None
@@ -608,13 +599,9 @@ def test_cross_version_report_ruleset_tamper_fails_artifact_correlation(
         run = session.get(AnalysisRunRow, environment.job.run_id)
         assert run is not None and run.report_json is not None
         report = deepcopy(run.report_json)
-        assert report["target"]["metadata"]["ruleset_id"] == (
-            "securescan-python-baseline-v2"
-        )
-        assert report["target"]["metadata"]["ruleset_version"] == "2"
-        report["target"]["metadata"]["ruleset_id"] = (
-            "securescan-python-baseline-v1"
-        )
+        assert report["target"]["metadata"]["ruleset_id"] == ("securescan-source-baseline-v3")
+        assert report["target"]["metadata"]["ruleset_version"] == "3"
+        report["target"]["metadata"]["ruleset_id"] = "securescan-python-baseline-v1"
         report["target"]["metadata"]["ruleset_version"] = "1"
         run.report_json = report
 
@@ -655,13 +642,9 @@ def test_matching_historical_v1_report_and_artifact_remain_assessable(
             media_type="application/json",
             sanitized=True,
         )
-        report["target"]["metadata"]["ruleset_id"] = (
-            "securescan-python-baseline-v1"
-        )
+        report["target"]["metadata"]["ruleset_id"] = "securescan-python-baseline-v1"
         report["target"]["metadata"]["ruleset_version"] = "1"
-        report["executions"][0]["artifacts"][0] = (
-            historical_artifact.model_dump(mode="json")
-        )
+        report["executions"][0]["artifacts"][0] = historical_artifact.model_dump(mode="json")
         run.report_json = report
 
     assessment = _service(environment).assess_job(environment.job.id)
@@ -844,15 +827,11 @@ def test_inconsistent_success_evidence_fails_closed(
                     observation["start_line"] = 0
                 elif mutation == "noncanonical_cwe":
                     observation["cwe_ids"] = ["CWE-invalid"]
-                    observation["properties"]["metadata"] = {
-                        "cwe": ["CWE-invalid"]
-                    }
+                    observation["properties"]["metadata"] = {"cwe": ["CWE-invalid"]}
                 elif mutation == "wrong_fingerprint":
                     observation["fingerprint"] = "0" * 64
                 elif mutation == "wrong_observation_id":
-                    observation["observation_id"] = (
-                        "00000000-0000-4000-8000-00000000eeee"
-                    )
+                    observation["observation_id"] = "00000000-0000-4000-8000-00000000eeee"
                 else:
                     observation["properties"]["scanner_version"] = "9.9.9"
             run.report_json = report
@@ -1165,5 +1144,5 @@ def test_assessment_contract_rejects_invalid_complete_combinations(
 def test_fixed_assessment_has_literal_golden_digest() -> None:
     assert (
         _fixed_assessment().assessment_digest()
-        == "49d45ad4c1b78ffcbcdfc596558488ac981f504a0eb960b9a7c5024a5432e7c2"
+        == "f96519777291744d55264d796518bea73098869c3b00cbc24381427c53c92acc"
     )

@@ -57,7 +57,7 @@ from securescan.scanners.gitleaks import (
 from securescan.scanners.semgrep import (
     DECLARED_SEMGREP_TOOL_VERSION,
     TrustedSemgrepSourceBinding,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.scanners.semgrep.source_execution import SourceProjectionExecutionReference
 from securescan.scanners.syft import (
@@ -81,7 +81,7 @@ from securescan.workspaces.models import RepositoryManifestEntry
 
 CONTROLLED_SCHEMA_VERSION = "securescan-unified-evidence-controlled-s4-v1"
 CONTROLLED_REPORT_PATH = Path("benchmarks/unified_evidence/controlled-s4-report.json")
-CONTROLLED_REPORT_SHA256 = "e4dc49cb53355df32b8226c7a5138045c1214dd3565c241121715bfc2ff2d69b"
+CONTROLLED_REPORT_SHA256 = "3eeae75911f2794740763fc448ce8089e6a9ddc1e80b734b5308bf7c31a621df"
 _RUN_ID = "00000000-0000-4000-8000-00000000a401"
 _JOB_ID = "00000000-0000-4000-8000-00000000a403"
 _EXECUTION_ID = "00000000-0000-4000-8000-00000000a404"
@@ -166,7 +166,7 @@ def _context(
         for path in sorted(paths)
     )
     adapter_id = (
-        "semgrep-ce" if analyzer_id == "python-semgrep-v1" else analyzer_id.split("-source-v1")[0]
+        "semgrep-ce" if analyzer_id == "semgrep-source-v1" else analyzer_id.split("-source-v1")[0]
     )
     return SourceExecutionContext(
         source_run_id=_RUN_ID,
@@ -210,10 +210,10 @@ def _semgrep_fragment():
     )
     binding = TrustedSemgrepSourceBinding(
         definition=definition,
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
     )
     context = _context(
-        AnalysisCapability.PYTHON_SAST,
+        AnalysisCapability.SOURCE_SAST,
         binding.source_analyzer_id,
         binding.binding_digest(),
         ("src/app.py",),

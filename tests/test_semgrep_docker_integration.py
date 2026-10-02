@@ -17,7 +17,7 @@ from securescan.scanners.semgrep import (
     SEMGREP_ARGUMENTS,
     TrustedSemgrepRuleset,
     create_semgrep_trusted_definition,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.workspaces import RepositoryWorkspaceManager
 
@@ -73,7 +73,7 @@ def _composition(
         tool_version="1.171.0",
         docker_executor=executor,
         workspace_manager=manager,
-        ruleset=ruleset or load_baseline_ruleset(),
+        ruleset=ruleset or load_source_ruleset(),
         artifact_store=store,
         source_resolver=lambda _run_id: source,
     )

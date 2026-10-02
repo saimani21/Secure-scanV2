@@ -15,7 +15,7 @@ from securescan.execution import CancellableProcessResult
 from securescan.jobs import JobFailureCommitResult, JobRecord, JobResultCommitResult
 from securescan.scanners.semgrep import (
     create_semgrep_trusted_definition,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.worker import SingleJobWorkerCycle, WorkerCycleDisposition
 from securescan.workspaces import RepositoryWorkspaceManager
@@ -191,7 +191,7 @@ def _definition(tmp_path: Path, executor: _DockerExecutor, source: Path):
         tool_version="1.171.0",
         docker_executor=executor,
         workspace_manager=manager,
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
         artifact_store=ContentAddressedArtifactStore(tmp_path / "artifacts"),
         source_resolver=resolve_source,
         clock=lambda: NOW,
@@ -229,11 +229,7 @@ def test_worker_semgrep_vertical_slice_commits_normalized_result_once(
     tmp_path: Path,
 ) -> None:
     raw = (
-        Path(__file__).parent
-        / "fixtures"
-        / "semgrep"
-        / "output"
-        / "valid-findings.json"
+        Path(__file__).parent / "fixtures" / "semgrep" / "output" / "valid-findings.json"
     ).read_bytes()
     executor = _DockerExecutor(raw)
     definition, manager, source_calls = _definition(

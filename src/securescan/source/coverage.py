@@ -31,7 +31,7 @@ _EXECUTABLE_LANGUAGE_STATES = frozenset(
 )
 _REPOSITORY_LEVEL_CAPABILITIES = (
     AnalysisCapability.CONFIGURATION_SECURITY,
-    AnalysisCapability.PYTHON_SAST,
+    AnalysisCapability.SOURCE_SAST,
     AnalysisCapability.SECRET_DETECTION,
 )
 _COMPONENT_GROUPED_CAPABILITIES = tuple(
@@ -68,15 +68,19 @@ class SourceCoverageCorrelationError(SourceCoverageError):
         RuntimeError.__init__(self, "Source coverage correlation failed")
 
 
-def _finalize_file_applicability(file: SourceFileRecord) -> SourceFileRecord:
+def _finalize_file_applicability(
+    file: SourceFileRecord,
+    executable_languages: frozenset[str],
+) -> SourceFileRecord:
     capabilities = set(file.eligible_capabilities)
     if (
         file.language is not None
-        and file.language.casefold() == "python"
+        and file.language.casefold() in executable_languages
+        and file.language.casefold() in {"javascript", "python", "typescript"}
         and file.content_kind is FileContentKind.TEXT
         and SourceFileFlag.BINARY not in file.flags
     ):
-        capabilities.add(AnalysisCapability.PYTHON_SAST)
+        capabilities.add(AnalysisCapability.SOURCE_SAST)
     return replace(
         file,
         eligible_capabilities=tuple(
@@ -95,11 +99,7 @@ def _surface(
     policy: SourceSupportPolicy,
 ) -> AnalysisSurface:
     rule = policy.capability_rule_for(capability)
-    eligible_paths = (
-        ()
-        if rule.support_state is SourceSupportState.UNSUPPORTED
-        else candidate_paths
-    )
+    eligible_paths = () if rule.support_state is SourceSupportState.UNSUPPORTED else candidate_paths
     return AnalysisSurface(
         capability=capability,
         component_id=component_id,
@@ -124,9 +124,7 @@ def _build_surfaces(
 
     for capability in _REPOSITORY_LEVEL_CAPABILITIES:
         paths = tuple(
-            file.relative_path
-            for file in files
-            if capability in file.eligible_capabilities
+            file.relative_path for file in files if capability in file.eligible_capabilities
         )
         if paths:
             surfaces.append(_surface(capability, None, paths, policy))
@@ -135,9 +133,7 @@ def _build_surfaces(
         paths_by_component: dict[str | None, list[str]] = {}
         for file in files:
             if capability in file.eligible_capabilities:
-                paths_by_component.setdefault(file.component_id, []).append(
-                    file.relative_path
-                )
+                paths_by_component.setdefault(file.component_id, []).append(file.relative_path)
         for component_id in sorted(
             paths_by_component,
             key=lambda value: value or "",
@@ -213,7 +209,14 @@ def build_repository_profile(
         raise SourceCoverageCorrelationError
 
     try:
-        files = tuple(_finalize_file_applicability(file) for file in inventory.files)
+        executable_languages = frozenset(
+            decision.language.casefold()
+            for decision in language_assessment.languages
+            if decision.support_state in _EXECUTABLE_LANGUAGE_STATES
+        )
+        files = tuple(
+            _finalize_file_applicability(file, executable_languages) for file in inventory.files
+        )
         return RepositoryProfile(
             repository_digest=inventory.repository_digest,
             files=files,

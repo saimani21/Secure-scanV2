@@ -21,17 +21,16 @@ from securescan.scanners.semgrep.ruleset import TrustedSemgrepRuleset
 from securescan.source.enums import AnalysisCapability
 from securescan.source.planning import TrustedSourceAnalyzer
 
-_BINDING_STREAM_VERSION = b"securescan-semgrep-source-binding-v0.3B2\0"
-_SCHEMA_VERSION = "0.3B2"
-_SOURCE_ANALYZER_ID = "python-semgrep-v1"
+_BINDING_STREAM_VERSION = b"securescan-semgrep-source-binding-v1.3\0"
+_SCHEMA_VERSION = "1.3"
+_SOURCE_ANALYZER_ID = "semgrep-source-v1"
 SEMGREP_ADAPTER_ID = "semgrep-ce"
 DECLARED_SEMGREP_TOOL_VERSION = "1.171.0"
 PRODUCTION_SEMGREP_IMAGE_REFERENCE: Final = (
-    "semgrep/semgrep@sha256:"
-    "bdf7013b2c3634a487671158da77c554f531742326b543a9464d2adf6c433ac8"
+    "semgrep/semgrep@sha256:bdf7013b2c3634a487671158da77c554f531742326b543a9464d2adf6c433ac8"
 )
 PRODUCTION_SEMGREP_BINDING_DIGEST: Final = (
-    "265fd32e59296d6dc50fd7f8b7558f0e35ead821c4ee689f5ff953bf70393ed2"
+    "1e317bf6e9eb6bb44feafa13ac7260b7d5c487b1117ce870ee1e946e1c60726c"
 )
 _CORE_ADAPTER_ID = SEMGREP_ADAPTER_ID
 _TOOL_FAMILY = "semgrep"
@@ -68,8 +67,7 @@ def _validated_definition(
         or definition.adapter_id != _CORE_ADAPTER_ID
         or definition.tool_name != _TOOL_FAMILY
         or definition.backend is not SandboxExecutionBackend.DOCKER_SANDBOX
-        or definition.policy.backend
-        is not SandboxExecutionBackend.DOCKER_SANDBOX
+        or definition.policy.backend is not SandboxExecutionBackend.DOCKER_SANDBOX
         or definition.command_prefix != _COMMAND_PREFIX
         or definition.test_only
         or not isinstance(definition.image_reference, str)
@@ -115,7 +113,7 @@ class TrustedSemgrepSourceBinding:
         trusted_ruleset = _validated_ruleset(ruleset)
         assert trusted_definition.image_reference is not None
         object.__setattr__(self, "source_analyzer_id", _SOURCE_ANALYZER_ID)
-        object.__setattr__(self, "capability", AnalysisCapability.PYTHON_SAST)
+        object.__setattr__(self, "capability", AnalysisCapability.SOURCE_SAST)
         object.__setattr__(self, "core_adapter_id", _CORE_ADAPTER_ID)
         object.__setattr__(self, "tool_family", _TOOL_FAMILY)
         object.__setattr__(
@@ -144,13 +142,12 @@ class TrustedSemgrepSourceBinding:
         if (
             self.schema_version != _SCHEMA_VERSION
             or self.source_analyzer_id != _SOURCE_ANALYZER_ID
-            or self.capability is not AnalysisCapability.PYTHON_SAST
+            or self.capability is not AnalysisCapability.SOURCE_SAST
             or self.core_adapter_id != _CORE_ADAPTER_ID
             or self.tool_family != _TOOL_FAMILY
             or not isinstance(self.declared_tool_version, str)
             or not self.declared_tool_version
-            or self.execution_backend
-            is not SandboxExecutionBackend.DOCKER_SANDBOX
+            or self.execution_backend is not SandboxExecutionBackend.DOCKER_SANDBOX
             or _SHA256_PATTERN.fullmatch(self.sandbox_policy_fingerprint) is None
             or not isinstance(self.ruleset_id, str)
             or not self.ruleset_id
@@ -200,8 +197,7 @@ class TrustedSemgrepSourceBinding:
             and trusted_definition.tool_name == self.tool_family
             and trusted_definition.tool_version == self.declared_tool_version
             and trusted_definition.backend is self.execution_backend
-            and trusted_definition.policy.fingerprint()
-            == self.sandbox_policy_fingerprint
+            and trusted_definition.policy.fingerprint() == self.sandbox_policy_fingerprint
             and trusted_definition.image_reference == self.image_reference
         )
 

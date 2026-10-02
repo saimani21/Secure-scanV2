@@ -90,9 +90,7 @@ def _binary_record(
 def _enriched(*records: SourceFileRecord) -> EnrichedRepositoryInventory:
     files = tuple(sorted(records, key=lambda record: record.relative_path))
     return EnrichedRepositoryInventory(
-        repository_digest=repository_content_digest(
-            tuple(record.entry for record in files)
-        ),
+        repository_digest=repository_content_digest(tuple(record.entry for record in files)),
         files=files,
     )
 
@@ -111,11 +109,7 @@ def _component(
 ) -> RepositoryComponent:
     return RepositoryComponent(
         component_id=component_id or _expected_component_id(root_path),
-        display_name=(
-            "Repository root"
-            if root_path == "."
-            else Path(root_path).name
-        ),
+        display_name=("Repository root" if root_path == "." else Path(root_path).name),
         root_path=root_path,
         manifest_paths=manifest_paths,
         lockfile_paths=lockfile_paths,
@@ -187,9 +181,7 @@ def test_componentized_inventory_rejects_unsorted_files() -> None:
     files = (_record("z.py"), _record("a.py"))
     with pytest.raises(ValueError, match="Componentized repository inventory is invalid"):
         ComponentizedRepositoryInventory(
-            repository_digest=repository_content_digest(
-                tuple(file.entry for file in files)
-            ),
+            repository_digest=repository_content_digest(tuple(file.entry for file in files)),
             files=files,
             components=(),
         )
@@ -200,9 +192,7 @@ def test_componentized_inventory_rejects_duplicate_files() -> None:
     files = (file, file)
     with pytest.raises(ValueError, match="Componentized repository inventory is invalid"):
         ComponentizedRepositoryInventory(
-            repository_digest=repository_content_digest(
-                tuple(item.entry for item in files)
-            ),
+            repository_digest=repository_content_digest(tuple(item.entry for item in files)),
             files=files,
             components=(),
         )
@@ -268,9 +258,7 @@ def test_componentized_inventory_rejects_missing_manifest_reference() -> None:
         ComponentizedRepositoryInventory(
             repository_digest=repository_content_digest(()),
             files=(),
-            components=(
-                _component(".", manifest_paths=("pyproject.toml",)),
-            ),
+            components=(_component(".", manifest_paths=("pyproject.toml",)),),
         )
 
 
@@ -279,9 +267,7 @@ def test_componentized_inventory_rejects_missing_lockfile_reference() -> None:
         ComponentizedRepositoryInventory(
             repository_digest=repository_content_digest(()),
             files=(),
-            components=(
-                _component(".", lockfile_paths=("poetry.lock",)),
-            ),
+            components=(_component(".", lockfile_paths=("poetry.lock",)),),
         )
 
 
@@ -292,9 +278,7 @@ def test_componentized_inventory_rejects_manifest_role_mismatch() -> None:
         ComponentizedRepositoryInventory(
             repository_digest=repository_content_digest((file.entry,)),
             files=(file,),
-            components=(
-                _component(".", manifest_paths=(file.relative_path,)),
-            ),
+            components=(_component(".", manifest_paths=(file.relative_path,)),),
         )
 
 
@@ -305,9 +289,7 @@ def test_componentized_inventory_rejects_lockfile_role_mismatch() -> None:
         ComponentizedRepositoryInventory(
             repository_digest=repository_content_digest((file.entry,)),
             files=(file,),
-            components=(
-                _component(".", lockfile_paths=(file.relative_path,)),
-            ),
+            components=(_component(".", lockfile_paths=(file.relative_path,)),),
         )
 
 
@@ -400,8 +382,7 @@ def test_componentization_digest_has_fixed_golden_value() -> None:
     result = _root_componentized_inventory()
 
     assert result.componentization_digest() == (
-        "80244dc0046f6c0ff350c6848468e0db"
-        "8d6b2159019ce92e605267c2d4675863"
+        "80244dc0046f6c0ff350c6848468e0db8d6b2159019ce92e605267c2d4675863"
     )
 
 
@@ -500,10 +481,7 @@ def test_multiple_terraform_files_in_directory_create_one_component() -> None:
     )
 
     assert result.component_count == 1
-    assert all(
-        file.component_id == result.components[0].component_id
-        for file in result.files
-    )
+    assert all(file.component_id == result.components[0].component_id for file in result.files)
 
 
 def test_nested_terraform_directory_creates_independent_component() -> None:
@@ -587,9 +565,7 @@ def test_nested_lockfile_is_not_metadata_associated_to_ancestor() -> None:
     files = _files_by_path(result)
 
     assert result.components[0].lockfile_paths == ()
-    assert files["backend/nested/poetry.lock"].component_id == (
-        result.components[0].component_id
-    )
+    assert files["backend/nested/poetry.lock"].component_id == (result.components[0].component_id)
 
 
 def test_orphan_lockfile_does_not_create_component() -> None:
@@ -760,9 +736,7 @@ def test_non_marker_file_under_component_receives_membership(
         )
     )
 
-    assert _files_by_path(result)[relative_path].component_id == (
-        result.components[0].component_id
-    )
+    assert _files_by_path(result)[relative_path].component_id == (result.components[0].component_id)
 
 
 def test_component_assignment_preserves_all_d2_file_facts() -> None:
@@ -776,9 +750,9 @@ def test_component_assignment_preserves_all_d2_file_facts() -> None:
             SourceFileFlag.VENDORED,
         ),
         eligible_capabilities=(
-            AnalysisCapability.PYTHON_SAST,
             AnalysisCapability.REPOSITORY_PROFILING,
             AnalysisCapability.SECRET_DETECTION,
+            AnalysisCapability.SOURCE_SAST,
         ),
     )
     inventory = _enriched(
@@ -860,12 +834,8 @@ def test_component_ids_are_stable_across_repeated_detection() -> None:
     first = detect_repository_components(inventory)
     second = detect_repository_components(inventory)
 
-    assert {
-        component.root_path: component.component_id
-        for component in first.components
-    } == {
-        component.root_path: component.component_id
-        for component in second.components
+    assert {component.root_path: component.component_id for component in first.components} == {
+        component.root_path: component.component_id for component in second.components
     }
 
 
@@ -902,9 +872,7 @@ def test_component_ordering_is_deterministic_by_id() -> None:
 def test_long_component_basename_uses_fixed_safe_display_name() -> None:
     root_path = "a" * 201
     result = detect_repository_components(
-        _enriched(
-            _record(f"{root_path}/pyproject.toml", role=SourceFileRole.MANIFEST)
-        )
+        _enriched(_record(f"{root_path}/pyproject.toml", role=SourceFileRole.MANIFEST))
     )
 
     assert result.components[0].display_name == "Repository component"
@@ -915,9 +883,7 @@ def test_component_id_algorithm_has_fixed_root_value() -> None:
         _enriched(_record("pyproject.toml", role=SourceFileRole.MANIFEST))
     )
 
-    assert result.components[0].component_id == (
-        "component-2e0e303148f8b55a8f42b5f6b0e0d1c9"
-    )
+    assert result.components[0].component_id == ("component-2e0e303148f8b55a8f42b5f6b0e0d1c9")
 
 
 def test_impossible_component_id_collision_is_rejected(
@@ -970,9 +936,7 @@ def test_conflicting_preexisting_component_id_is_rejected() -> None:
 
 
 def test_preexisting_component_id_without_derived_root_is_rejected() -> None:
-    inventory = _enriched(
-        _record("src/app.py", component_id="component-conflict")
-    )
+    inventory = _enriched(_record("src/app.py", component_id="component-conflict"))
 
     with pytest.raises(SourceComponentCorrelationError):
         detect_repository_components(inventory)
@@ -996,9 +960,7 @@ def test_component_detection_does_not_mutate_input() -> None:
 def test_component_detection_has_no_external_side_effects(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    inventory = _enriched(
-        _record("service/pyproject.toml", role=SourceFileRole.MANIFEST)
-    )
+    inventory = _enriched(_record("service/pyproject.toml", role=SourceFileRole.MANIFEST))
 
     def fail(*_args: object, **_kwargs: object) -> None:
         raise AssertionError("external operation attempted")
@@ -1044,9 +1006,7 @@ def test_repeated_component_detection_is_identical() -> None:
         _record("src/app.py"),
     )
 
-    assert detect_repository_components(inventory) == detect_repository_components(
-        inventory
-    )
+    assert detect_repository_components(inventory) == detect_repository_components(inventory)
 
 
 @pytest.mark.skipif(not _LOCAL_HELPER.exists(), reason="local Enry helper is absent")
@@ -1118,28 +1078,21 @@ def test_real_enry_component_detection_pipeline(tmp_path: Path) -> None:
             components["services/api"].component_id
         )
         assert output_files["infra/main.tf"].component_id == components["infra"].component_id
-        assert output_files["infra/variables.tf"].component_id == (
-            components["infra"].component_id
-        )
+        assert output_files["infra/variables.tf"].component_id == (components["infra"].component_id)
         assert output_files["infra/modules/db/main.tf"].component_id == (
             components["infra/modules/db"].component_id
         )
         assert components["frontend"].manifest_paths == ("frontend/package.json",)
         assert components["frontend"].lockfile_paths == ("frontend/package-lock.json",)
-        assert components["services/api"].manifest_paths == (
-            "services/api/pyproject.toml",
-        )
-        assert components["services/api"].lockfile_paths == (
-            "services/api/poetry.lock",
-        )
+        assert components["services/api"].manifest_paths == ("services/api/pyproject.toml",)
+        assert components["services/api"].lockfile_paths == ("services/api/poetry.lock",)
         assert all(
             output_files[path].entry is input_files[path].entry
             and output_files[path].content_kind is input_files[path].content_kind
             and output_files[path].role is input_files[path].role
             and output_files[path].language == input_files[path].language
             and output_files[path].flags is input_files[path].flags
-            and output_files[path].eligible_capabilities
-            is input_files[path].eligible_capabilities
+            and output_files[path].eligible_capabilities is input_files[path].eligible_capabilities
             for path in output_files
         )
         assert not hasattr(result, "support_state")

@@ -73,14 +73,18 @@ def _prepare_environment(
         "app.py": b"print('approved')\n",
         "pkg/auth.py": b"def authenticate():\n    return True\n",
     }
-    excluded_content = excluded if excluded is not None else {
-        ".gitignore": b"*.secret\n",
-        ".semgrepignore": b"vendor/\n",
-        "README.md": b"excluded documentation\n",
-        "secret.txt": b"credential=excluded\n",
-        "tests/test_app.py": b"assert False\n",
-        "vendor/lib.py": b"dangerous_vendor_code()\n",
-    }
+    excluded_content = (
+        excluded
+        if excluded is not None
+        else {
+            ".gitignore": b"*.secret\n",
+            ".semgrepignore": b"vendor/\n",
+            "README.md": b"excluded documentation\n",
+            "secret.txt": b"credential=excluded\n",
+            "tests/test_app.py": b"assert False\n",
+            "vendor/lib.py": b"dangerous_vendor_code()\n",
+        }
+    )
     source = tmp_path / "original-repository"
     source.mkdir()
     for relative_path, content in {**selected_content, **excluded_content}.items():
@@ -95,20 +99,16 @@ def _prepare_environment(
         workspace_id_factory=lambda: "a" * 32,
     )
     workspace = workspace_manager.prepare_repository(source)
-    entries = {
-        entry.relative_path: entry for entry in workspace.manifest.entries
-    }
-    selected_entries = tuple(
-        entries[path] for path in sorted(selected_content)
-    )
+    entries = {entry.relative_path: entry for entry in workspace.manifest.entries}
+    selected_entries = tuple(entries[path] for path in sorted(selected_content))
     context = SourceExecutionContext(
         source_run_id=RUN_ID,
         job_id=JOB_ID,
         repository_digest=workspace.manifest.content_digest,
         profile_digest="1" * 64,
         plan_digest="2" * 64,
-        source_analyzer_id="python-semgrep-v1",
-        capability=AnalysisCapability.PYTHON_SAST,
+        source_analyzer_id="semgrep-source-v1",
+        capability=AnalysisCapability.SOURCE_SAST,
         component_id=None,
         selected_files=tuple(
             SourceExecutionSelectedFile(entry=entry, component_id=None)
@@ -185,18 +185,14 @@ def test_projection_materializes_exact_selected_scope_and_independent_inodes(
         environment.context,
     )
     try:
-        expected_entries = tuple(
-            selected.entry for selected in environment.context.selected_files
-        )
+        expected_entries = tuple(selected.entry for selected in environment.context.selected_files)
         expected_paths = tuple(entry.relative_path for entry in expected_entries)
 
         assert isinstance(projection, PreparedSourceProjection)
         assert _visible_files(projection.source_directory) == expected_paths
         assert projection.manifest.entries == expected_entries
         assert projection.manifest.file_count == 2
-        assert projection.projection_digest == repository_content_digest(
-            expected_entries
-        )
+        assert projection.projection_digest == repository_content_digest(expected_entries)
         assert projection.projection_digest != environment.context.repository_digest
         assert projection.context_digest == environment.context.context_digest()
         assert not (projection.source_directory / ".git").exists()
@@ -211,12 +207,8 @@ def test_projection_materializes_exact_selected_scope_and_independent_inodes(
             assert not (projection.source_directory / excluded).exists()
         _assert_no_symlinks_or_special_files(projection.source_directory)
         for entry in expected_entries:
-            source_metadata = (
-                environment.workspace.source_directory / entry.relative_path
-            ).stat()
-            projected_metadata = (
-                projection.source_directory / entry.relative_path
-            ).stat()
+            source_metadata = (environment.workspace.source_directory / entry.relative_path).stat()
+            projected_metadata = (projection.source_directory / entry.relative_path).stat()
             assert (source_metadata.st_dev, source_metadata.st_ino) != (
                 projected_metadata.st_dev,
                 projected_metadata.st_ino,
@@ -334,9 +326,7 @@ def test_workspace_context_and_selected_identity_mismatches_are_rejected(
             )
         context = replace(
             context,
-            selected_files=tuple(
-                sorted(selected, key=lambda item: item.relative_path)
-            ),
+            selected_files=tuple(sorted(selected, key=lambda item: item.relative_path)),
         )
 
     with pytest.raises(error):
@@ -640,9 +630,7 @@ def test_reopen_rejects_projection_and_marker_tampering(
             )
 
     with pytest.raises(error):
-        SourceProjectionManager(
-            environment.projection_manager.base_directory
-        ).reopen_projection(
+        SourceProjectionManager(environment.projection_manager.base_directory).reopen_projection(
             projection.projection_id,
             expected_context_digest=context_digest,
             expected_projection_digest=projection_digest,
@@ -715,9 +703,7 @@ def test_marker_parser_rejects_non_strict_json(
     os.chmod(marker, 0o400, follow_symlinks=False)
 
     with pytest.raises(SourceProjectionOwnershipError):
-        SourceProjectionManager(
-            environment.projection_manager.base_directory
-        ).reopen_projection(
+        SourceProjectionManager(environment.projection_manager.base_directory).reopen_projection(
             projection.projection_id,
             expected_context_digest=projection.context_digest,
             expected_projection_digest=projection.projection_digest,
@@ -886,9 +872,7 @@ def test_preexisting_final_projection_is_not_overwritten(tmp_path: Path) -> None
         tmp_path / "fixed-projections",
         projection_id_factory=lambda: "f" * 32,
     )
-    final = manager.base_directory / (
-        "securescan-source-projection-" + "f" * 32
-    )
+    final = manager.base_directory / ("securescan-source-projection-" + "f" * 32)
     final.mkdir()
     try:
         with pytest.raises(SourceProjectionPublicationError):
@@ -1042,10 +1026,7 @@ def test_projection_root_rejects_broad_temporary_root_without_modifying_it() -> 
         SourceProjectionManager(Path("/tmp"))
 
     assert stat.S_IMODE(Path("/tmp").stat(follow_symlinks=False).st_mode) == mode_before
-    assert (
-        os.path.lexists(Path("/tmp") / ROOT_MARKER_NAME)
-        is marker_existed_before
-    )
+    assert os.path.lexists(Path("/tmp") / ROOT_MARKER_NAME) is marker_existed_before
 
 
 def test_projection_root_rejects_relative_symlink_and_git_locations(

@@ -45,9 +45,7 @@ from securescan.workspaces.models import repository_content_digest
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _LOCAL_HELPER = _PROJECT_ROOT / "tools/enry-helper/bin/securescan-enry-helper"
-_PROFILE_GOLDEN_DIGEST = (
-    "63057c5d9aeccc25a59f1fc85d065b3ce0ffa9766850e4621f7513a768bcc86d"
-)
+_PROFILE_GOLDEN_DIGEST = "6ab9b48c1b4024e4b8e7cdcb2332b0938969d41c6e521a6727aa464485d88c01"
 
 
 def _entry(relative_path: str, content: bytes) -> RepositoryManifestEntry:
@@ -104,22 +102,16 @@ def _componentized(
 ) -> ComponentizedRepositoryInventory:
     files = tuple(sorted(records, key=lambda record: record.relative_path))
     return ComponentizedRepositoryInventory(
-        repository_digest=repository_content_digest(
-            tuple(record.entry for record in files)
-        ),
+        repository_digest=repository_content_digest(tuple(record.entry for record in files)),
         files=files,
-        components=tuple(
-            sorted(components, key=lambda component: component.component_id)
-        ),
+        components=tuple(sorted(components, key=lambda component: component.component_id)),
     )
 
 
 def _enriched(*records: SourceFileRecord) -> EnrichedRepositoryInventory:
     files = tuple(sorted(records, key=lambda record: record.relative_path))
     return EnrichedRepositoryInventory(
-        repository_digest=repository_content_digest(
-            tuple(record.entry for record in files)
-        ),
+        repository_digest=repository_content_digest(tuple(record.entry for record in files)),
         files=files,
     )
 
@@ -167,7 +159,19 @@ def _build(
     inventory: ComponentizedRepositoryInventory,
     policy: SourceSupportPolicy | None = None,
 ) -> RepositoryProfile:
-    selected_policy = policy or SourceSupportPolicy()
+    selected_policy = policy or SourceSupportPolicy(
+        language_rules=(
+            LanguageSupportRule("JavaScript", SourceSupportState.SCANNABLE),
+            LanguageSupportRule("Python", SourceSupportState.SCANNABLE),
+            LanguageSupportRule("TypeScript", SourceSupportState.SCANNABLE),
+        ),
+        capability_rules=(
+            CapabilitySupportRule(
+                AnalysisCapability.SOURCE_SAST,
+                SourceSupportState.SCANNABLE,
+            ),
+        ),
+    )
     assessment = assess_repository_language_support(inventory, selected_policy)
     return build_repository_profile(inventory, assessment, selected_policy)
 
@@ -180,11 +184,7 @@ def _surfaces(
     profile: RepositoryProfile,
     capability: AnalysisCapability,
 ) -> tuple[object, ...]:
-    return tuple(
-        surface
-        for surface in profile.surfaces
-        if surface.capability is capability
-    )
+    return tuple(surface for surface in profile.surfaces if surface.capability is capability)
 
 
 @pytest.mark.parametrize(
@@ -270,13 +270,11 @@ def test_python_text_applicability_is_broad_and_role_independent(
     role: SourceFileRole,
     flags: tuple[SourceFileFlag, ...],
 ) -> None:
-    inventory = _componentized(
-        _record("setup.py", language="Python", role=role, flags=flags)
-    )
+    inventory = _componentized(_record("setup.py", language="Python", role=role, flags=flags))
 
     result = _build(inventory).files[0]
 
-    assert AnalysisCapability.PYTHON_SAST in result.eligible_capabilities
+    assert AnalysisCapability.SOURCE_SAST in result.eligible_capabilities
 
 
 @pytest.mark.parametrize(
@@ -299,25 +297,41 @@ def test_python_non_text_does_not_gain_sast(
 
     result = _build(inventory).files[0]
 
-    assert AnalysisCapability.PYTHON_SAST not in result.eligible_capabilities
+    assert AnalysisCapability.SOURCE_SAST not in result.eligible_capabilities
 
 
-@pytest.mark.parametrize("language", ["JavaScript", None])
-def test_non_python_or_unknown_language_does_not_gain_sast(
+@pytest.mark.parametrize("language", ["Go", None])
+def test_unsupported_or_unknown_language_does_not_gain_sast(
     language: str | None,
 ) -> None:
     result = _build(_componentized(_record("app.txt", language=language))).files[0]
 
-    assert AnalysisCapability.PYTHON_SAST not in result.eligible_capabilities
+    assert AnalysisCapability.SOURCE_SAST not in result.eligible_capabilities
+
+
+@pytest.mark.parametrize(
+    ("language", "path"),
+    [
+        ("JavaScript", "app.js"),
+        ("JavaScript", "component.jsx"),
+        ("TypeScript", "app.ts"),
+        ("TypeScript", "component.tsx"),
+    ],
+)
+def test_javascript_and_typescript_text_sources_gain_source_sast(
+    language: str,
+    path: str,
+) -> None:
+    result = _build(_componentized(_record(path, language=language))).files[0]
+
+    assert AnalysisCapability.SOURCE_SAST in result.eligible_capabilities
 
 
 def test_python_matching_is_case_insensitive_without_normalizing_language() -> None:
-    result = _build(
-        _componentized(_record("app.py", language="pYtHoN"))
-    ).files[0]
+    result = _build(_componentized(_record("app.py", language="pYtHoN"))).files[0]
 
     assert result.language == "pYtHoN"
-    assert AnalysisCapability.PYTHON_SAST in result.eligible_capabilities
+    assert AnalysisCapability.SOURCE_SAST in result.eligible_capabilities
 
 
 def test_existing_capabilities_are_preserved_sorted_and_unique() -> None:
@@ -335,8 +349,8 @@ def test_existing_capabilities_are_preserved_sorted_and_unique() -> None:
     capabilities = _build(inventory).files[0].eligible_capabilities
 
     assert set(capabilities) == {
-        AnalysisCapability.PYTHON_SAST,
         AnalysisCapability.REPOSITORY_PROFILING,
+        AnalysisCapability.SOURCE_SAST,
         AnalysisCapability.SECRET_DETECTION,
     }
     assert capabilities == tuple(sorted(capabilities, key=lambda item: item.value))
@@ -481,33 +495,34 @@ def test_python_sast_surface_spans_components_and_retains_flagged_files() -> Non
         components=components,
     )
 
-    surface = _surfaces(_build(inventory), AnalysisCapability.PYTHON_SAST)[0]
+    surface = _surfaces(_build(inventory), AnalysisCapability.SOURCE_SAST)[0]
 
     assert surface.component_id is None
     assert surface.eligible_paths == ("a/generated.py", "b/test_app.py")
 
 
-def test_python_sast_surface_absent_without_applicability() -> None:
+def test_source_sast_surface_absent_without_applicability() -> None:
     assert not _surfaces(
-        _build(_componentized(_record("app.js", language="JavaScript"))),
-        AnalysisCapability.PYTHON_SAST,
+        _build(_componentized(_record("app.go", language="Go"))),
+        AnalysisCapability.SOURCE_SAST,
     )
 
 
 def test_unsupported_python_surface_hides_paths_but_preserves_applicability() -> None:
     policy = _policy(
+        language_states={"Python": SourceSupportState.SCANNABLE},
         capability_states={
-            AnalysisCapability.PYTHON_SAST: SourceSupportState.UNSUPPORTED,
-        }
+            AnalysisCapability.SOURCE_SAST: SourceSupportState.UNSUPPORTED,
+        },
     )
 
     profile = _build(
         _componentized(_record("app.py", language="Python")),
         policy,
     )
-    surface = _surfaces(profile, AnalysisCapability.PYTHON_SAST)[0]
+    surface = _surfaces(profile, AnalysisCapability.SOURCE_SAST)[0]
 
-    assert AnalysisCapability.PYTHON_SAST in profile.files[0].eligible_capabilities
+    assert AnalysisCapability.SOURCE_SAST in profile.files[0].eligible_capabilities
     assert surface.support_state is SourceSupportState.UNSUPPORTED
     assert surface.eligible_paths == ()
     assert surface.reason_code == "CAPABILITY_UNSUPPORTED"
@@ -801,11 +816,16 @@ def test_language_support_conversion_uses_explicit_executable_states(
 
     language = _build(inventory, policy).languages[0]
 
-    expected_eligible = 1 if support_state in {
-        SourceSupportState.SCANNABLE,
-        SourceSupportState.BENCHMARKED,
-        SourceSupportState.PRODUCT_SUPPORTED,
-    } else 0
+    expected_eligible = (
+        1
+        if support_state
+        in {
+            SourceSupportState.SCANNABLE,
+            SourceSupportState.BENCHMARKED,
+            SourceSupportState.PRODUCT_SUPPORTED,
+        }
+        else 0
+    )
     assert language.file_count == 2
     assert language.eligible_file_count == expected_eligible
     assert language.support_state is support_state
@@ -840,13 +860,13 @@ def test_generated_and_test_source_files_still_count_as_language_eligible() -> N
         (SourceSupportState.DETECTED, SourceSupportState.SCANNABLE),
     ],
 )
-def test_language_and_capability_support_states_remain_independent(
+def test_language_state_gates_source_sast_applicability(
     language_state: SourceSupportState,
     capability_state: SourceSupportState,
 ) -> None:
     policy = _policy(
         language_states={"Python": language_state},
-        capability_states={AnalysisCapability.PYTHON_SAST: capability_state},
+        capability_states={AnalysisCapability.SOURCE_SAST: capability_state},
     )
 
     profile = _build(
@@ -855,10 +875,11 @@ def test_language_and_capability_support_states_remain_independent(
     )
 
     assert profile.languages[0].support_state is language_state
-    assert _surfaces(
-        profile,
-        AnalysisCapability.PYTHON_SAST,
-    )[0].support_state is capability_state
+    surfaces = _surfaces(profile, AnalysisCapability.SOURCE_SAST)
+    if language_state is SourceSupportState.DETECTED:
+        assert surfaces == ()
+    else:
+        assert surfaces[0].support_state is capability_state
 
 
 def test_profile_is_complete_sorted_repeatable_and_golden() -> None:
@@ -903,7 +924,7 @@ def test_semantic_profile_change_changes_digest() -> None:
         inventory,
         _policy(
             capability_states={
-                AnalysisCapability.PYTHON_SAST: SourceSupportState.SCANNABLE,
+                AnalysisCapability.SOURCE_SAST: SourceSupportState.SCANNABLE,
             }
         ),
     )
@@ -996,18 +1017,12 @@ def test_real_enry_repository_profile_pipeline(tmp_path: Path) -> None:
             "Python": SourceSupportState.SCANNABLE,
         },
         capability_states={
-            AnalysisCapability.REPOSITORY_PROFILING: (
-                SourceSupportState.PRODUCT_SUPPORTED
-            ),
-            AnalysisCapability.PYTHON_SAST: SourceSupportState.SCANNABLE,
+            AnalysisCapability.REPOSITORY_PROFILING: (SourceSupportState.PRODUCT_SUPPORTED),
+            AnalysisCapability.SOURCE_SAST: SourceSupportState.SCANNABLE,
             AnalysisCapability.SECRET_DETECTION: SourceSupportState.SCANNABLE,
             AnalysisCapability.PACKAGE_INVENTORY: SourceSupportState.DETECTED,
-            AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING: (
-                SourceSupportState.DETECTED
-            ),
-            AnalysisCapability.TERRAFORM_SOURCE_POLICY: (
-                SourceSupportState.SCANNABLE
-            ),
+            AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING: (SourceSupportState.DETECTED),
+            AnalysisCapability.TERRAFORM_SOURCE_POLICY: (SourceSupportState.SCANNABLE),
             AnalysisCapability.DOCKERFILE_POLICY: SourceSupportState.DETECTED,
         },
     )
@@ -1027,8 +1042,7 @@ def test_real_enry_repository_profile_pipeline(tmp_path: Path) -> None:
         files = _files(profile)
         languages = {language.language: language for language in profile.languages}
         components = {
-            component.root_path: component.component_id
-            for component in profile.components
+            component.root_path: component.component_id for component in profile.components
         }
 
         assert languages["Python"].support_state is SourceSupportState.SCANNABLE
@@ -1036,7 +1050,7 @@ def test_real_enry_repository_profile_pipeline(tmp_path: Path) -> None:
         assert languages["Python"].eligible_file_count == 6
         assert languages["JavaScript"].support_state is SourceSupportState.DETECTED
         assert languages["JavaScript"].eligible_file_count == 0
-        python_surface = _surfaces(profile, AnalysisCapability.PYTHON_SAST)[0]
+        python_surface = _surfaces(profile, AnalysisCapability.SOURCE_SAST)[0]
         assert python_surface.support_state is SourceSupportState.SCANNABLE
         assert python_surface.eligible_paths == (
             "generated/__generated__/generated_client.py",
@@ -1078,9 +1092,9 @@ def test_real_enry_repository_profile_pipeline(tmp_path: Path) -> None:
         }
         assert profile.components is componentized.components
         assert profile.repository_digest == componentized.repository_digest
-        assert SourceFileFlag.GENERATED in files[
-            "generated/__generated__/generated_client.py"
-        ].flags
+        assert (
+            SourceFileFlag.GENERATED in files["generated/__generated__/generated_client.py"].flags
+        )
         assert SourceFileFlag.TEST in files["tests/test_app.py"].flags
         assert SourceFileFlag.VENDORED in files["vendor/sdk.py"].flags
         assert not hasattr(profile, "coverage_status")

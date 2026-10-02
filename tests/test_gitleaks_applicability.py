@@ -83,16 +83,8 @@ def _record(
 
     return SourceFileRecord(
         entry=_entry(relative_path, content),
-        content_kind=(
-            FileContentKind.BINARY
-            if binary
-            else FileContentKind.TEXT
-        ),
-        role=(
-            SourceFileRole.BINARY
-            if binary
-            else SourceFileRole.SOURCE
-        ),
+        content_kind=(FileContentKind.BINARY if binary else FileContentKind.TEXT),
+        role=(SourceFileRole.BINARY if binary else SourceFileRole.SOURCE),
         language=None,
         component_id=None,
         flags=tuple(
@@ -101,9 +93,7 @@ def _record(
                 key=lambda flag: flag.value,
             )
         ),
-        eligible_capabilities=(
-            AnalysisCapability.REPOSITORY_PROFILING,
-        ),
+        eligible_capabilities=(AnalysisCapability.REPOSITORY_PROFILING,),
     )
 
 
@@ -119,9 +109,7 @@ def _profile(
     paths = tuple(file.relative_path for file in ordered)
 
     return RepositoryProfile(
-        repository_digest=repository_content_digest(
-            tuple(file.entry for file in ordered)
-        ),
+        repository_digest=repository_content_digest(tuple(file.entry for file in ordered)),
         files=ordered,
         components=(),
         languages=(),
@@ -171,31 +159,23 @@ def _trusted_binding() -> TrustedGitleaksBinding:
     return TrustedGitleaksBinding(
         executable_path=Path("/opt/securescan/bin/gitleaks"),
         executable_sha256="a" * 64,
-        config_path=Path(
-            "/opt/securescan/config/securescan-gitleaks-v1.toml"
-        ),
+        config_path=Path("/opt/securescan/config/securescan-gitleaks-v1.toml"),
         config_sha256="b" * 64,
-        ignore_path=Path(
-            "/opt/securescan/config/securescan-gitleaks-v1.ignore"
-        ),
+        ignore_path=Path("/opt/securescan/config/securescan-gitleaks-v1.ignore"),
         ignore_sha256="c" * 64,
     )
 
 
 def test_schema_and_v04c_baseline_are_frozen() -> None:
-    assert GITLEAKS_APPLICABILITY_SCHEMA_VERSION == (
-        "securescan-gitleaks-applicability-v0.4D"
-    )
-    assert GITLEAKS_V04C_BASELINE_COMMIT == (
-        "d488fd96eb573687d9887c829d4d5bf26b31fc9a"
-    )
+    assert GITLEAKS_APPLICABILITY_SCHEMA_VERSION == ("securescan-gitleaks-applicability-v0.4D")
+    assert GITLEAKS_V04C_BASELINE_COMMIT == ("d488fd96eb573687d9887c829d4d5bf26b31fc9a")
 
 
 def test_support_policy_promotes_only_secret_detection() -> None:
     original = SourceSupportPolicy(
         capability_rules=(
             CapabilitySupportRule(
-                AnalysisCapability.PYTHON_SAST,
+                AnalysisCapability.SOURCE_SAST,
                 SourceSupportState.SCANNABLE,
                 "PYTHON_SCANNABLE_BY_POLICY",
             ),
@@ -204,9 +184,7 @@ def test_support_policy_promotes_only_secret_detection() -> None:
 
     updated = with_gitleaks_source_support(original)
 
-    secret = updated.capability_rule_for(
-        AnalysisCapability.SECRET_DETECTION
-    )
+    secret = updated.capability_rule_for(AnalysisCapability.SECRET_DETECTION)
 
     assert secret == CapabilitySupportRule(
         AnalysisCapability.SECRET_DETECTION,
@@ -216,9 +194,10 @@ def test_support_policy_promotes_only_secret_detection() -> None:
     assert updated.language_rules == original.language_rules
     assert updated.default_language_state is original.default_language_state
     assert updated.default_capability_state is original.default_capability_state
-    assert original.capability_rule_for(
-        AnalysisCapability.SECRET_DETECTION
-    ).support_state is SourceSupportState.DETECTED
+    assert (
+        original.capability_rule_for(AnalysisCapability.SECRET_DETECTION).support_state
+        is SourceSupportState.DETECTED
+    )
 
 
 def test_identical_gitleaks_support_rule_is_idempotent() -> None:
@@ -247,9 +226,7 @@ def test_conflicting_explicit_secret_support_rule_fails_closed() -> None:
 def test_planning_policy_freezes_zero_secret_exclusions() -> None:
     updated = with_gitleaks_planning_policy(SourcePlanningPolicy())
 
-    assert updated.excluded_flags_for(
-        AnalysisCapability.SECRET_DETECTION
-    ) == ()
+    assert updated.excluded_flags_for(AnalysisCapability.SECRET_DETECTION) == ()
 
     rule = next(
         rule
@@ -385,7 +362,7 @@ def test_profile_enrichment_is_deterministic_and_non_mutating() -> None:
 def test_existing_other_surfaces_are_preserved() -> None:
     original = _profile(_record("app.py"))
     extra = AnalysisSurface(
-        capability=AnalysisCapability.PYTHON_SAST,
+        capability=AnalysisCapability.SOURCE_SAST,
         support_state=SourceSupportState.SCANNABLE,
         eligible_paths=("app.py",),
     )
@@ -407,7 +384,7 @@ def test_existing_other_surfaces_are_preserved() -> None:
     python = next(
         surface
         for surface in enriched.surfaces
-        if surface.capability is AnalysisCapability.PYTHON_SAST
+        if surface.capability is AnalysisCapability.SOURCE_SAST
     )
 
     assert python == extra
@@ -455,9 +432,7 @@ def test_available_analyzer_snapshot_registers_secret_detection(
     analyzer = build_gitleaks_source_analyzer_snapshot(binding)
 
     assert analyzer.analyzer_id == GITLEAKS_SOURCE_ANALYZER_ID
-    assert analyzer.capabilities == (
-        AnalysisCapability.SECRET_DETECTION,
-    )
+    assert analyzer.capabilities == (AnalysisCapability.SECRET_DETECTION,)
     assert analyzer.available is True
     assert analyzer.unavailable_reason_code is None
 
@@ -532,9 +507,7 @@ def test_available_analyzer_plans_repository_wide_secret_scan(
     )
 
     analyzer = build_gitleaks_source_analyzer_snapshot(binding)
-    registry = TrustedSourceAnalyzerRegistry(
-        analyzers=(analyzer,)
-    )
+    registry = TrustedSourceAnalyzerRegistry(analyzers=(analyzer,))
 
     plan = build_source_analysis_plan(
         profile,
@@ -543,9 +516,7 @@ def test_available_analyzer_plans_repository_wide_secret_scan(
     )
 
     secret = next(
-        entry
-        for entry in plan.entries
-        if entry.capability is AnalysisCapability.SECRET_DETECTION
+        entry for entry in plan.entries if entry.capability is AnalysisCapability.SECRET_DETECTION
     )
 
     assert secret.action is SourcePlanAction.RUN
@@ -561,9 +532,7 @@ def test_available_analyzer_plans_repository_wide_secret_scan(
 
 
 def test_missing_analyzer_is_explicit_skip() -> None:
-    profile = _apply_gitleaks(
-        _profile(_record("app.py"))
-    )
+    profile = _apply_gitleaks(_profile(_record("app.py")))
 
     plan = build_source_analysis_plan(
         profile,
@@ -572,9 +541,7 @@ def test_missing_analyzer_is_explicit_skip() -> None:
     )
 
     secret = next(
-        entry
-        for entry in plan.entries
-        if entry.capability is AnalysisCapability.SECRET_DETECTION
+        entry for entry in plan.entries if entry.capability is AnalysisCapability.SECRET_DETECTION
     )
 
     assert secret.action is SourcePlanAction.SKIP
@@ -584,9 +551,7 @@ def test_missing_analyzer_is_explicit_skip() -> None:
 def test_unavailable_analyzer_is_explicit_skip(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    profile = _apply_gitleaks(
-        _profile(_record("app.py"))
-    )
+    profile = _apply_gitleaks(_profile(_record("app.py")))
 
     binding = _trusted_binding()
 
@@ -600,9 +565,7 @@ def test_unavailable_analyzer_is_explicit_skip(
     )
 
     registry = TrustedSourceAnalyzerRegistry(
-        analyzers=(
-            build_gitleaks_source_analyzer_snapshot(binding),
-        )
+        analyzers=(build_gitleaks_source_analyzer_snapshot(binding),)
     )
 
     plan = build_source_analysis_plan(
@@ -612,9 +575,7 @@ def test_unavailable_analyzer_is_explicit_skip(
     )
 
     secret = next(
-        entry
-        for entry in plan.entries
-        if entry.capability is AnalysisCapability.SECRET_DETECTION
+        entry for entry in plan.entries if entry.capability is AnalysisCapability.SECRET_DETECTION
     )
 
     assert secret.action is SourcePlanAction.SKIP
@@ -635,9 +596,7 @@ def test_existing_equivalent_scannable_support_rule_is_preserved() -> None:
     updated = with_gitleaks_source_support(policy)
 
     assert updated is policy
-    assert updated.capability_rule_for(
-        AnalysisCapability.SECRET_DETECTION
-    ) is existing
+    assert updated.capability_rule_for(AnalysisCapability.SECRET_DETECTION) is existing
 
 
 @pytest.mark.parametrize(
@@ -662,11 +621,7 @@ def test_scanner_overlay_never_overrides_explicit_incompatible_support_state(
     surface = AnalysisSurface(
         capability=AnalysisCapability.SECRET_DETECTION,
         support_state=state,
-        eligible_paths=(
-            ()
-            if state is SourceSupportState.UNSUPPORTED
-            else ("app.py",)
-        ),
+        eligible_paths=(() if state is SourceSupportState.UNSUPPORTED else ("app.py",)),
         reason_code=reason,
     )
 
@@ -715,9 +670,7 @@ def test_existing_scannable_surface_keeps_its_policy_reason() -> None:
 
     enriched = _apply_gitleaks(
         profile,
-        _gitleaks_support_policy(
-            "EXISTING_SECRET_SCANNABLE_POLICY"
-        ),
+        _gitleaks_support_policy("EXISTING_SECRET_SCANNABLE_POLICY"),
     )
     secret = _secret_surface(enriched)
 
@@ -766,8 +719,6 @@ def test_default_detected_support_policy_cannot_authorize_overlay() -> None:
         )
 
 
-
-
 def test_real_generic_profile_then_gitleaks_overlay_expands_binary_scope() -> None:
     text_file = replace(
         _record("app.py"),
@@ -795,16 +746,12 @@ def test_real_generic_profile_then_gitleaks_overlay_expands_binary_scope() -> No
     )
 
     inventory = ComponentizedRepositoryInventory(
-        repository_digest=repository_content_digest(
-            tuple(file.entry for file in files)
-        ),
+        repository_digest=repository_content_digest(tuple(file.entry for file in files)),
         files=files,
         components=(),
     )
 
-    policy = with_gitleaks_source_support(
-        SourceSupportPolicy()
-    )
+    policy = with_gitleaks_source_support(SourceSupportPolicy())
 
     assessment = assess_repository_language_support(
         inventory,
@@ -822,10 +769,7 @@ def test_real_generic_profile_then_gitleaks_overlay_expands_binary_scope() -> No
     # Generic frozen inventory eligibility is text-oriented.
     assert generic_secret.support_state is SourceSupportState.SCANNABLE
     assert generic_secret.eligible_paths == ("app.py",)
-    assert (
-        AnalysisCapability.SECRET_DETECTION
-        not in generic_profile.files[1].eligible_capabilities
-    )
+    assert AnalysisCapability.SECRET_DETECTION not in generic_profile.files[1].eligible_capabilities
 
     enriched = apply_gitleaks_source_applicability(
         generic_profile,
@@ -843,13 +787,8 @@ def test_real_generic_profile_then_gitleaks_overlay_expands_binary_scope() -> No
     )
 
     binary = next(
-        file
-        for file in enriched.files
-        if file.relative_path == "certificates/client.p12"
+        file for file in enriched.files if file.relative_path == "certificates/client.p12"
     )
 
     assert SourceFileFlag.BINARY in binary.flags
-    assert (
-        AnalysisCapability.SECRET_DETECTION
-        in binary.eligible_capabilities
-    )
+    assert AnalysisCapability.SECRET_DETECTION in binary.eligible_capabilities

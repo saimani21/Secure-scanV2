@@ -90,8 +90,8 @@ _TRUSTED_NATIVE_IDENTITIES = {
     ),
     "semgrep-ce": (
         "1.171.0",
-        "python-semgrep-v1",
-        "265fd32e59296d6dc50fd7f8b7558f0e35ead821c4ee689f5ff953bf70393ed2",
+        "semgrep-source-v1",
+        "1e317bf6e9eb6bb44feafa13ac7260b7d5c487b1117ce870ee1e946e1c60726c",
         "securescan-semgrep-sanitized-v1",
     ),
     "syft": (

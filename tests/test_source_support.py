@@ -46,12 +46,8 @@ from securescan.workspaces.models import repository_content_digest
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _LOCAL_HELPER = _PROJECT_ROOT / "tools/enry-helper/bin/securescan-enry-helper"
-_POLICY_GOLDEN_DIGEST = (
-    "22fc4aba9c6f9309fcf89b67412e6070a47e38141a9ee24218f7378e55c1c69a"
-)
-_ASSESSMENT_GOLDEN_DIGEST = (
-    "1ec06aa19bbdbbe163b95fa598e693b6f615ba1039e39496dca4d92c12ffcb0b"
-)
+_POLICY_GOLDEN_DIGEST = "22fc4aba9c6f9309fcf89b67412e6070a47e38141a9ee24218f7378e55c1c69a"
+_ASSESSMENT_GOLDEN_DIGEST = "1ec06aa19bbdbbe163b95fa598e693b6f615ba1039e39496dca4d92c12ffcb0b"
 
 
 def _entry(relative_path: str, content: bytes) -> RepositoryManifestEntry:
@@ -87,9 +83,7 @@ def _componentized(
 ) -> ComponentizedRepositoryInventory:
     files = tuple(sorted(records, key=lambda record: record.relative_path))
     return ComponentizedRepositoryInventory(
-        repository_digest=repository_content_digest(
-            tuple(record.entry for record in files)
-        ),
+        repository_digest=repository_content_digest(tuple(record.entry for record in files)),
         files=files,
         components=(),
     )
@@ -98,9 +92,7 @@ def _componentized(
 def _enriched(*records: SourceFileRecord) -> EnrichedRepositoryInventory:
     files = tuple(sorted(records, key=lambda record: record.relative_path))
     return EnrichedRepositoryInventory(
-        repository_digest=repository_content_digest(
-            tuple(record.entry for record in files)
-        ),
+        repository_digest=repository_content_digest(tuple(record.entry for record in files)),
         files=files,
     )
 
@@ -184,7 +176,7 @@ def test_capability_rule_accepts_every_support_state(
     reason = "CAPABILITY_NOT_SUPPORTED" if support_state is SourceSupportState.UNSUPPORTED else None
 
     rule = CapabilitySupportRule(
-        AnalysisCapability.PYTHON_SAST,
+        AnalysisCapability.SOURCE_SAST,
         support_state,
         reason,
     )
@@ -200,7 +192,7 @@ def test_capability_rule_rejects_invalid_capability_and_reason() -> None:
         )
     with pytest.raises(InvalidSourceSupportPolicyError):
         CapabilitySupportRule(
-            AnalysisCapability.PYTHON_SAST,
+            AnalysisCapability.SOURCE_SAST,
             SourceSupportState.DETECTED,
             "invalid",
         )
@@ -209,7 +201,7 @@ def test_capability_rule_rejects_invalid_capability_and_reason() -> None:
 def test_capability_rule_requires_reason_for_unsupported() -> None:
     with pytest.raises(InvalidSourceSupportPolicyError):
         CapabilitySupportRule(
-            AnalysisCapability.PYTHON_SAST,
+            AnalysisCapability.SOURCE_SAST,
             SourceSupportState.UNSUPPORTED,
         )
 
@@ -255,12 +247,12 @@ def test_policy_requires_sorted_unique_capability_rules() -> None:
         SourceSupportState.DETECTED,
     )
     python = CapabilitySupportRule(
-        AnalysisCapability.PYTHON_SAST,
+        AnalysisCapability.SOURCE_SAST,
         SourceSupportState.SCANNABLE,
     )
 
     with pytest.raises(InvalidSourceSupportPolicyError):
-        SourceSupportPolicy(capability_rules=(repository, python))
+        SourceSupportPolicy(capability_rules=(python, repository))
     with pytest.raises(InvalidSourceSupportPolicyError):
         SourceSupportPolicy(capability_rules=(python, python))
 
@@ -327,9 +319,7 @@ def test_language_lookup_preserves_explicit_policy_state(
     reason_code: str,
 ) -> None:
     policy = SourceSupportPolicy(
-        language_rules=(
-            LanguageSupportRule("Python", support_state, reason_code),
-        )
+        language_rules=(LanguageSupportRule("Python", support_state, reason_code),)
     )
 
     result = policy.language_rule_for("Python")
@@ -356,17 +346,15 @@ def test_language_fallback_preserves_requested_spelling_and_policy() -> None:
 
 def test_capability_lookup_explicit_and_fallback_are_declarative() -> None:
     rule = CapabilitySupportRule(
-        AnalysisCapability.PYTHON_SAST,
+        AnalysisCapability.SOURCE_SAST,
         SourceSupportState.BENCHMARKED,
         "PYTHON_SAST_BENCHMARKED",
     )
     policy = SourceSupportPolicy(capability_rules=(rule,))
     before = policy.canonical_data()
 
-    assert policy.capability_rule_for(AnalysisCapability.PYTHON_SAST) is rule
-    assert policy.capability_rule_for(
-        AnalysisCapability.SECRET_DETECTION
-    ) == CapabilitySupportRule(
+    assert policy.capability_rule_for(AnalysisCapability.SOURCE_SAST) is rule
+    assert policy.capability_rule_for(AnalysisCapability.SECRET_DETECTION) == CapabilitySupportRule(
         AnalysisCapability.SECRET_DETECTION,
         SourceSupportState.DETECTED,
         "CAPABILITY_DETECTED_NO_DECLARED_SUPPORT",
@@ -598,9 +586,7 @@ def test_repository_support_state_and_reason_come_only_from_policy(
     reason_code: str,
 ) -> None:
     policy = SourceSupportPolicy(
-        language_rules=(
-            LanguageSupportRule("python", support_state, reason_code),
-        )
+        language_rules=(LanguageSupportRule("python", support_state, reason_code),)
     )
     inventory = _componentized(
         _record(

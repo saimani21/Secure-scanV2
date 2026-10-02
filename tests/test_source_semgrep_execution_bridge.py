@@ -43,7 +43,7 @@ from securescan.scanners.semgrep import (
     TrustedSemgrepSourceBinding,
     create_semgrep_trusted_definition,
     create_source_aware_semgrep_trusted_definition,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.source import (
     AnalysisCapability,
@@ -68,9 +68,7 @@ IMAGE = f"registry.example/securescan/semgrep@sha256:{'7' * 64}"
 NOW = datetime(2063, 3, 3, 3, 3, 3, tzinfo=UTC)
 WORKER_ID = "source-semgrep-worker"
 LEASE_TOKEN = str(UUID("00000000-0000-4000-8000-000000003c33"))
-FIXTURE = (
-    Path(__file__).parent / "fixtures" / "semgrep" / "output" / "valid-findings.json"
-)
+FIXTURE = Path(__file__).parent / "fixtures" / "semgrep" / "output" / "valid-findings.json"
 
 
 def _process_result() -> CancellableProcessResult:
@@ -192,12 +190,10 @@ class _Environment:
             docker_executor=executor,
             workspace_manager=workspace_manager
             or RepositoryWorkspaceManager(tmp_path / "attempt-workspaces"),
-            ruleset=load_baseline_ruleset(),
+            ruleset=load_source_ruleset(),
             artifact_store=self.store,
             source_resolver=ordinary_source_resolver,
-            projection_manager=SourceProjectionManager(
-                self.projection_manager.base_directory
-            ),
+            projection_manager=SourceProjectionManager(self.projection_manager.base_directory),
             binding=trusted_binding,
             clock=lambda: NOW,
         )
@@ -205,9 +201,7 @@ class _Environment:
 
 def _profile(workspace, *, select_ignore: bool = False):
     selected_paths = (
-        (".semgrepignore", "app.py", "pkg/auth.py")
-        if select_ignore
-        else ("app.py", "pkg/auth.py")
+        (".semgrepignore", "app.py", "pkg/auth.py") if select_ignore else ("app.py", "pkg/auth.py")
     )
     records = []
     for entry in workspace.manifest.entries:
@@ -231,8 +225,8 @@ def _profile(workspace, *, select_ignore: bool = False):
                 flags=flag,
                 eligible_capabilities=(
                     (
-                        AnalysisCapability.PYTHON_SAST,
                         AnalysisCapability.REPOSITORY_PROFILING,
+                        AnalysisCapability.SOURCE_SAST,
                     )
                     if selected
                     else (AnalysisCapability.REPOSITORY_PROFILING,)
@@ -251,12 +245,10 @@ def _profile(workspace, *, select_ignore: bool = False):
                     AnalysisSurface(
                         capability=AnalysisCapability.REPOSITORY_PROFILING,
                         support_state=SourceSupportState.DETECTED,
-                        eligible_paths=tuple(
-                            record.relative_path for record in records_tuple
-                        ),
+                        eligible_paths=tuple(record.relative_path for record in records_tuple),
                     ),
                     AnalysisSurface(
-                        capability=AnalysisCapability.PYTHON_SAST,
+                        capability=AnalysisCapability.SOURCE_SAST,
                         support_state=SourceSupportState.SCANNABLE,
                         eligible_paths=selected_paths,
                     ),
@@ -285,18 +277,14 @@ def _environment(tmp_path: Path, *, select_ignore: bool = False) -> _Environment
     analyzer_registry = TrustedSourceAnalyzerRegistry(
         analyzers=(
             TrustedSourceAnalyzer(
-                analyzer_id="python-semgrep-v1",
-                capabilities=(AnalysisCapability.PYTHON_SAST,),
+                analyzer_id="semgrep-source-v1",
+                capabilities=(AnalysisCapability.SOURCE_SAST,),
                 available=True,
             ),
         )
     )
     plan = build_source_analysis_plan(profile, analyzer_registry, SourcePlanningPolicy())
-    entry = next(
-        item
-        for item in plan.entries
-        if item.capability is AnalysisCapability.PYTHON_SAST
-    )
+    entry = next(item for item in plan.entries if item.capability is AnalysisCapability.SOURCE_SAST)
 
     placeholder_executor = _DockerExecutor()
     base_definition = create_semgrep_trusted_definition(
@@ -304,14 +292,14 @@ def _environment(tmp_path: Path, *, select_ignore: bool = False) -> _Environment
         tool_version="1.171.0",
         docker_executor=placeholder_executor,
         workspace_manager=RepositoryWorkspaceManager(tmp_path / "unused-workspaces"),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
         artifact_store=ContentAddressedArtifactStore(tmp_path / "artifacts"),
         source_resolver=lambda _run_id: source,
         clock=lambda: NOW,
     )
     binding = TrustedSemgrepSourceBinding(
         definition=base_definition,
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
     )
 
     settings = Settings(
@@ -333,9 +321,7 @@ def _environment(tmp_path: Path, *, select_ignore: bool = False) -> _Environment
         target_id = target.id
 
     store = ContentAddressedArtifactStore(tmp_path / "artifacts")
-    projection_manager = SourceProjectionManager.initialize_base_directory(
-        tmp_path / "projections"
-    )
+    projection_manager = SourceProjectionManager.initialize_base_directory(tmp_path / "projections")
     submission = SourceSemgrepSubmissionService(
         JobSubmissionService(session_factory),
         store,
@@ -387,9 +373,7 @@ def test_durable_source_job_reopens_projection_through_existing_worker(
     definition = environment.definition(tmp_path, executor)
     registry = TrustedAdapterRegistry((definition,))
 
-    environment.source_workspace_manager.cleanup_workspace(
-        environment.source_workspace
-    )
+    environment.source_workspace_manager.cleanup_workspace(environment.source_workspace)
     shutil.rmtree(environment.source_repository)
 
     cycle = SingleJobWorkerCycle(
@@ -407,9 +391,7 @@ def test_durable_source_job_reopens_projection_through_existing_worker(
     )
 
     result = cycle.run_one_job()
-    committed = JobRepository(environment.session_factory).get_job(
-        environment.submission.job_id
-    )
+    committed = JobRepository(environment.session_factory).get_job(environment.submission.job_id)
 
     assert result.disposition is WorkerCycleDisposition.SUCCEEDED
     assert committed is not None and committed.status is JobStatus.SUCCEEDED
@@ -418,9 +400,7 @@ def test_durable_source_job_reopens_projection_through_existing_worker(
     request = executor.requests[0]
     assert request.source_directory.parent.name.startswith("securescan-workspace-")
     assert "--no-git-ignore" in request.arguments
-    assert request.arguments.count(
-        "--config=/workspace/output/.securescan-semgrep-rules.yml"
-    ) == 1
+    assert request.arguments.count("--config=/workspace/output/.securescan-semgrep-rules.yml") == 1
     assert "auto" not in " ".join(request.arguments)
     assert executor.handles[0].closed is True
     assert list((tmp_path / "attempt-workspaces").iterdir()) == []
@@ -443,7 +423,7 @@ def test_source_envelope_without_source_aware_resolver_fails_closed(
         tool_version=environment.binding.declared_tool_version,
         docker_executor=executor,
         workspace_manager=RepositoryWorkspaceManager(tmp_path / "ordinary-attempts"),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
         artifact_store=environment.store,
         source_resolver=generic_resolver,
         clock=lambda: NOW,
@@ -451,10 +431,7 @@ def test_source_envelope_without_source_aware_resolver_fails_closed(
 
     result = _run(definition.factory(), environment.job)
 
-    assert (
-        result.tool_execution.failure_category
-        is JobFailureCategory.NON_RETRYABLE_POLICY
-    )
+    assert result.tool_execution.failure_category is JobFailureCategory.NON_RETRYABLE_POLICY
     assert result.tool_execution.retryable is False
     assert source_calls == []
     assert executor.requests == []
@@ -488,7 +465,7 @@ def test_source_aware_composition_preserves_ordinary_resolution_semantics(
         tool_version=environment.binding.declared_tool_version,
         docker_executor=plain_executor,
         workspace_manager=RepositoryWorkspaceManager(tmp_path / "plain-attempts"),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
         artifact_store=environment.store,
         source_resolver=resolver(plain_calls),
         clock=lambda: NOW,
@@ -508,10 +485,7 @@ def test_source_aware_composition_preserves_ordinary_resolution_semantics(
     assert plain.tool_execution == aware.tool_execution
     if resolver_fails:
         assert plain_executor.requests == aware_executor.requests == []
-        assert (
-            plain.tool_execution.failure_category
-            is JobFailureCategory.RETRYABLE_INFRASTRUCTURE
-        )
+        assert plain.tool_execution.failure_category is JobFailureCategory.RETRYABLE_INFRASTRUCTURE
     else:
         assert plain.final_status == aware.final_status == JobStatus.SUCCEEDED
         assert plain.report_json["observations"] == aware.report_json["observations"]
@@ -538,10 +512,7 @@ def test_source_envelope_wrong_adapter_is_policy_failure_but_ordinary_is_unchang
         ),
     )
 
-    assert (
-        source_result.tool_execution.failure_category
-        is JobFailureCategory.NON_RETRYABLE_POLICY
-    )
+    assert source_result.tool_execution.failure_category is JobFailureCategory.NON_RETRYABLE_POLICY
     assert source_result.tool_execution.retryable is False
     assert (
         ordinary_result.tool_execution.failure_category
@@ -590,9 +561,8 @@ def test_projection_reference_and_envelope_are_strict(
         SourceExecutionEnvelope.from_payload_json(payload)
 
     with pytest.raises(InvalidSourceSemgrepExecutionRequestError):
-        SourceExecutionEnvelope.from_payload_json(
-            {**environment.job.payload_json, "unknown": True}
-        )
+        SourceExecutionEnvelope.from_payload_json({**environment.job.payload_json, "unknown": True})
+
 
 @pytest.mark.parametrize(
     "field",
@@ -668,10 +638,7 @@ def test_projection_tree_tampering_is_reinventoried_before_every_attempt(
 
     result = _run(environment.definition(tmp_path, executor).factory(), environment.job)
 
-    assert (
-        result.tool_execution.failure_category
-        is JobFailureCategory.NON_RETRYABLE_POLICY
-    )
+    assert result.tool_execution.failure_category is JobFailureCategory.NON_RETRYABLE_POLICY
     assert executor.requests == []
 
 
@@ -690,10 +657,7 @@ def test_missing_projection_is_retryable_and_never_rebuilt_from_original(
 
     result = _run(environment.definition(tmp_path, executor).factory(), environment.job)
 
-    assert (
-        result.tool_execution.failure_category
-        is JobFailureCategory.RETRYABLE_INFRASTRUCTURE
-    )
+    assert result.tool_execution.failure_category is JobFailureCategory.RETRYABLE_INFRASTRUCTURE
     assert result.tool_execution.retryable is True
     assert executor.requests == []
 
@@ -708,13 +672,13 @@ def test_binding_change_and_attempt_manifest_mismatch_block_before_docker(
         tool_version="1.172.0",
         docker_executor=executor,
         workspace_manager=RepositoryWorkspaceManager(tmp_path / "changed-unused"),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
         artifact_store=environment.store,
         source_resolver=lambda _run_id: environment.source_repository,
     )
     changed_binding = TrustedSemgrepSourceBinding(
         definition=changed_definition,
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
     )
 
     changed_result = _run(
@@ -731,12 +695,8 @@ def test_binding_change_and_attempt_manifest_mismatch_block_before_docker(
                     workspace.manifest,
                     entries=workspace.manifest.entries[:-1],
                     file_count=workspace.manifest.file_count - 1,
-                    total_bytes=sum(
-                        entry.size_bytes for entry in workspace.manifest.entries[:-1]
-                    ),
-                    content_digest=repository_content_digest(
-                        workspace.manifest.entries[:-1]
-                    ),
+                    total_bytes=sum(entry.size_bytes for entry in workspace.manifest.entries[:-1]),
+                    content_digest=repository_content_digest(workspace.manifest.entries[:-1]),
                 ),
             )
 
@@ -751,13 +711,9 @@ def test_binding_change_and_attempt_manifest_mismatch_block_before_docker(
         environment.job,
     )
 
+    assert changed_result.tool_execution.failure_category is JobFailureCategory.NON_RETRYABLE_POLICY
     assert (
-        changed_result.tool_execution.failure_category
-        is JobFailureCategory.NON_RETRYABLE_POLICY
-    )
-    assert (
-        mismatch_result.tool_execution.failure_category
-        is JobFailureCategory.NON_RETRYABLE_POLICY
+        mismatch_result.tool_execution.failure_category is JobFailureCategory.NON_RETRYABLE_POLICY
     )
     assert executor.requests == []
     assert mismatch_executor.requests == []
@@ -772,10 +728,7 @@ def test_source_selected_ignore_file_is_rejected_as_scanner_configuration(
 
     result = _run(environment.definition(tmp_path, executor).factory(), environment.job)
 
-    assert (
-        result.tool_execution.failure_category
-        is JobFailureCategory.NON_RETRYABLE_POLICY
-    )
+    assert result.tool_execution.failure_category is JobFailureCategory.NON_RETRYABLE_POLICY
     assert executor.requests == []
 
 
@@ -815,9 +768,7 @@ def test_finding_outside_selected_manifest_remains_parser_rejection(
     environment = _environment(tmp_path)
     payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
     payload["results"][0]["path"] = "/workspace/source/vendor/lib.py"
-    executor = _DockerExecutor(
-        json.dumps(payload, separators=(",", ":")).encode("utf-8")
-    )
+    executor = _DockerExecutor(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
 
     result = _run(environment.definition(tmp_path, executor).factory(), environment.job)
 
@@ -854,8 +805,5 @@ def test_fresh_resolver_reopens_projection_on_retry_and_detects_later_mutation(
 
     assert first.final_status is JobStatus.SUCCEEDED
     assert len(first_executor.requests) == 1
-    assert (
-        second.tool_execution.failure_category
-        is JobFailureCategory.NON_RETRYABLE_POLICY
-    )
+    assert second.tool_execution.failure_category is JobFailureCategory.NON_RETRYABLE_POLICY
     assert second_executor.requests == []

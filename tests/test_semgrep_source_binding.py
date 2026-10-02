@@ -31,7 +31,7 @@ from securescan.scanners.semgrep import (
     build_semgrep_source_analyzer_snapshot,
     create_production_semgrep_source_binding,
     create_semgrep_trusted_definition,
-    load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.scanners.semgrep.adapter import SemgrepScannerAdapter
 from securescan.source import (
@@ -60,9 +60,7 @@ IMAGE = PRODUCTION_SEMGREP_IMAGE_REFERENCE
 OLD_PLACEHOLDER_IMAGE = "registry.example/securescan/semgrep@sha256:" + "4" * 64
 TOOL_VERSION = "1.171.0"
 BINDING_GOLDEN_DIGEST = PRODUCTION_SEMGREP_BINDING_DIGEST
-REGISTRY_GOLDEN_DIGEST = (
-    "7e795691ac8ae95c54efcb99bf9fe746dd9da33cdf29e641b2a03b71123dd072"
-)
+REGISTRY_GOLDEN_DIGEST = "205b72c7866ee9ea08ceebb7654c18176bbf3a5cd4cbf9f59e20da0e94085ada"
 
 
 def _definition(
@@ -78,8 +76,7 @@ def _definition(
         tool_name="semgrep",
         tool_version=tool_version,
         backend=SandboxExecutionBackend.DOCKER_SANDBOX,
-        policy=policy
-        or SandboxExecutionPolicy(allowed_environment_names=("HOME",)),
+        policy=policy or SandboxExecutionPolicy(allowed_environment_names=("HOME",)),
         factory=lambda: object(),
         image_reference=image_reference,
         command_prefix=("semgrep",),
@@ -122,7 +119,7 @@ def _binding(
 ) -> TrustedSemgrepSourceBinding:
     return create_production_semgrep_source_binding(
         definition=definition or _definition(),
-        ruleset=load_baseline_ruleset(),
+        ruleset=load_source_ruleset(),
     )
 
 
@@ -156,8 +153,8 @@ def _profile(support_state: SourceSupportState) -> RepositoryProfile:
         content_kind=FileContentKind.TEXT,
         role=SourceFileRole.SOURCE,
         eligible_capabilities=(
-            AnalysisCapability.PYTHON_SAST,
             AnalysisCapability.REPOSITORY_PROFILING,
+            AnalysisCapability.SOURCE_SAST,
         ),
     )
     paths = (file.relative_path,)
@@ -173,7 +170,7 @@ def _profile(support_state: SourceSupportState) -> RepositoryProfile:
                         eligible_paths=paths,
                     ),
                     AnalysisSurface(
-                        capability=AnalysisCapability.PYTHON_SAST,
+                        capability=AnalysisCapability.SOURCE_SAST,
                         support_state=support_state,
                         eligible_paths=paths,
                     ),
@@ -186,22 +183,20 @@ def _profile(support_state: SourceSupportState) -> RepositoryProfile:
 
 def _python_entry(plan):
     return next(
-        entry
-        for entry in plan.entries
-        if entry.capability is AnalysisCapability.PYTHON_SAST
+        entry for entry in plan.entries if entry.capability is AnalysisCapability.SOURCE_SAST
     )
 
 
 def test_trusted_semgrep_source_binding_retains_exact_provenance() -> None:
     definition = _definition()
-    ruleset = load_baseline_ruleset()
+    ruleset = load_source_ruleset()
     binding = create_production_semgrep_source_binding(
         definition=definition,
         ruleset=ruleset,
     )
 
-    assert binding.source_analyzer_id == "python-semgrep-v1"
-    assert binding.capability is AnalysisCapability.PYTHON_SAST
+    assert binding.source_analyzer_id == "semgrep-source-v1"
+    assert binding.capability is AnalysisCapability.SOURCE_SAST
     assert binding.core_adapter_id == "semgrep-ce"
     assert binding.tool_family == "semgrep"
     assert binding.declared_tool_version == TOOL_VERSION
@@ -221,14 +216,14 @@ def test_production_binding_rejects_old_placeholder_contract() -> None:
     with pytest.raises(InvalidSemgrepSourceBindingError):
         create_production_semgrep_source_binding(
             definition=_definition(image_reference=OLD_PLACEHOLDER_IMAGE),
-            ruleset=load_baseline_ruleset(),
+            ruleset=load_source_ruleset(),
         )
 
 
 def test_binding_uses_the_same_ruleset_as_core_semgrep_configuration(
     tmp_path: Path,
 ) -> None:
-    ruleset = load_baseline_ruleset()
+    ruleset = load_source_ruleset()
     definition = create_semgrep_trusted_definition(
         image_reference=IMAGE,
         tool_version=TOOL_VERSION,
@@ -261,7 +256,7 @@ def test_binding_rejects_wrong_adapter_and_invalid_or_unpinned_image() -> None:
 
 
 def test_binding_revalidates_ruleset_content_digest() -> None:
-    ruleset = load_baseline_ruleset()
+    ruleset = load_source_ruleset()
     object.__setattr__(ruleset, "sha256", "0" * 64)
 
     with pytest.raises(InvalidSemgrepSourceBindingError):
@@ -306,8 +301,8 @@ def test_available_snapshot_is_deterministic_and_uses_read_only_probes() -> None
     registry = TrustedSourceAnalyzerRegistry(analyzers=(first,))
 
     assert first == second
-    assert first.analyzer_id == "python-semgrep-v1"
-    assert first.capabilities == (AnalysisCapability.PYTHON_SAST,)
+    assert first.analyzer_id == "semgrep-source-v1"
+    assert first.capabilities == (AnalysisCapability.SOURCE_SAST,)
     assert first.available is True
     assert first.unavailable_reason_code is None
     assert registry.registry_digest() == REGISTRY_GOLDEN_DIGEST
@@ -358,9 +353,7 @@ def test_existing_registry_rejects_duplicate_source_declaration() -> None:
 
 def test_binding_api_accepts_only_trusted_configuration_inputs() -> None:
     binding_parameters = inspect.signature(TrustedSemgrepSourceBinding).parameters
-    snapshot_parameters = inspect.signature(
-        build_semgrep_source_analyzer_snapshot
-    ).parameters
+    snapshot_parameters = inspect.signature(build_semgrep_source_analyzer_snapshot).parameters
 
     assert tuple(binding_parameters) == ("definition", "ruleset")
     assert tuple(snapshot_parameters) == (
@@ -378,7 +371,7 @@ def test_snapshot_drives_existing_planner_without_mutating_source_truth() -> Non
     support_policy = SourceSupportPolicy(
         capability_rules=(
             CapabilitySupportRule(
-                AnalysisCapability.PYTHON_SAST,
+                AnalysisCapability.SOURCE_SAST,
                 SourceSupportState.SCANNABLE,
             ),
         )
@@ -416,7 +409,7 @@ def test_snapshot_drives_existing_planner_without_mutating_source_truth() -> Non
     )
 
     assert runnable.action is SourcePlanAction.RUN
-    assert runnable.analyzer_id == "python-semgrep-v1"
+    assert runnable.analyzer_id == "semgrep-source-v1"
     assert runnable.support_state is SourceSupportState.SCANNABLE
     assert unavailable_entry.action is SourcePlanAction.SKIP
     assert unavailable_entry.reason_code == "ANALYZER_UNAVAILABLE"

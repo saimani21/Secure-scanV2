@@ -1,0 +1,70 @@
+rules:
+  - id: securescan.javascript.dynamic-eval
+    message: "Audit dynamic eval use: this match does not prove attacker-controlled input."
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      cwe: [CWE-95]
+    patterns:
+      - pattern: eval($CODE)
+      - pattern-not: eval("...")
+      - pattern-not: eval('...')
+
+  - id: securescan.javascript.child-process-exec
+    message: "Audit child_process command execution: this match does not prove attacker-controlled input."
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      cwe: [CWE-78]
+    pattern-either:
+      - pattern: child_process.exec(...)
+      - pattern: child_process.execSync(...)
+      - pattern: require("child_process").exec(...)
+      - pattern: require("child_process").execSync(...)
+      - pattern: require("node:child_process").exec(...)
+      - pattern: require("node:child_process").execSync(...)
+
+  - id: securescan.javascript.child-process-shell
+    message: "Audit child_process shell mode: this match does not prove attacker-controlled input."
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      cwe: [CWE-78]
+    pattern-either:
+      - pattern: 'child_process.spawn(..., { ..., shell: true, ... }, ...)'
+      - pattern: 'child_process.spawnSync(..., { ..., shell: true, ... }, ...)'
+      - pattern: 'child_process.execFile(..., { ..., shell: true, ... }, ...)'
+      - pattern: 'child_process.execFileSync(..., { ..., shell: true, ... }, ...)'
+
+  - id: securescan.javascript.request-derived-redirect
+    message: "Audit redirect targets read directly from request data: this match does not prove an exploitable redirect."
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      cwe: [CWE-601]
+    pattern-either:
+      - pattern: $RES.redirect($REQ.query.$KEY)
+      - pattern: $RES.redirect($REQ.params.$KEY)
+      - pattern: $RES.redirect($REQ.body.$KEY)
+
+  - id: securescan.javascript.sql-template-query
+    message: "Audit interpolated SQL query text: this match does not prove attacker-controlled input."
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      cwe: [CWE-89]
+    pattern-either:
+      - pattern: '$DB.query(`...${$VALUE}...`, ...)'
+      - pattern: '$DB.execute(`...${$VALUE}...`, ...)'
+
+  - id: securescan.javascript.request-derived-path
+    message: "Audit filesystem paths composed directly from request data: this match does not prove traversal."
+    severity: WARNING
+    languages: [javascript, typescript]
+    metadata:
+      cwe: [CWE-22]
+    pattern-either:
+      - pattern: path.join(..., $REQ.query.$KEY, ...)
+      - pattern: path.join(..., $REQ.params.$KEY, ...)
+      - pattern: path.resolve(..., $REQ.query.$KEY, ...)
+      - pattern: path.resolve(..., $REQ.params.$KEY, ...)

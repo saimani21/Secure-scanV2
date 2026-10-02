@@ -44,18 +44,14 @@ def _valid_profile() -> RepositoryProfile:
             role=SourceFileRole.TERRAFORM,
             language="HCL",
             component_id="root",
-            eligible_capabilities=(
-                AnalysisCapability.TERRAFORM_SOURCE_POLICY,
-            ),
+            eligible_capabilities=(AnalysisCapability.TERRAFORM_SOURCE_POLICY,),
         ),
         SourceFileRecord(
             entry=_entry("poetry.lock", b"package = []\n"),
             content_kind=FileContentKind.TEXT,
             role=SourceFileRole.LOCKFILE,
             component_id="root",
-            eligible_capabilities=(
-                AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING,
-            ),
+            eligible_capabilities=(AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING,),
         ),
         SourceFileRecord(
             entry=_entry("pyproject.toml", b"[project]\nname='demo'\n"),
@@ -70,15 +66,13 @@ def _valid_profile() -> RepositoryProfile:
             language="Python",
             component_id="root",
             eligible_capabilities=(
-                AnalysisCapability.PYTHON_SAST,
                 AnalysisCapability.SECRET_DETECTION,
+                AnalysisCapability.SOURCE_SAST,
             ),
         ),
     )
     return RepositoryProfile(
-        repository_digest=repository_content_digest(
-            tuple(file.entry for file in files)
-        ),
+        repository_digest=repository_content_digest(tuple(file.entry for file in files)),
         files=files,
         components=(
             RepositoryComponent(
@@ -111,7 +105,7 @@ def _valid_profile() -> RepositoryProfile:
                 eligible_paths=("poetry.lock",),
             ),
             AnalysisSurface(
-                capability=AnalysisCapability.PYTHON_SAST,
+                capability=AnalysisCapability.SOURCE_SAST,
                 support_state=SourceSupportState.PRODUCT_SUPPORTED,
                 component_id="root",
                 eligible_paths=("src/app.py",),
@@ -133,8 +127,8 @@ def test_source_file_record_is_immutable_and_canonical() -> None:
         role=SourceFileRole.SOURCE,
         language="Python",
         eligible_capabilities=(
-            AnalysisCapability.PYTHON_SAST,
             AnalysisCapability.SECRET_DETECTION,
+            AnalysisCapability.SOURCE_SAST,
         ),
     )
 
@@ -171,8 +165,8 @@ def test_source_file_record_rejects_noncanonical_flags_and_capabilities() -> Non
             content_kind=FileContentKind.TEXT,
             role=SourceFileRole.SOURCE,
             eligible_capabilities=(
+                AnalysisCapability.SOURCE_SAST,
                 AnalysisCapability.SECRET_DETECTION,
-                AnalysisCapability.PYTHON_SAST,
             ),
         )
 
@@ -198,20 +192,20 @@ def test_repository_component_rejects_escape_and_unsorted_paths() -> None:
 def test_unsupported_surface_requires_reason_and_has_no_eligible_paths() -> None:
     with pytest.raises(ValueError, match="Analysis surface is invalid"):
         AnalysisSurface(
-            capability=AnalysisCapability.PYTHON_SAST,
+            capability=AnalysisCapability.SOURCE_SAST,
             support_state=SourceSupportState.UNSUPPORTED,
         )
 
     with pytest.raises(ValueError, match="Analysis surface is invalid"):
         AnalysisSurface(
-            capability=AnalysisCapability.PYTHON_SAST,
+            capability=AnalysisCapability.SOURCE_SAST,
             support_state=SourceSupportState.UNSUPPORTED,
             eligible_paths=("src/app.py",),
             reason_code="LANGUAGE_UNSUPPORTED",
         )
 
     surface = AnalysisSurface(
-        capability=AnalysisCapability.PYTHON_SAST,
+        capability=AnalysisCapability.SOURCE_SAST,
         support_state=SourceSupportState.UNSUPPORTED,
         reason_code="LANGUAGE_UNSUPPORTED",
     )
@@ -266,9 +260,7 @@ def test_repository_profile_rejects_unknown_component() -> None:
         match="Repository profile references an unknown component",
     ):
         RepositoryProfile(
-            repository_digest=repository_content_digest(
-                tuple(item.entry for item in files)
-            ),
+            repository_digest=repository_content_digest(tuple(item.entry for item in files)),
             files=files,
             languages=(
                 LanguageSupport(

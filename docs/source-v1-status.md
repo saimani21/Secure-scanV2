@@ -217,6 +217,18 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.2I | Hostile full-product acceptance and recovery/integrity repair | COMPLETE - FROZEN |
 | V1.2R | Final release verification and product tag | COMPLETE - FROZEN |
 | V1.2 | SecureScan Source v1.2.0 | COMPLETE - FROZEN |
+| V1.3P1 | Trust + Components + Interoperability | COMPLETE - FROZEN |
+| V1.3P2 | Validated JS/TS + Research-Grade Validation | COMPLETE - FROZEN |
+| V1.3 | SecureScan Source v1.3.0 | COMPLETE - FROZEN |
+
+V1.3 adds the verified published-run gateway, stable security-invariant
+catalog, canonical package/PURL identity, CycloneDX 1.7, deterministic
+toolchain provenance, and bounded Python/JavaScript/TypeScript Source SAST.
+Its final collection contains 3,613 distinct pytest node IDs: 3,550 with
+passing release evidence, 62 explicit historical branch-bound exclusions, one
+optional second-Checkov-environment skip, and no unresolved mandatory failure.
+The release introduces no database migration. See
+`docs/source-v1.3-release.md`.
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with

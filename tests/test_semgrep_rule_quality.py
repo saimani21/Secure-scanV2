@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from securescan.scanners.semgrep import load_baseline_ruleset, parse_semgrep_output
+from securescan.scanners.semgrep import load_source_ruleset, parse_semgrep_output
 from securescan.scanners.semgrep.sanitizer import build_sanitized_semgrep_evidence
 from securescan.workspaces.models import (
     RepositoryManifest,
@@ -92,8 +92,7 @@ EXPECTED_RULES = {
     ),
 }
 EXPECTED_RESULT_COUNTS = {
-    fixture_name: 13 if fixture_name == "unsafe-yaml-load" else 1
-    for fixture_name in EXPECTED_RULES
+    fixture_name: 13 if fixture_name == "unsafe-yaml-load" else 1 for fixture_name in EXPECTED_RULES
 }
 
 
@@ -158,11 +157,7 @@ def _run_semgrep(tmp_path: Path, paths: tuple[Path, ...]) -> bytes:
 
 def test_every_rule_has_dedicated_positive_safe_and_near_miss_fixture() -> None:
     directories = tuple(
-        sorted(
-            path.name
-            for path in (ROOT / FIXTURE_ROOT).iterdir()
-            if path.is_dir()
-        )
+        sorted(path.name for path in (ROOT / FIXTURE_ROOT).iterdir() if path.is_dir())
     )
 
     assert directories == tuple(sorted(EXPECTED_RULES))
@@ -211,7 +206,7 @@ def test_curated_rules_match_only_expected_vulnerable_fixtures(
         build_sanitized_semgrep_evidence(
             parsed,
             scanner_id="semgrep-ce",
-            ruleset=load_baseline_ruleset(),
+            ruleset=load_source_ruleset(),
         )
     )
     assert len(evidence["results"]) == 29
@@ -219,12 +214,13 @@ def test_curated_rules_match_only_expected_vulnerable_fixtures(
 
 
 def test_ruleset_has_only_supported_metadata_and_no_autofix() -> None:
-    text = load_baseline_ruleset().content.decode("utf-8")
+    text = load_source_ruleset().content.decode("utf-8")
 
     assert text.count("\n  - id: securescan.python.") == 17
-    assert text.count("\n      cwe: [CWE-") == 17
-    assert text.count("\n    severity: ERROR") == 10
-    assert text.count("\n    severity: WARNING") == 7
+    assert text.count("\n  - id: securescan.javascript.") == 6
+    assert text.count("\n      cwe: [CWE-") == 23
+    assert text.count("\n    severity: ERROR") == 14
+    assert text.count("\n    severity: WARNING") == 9
     assert "autofix:" not in text
     assert "\n    fix:" not in text
     assert "p/" not in text

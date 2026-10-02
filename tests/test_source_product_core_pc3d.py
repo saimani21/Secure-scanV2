@@ -272,9 +272,7 @@ def test_scan_rejects_non_directory_sources(
         source.write_text("not a repository", encoding="utf-8")
     _install_services(monkeypatch, _services())
 
-    result = CliRunner().invoke(
-        cli_main.app, ["scan", str(source), "--project-id", _PROJECT_ID]
-    )
+    result = CliRunner().invoke(cli_main.app, ["scan", str(source), "--project-id", _PROJECT_ID])
 
     assert result.exit_code == 2
     assert "INVALID_REPOSITORY" in result.stderr
@@ -351,9 +349,7 @@ def test_profile_planner_uses_frozen_repository_wide_syft_scope_without_scanning
                 EnryClassification(
                     relative_path=item.relative_path,
                     language="Python" if item.relative_path == "app.py" else None,
-                    candidate_languages=("Python",)
-                    if item.relative_path == "app.py"
-                    else (),
+                    candidate_languages=("Python",) if item.relative_path == "app.py" else (),
                     is_binary=False,
                     is_vendor=False,
                     is_generated=False,
@@ -422,7 +418,7 @@ def test_profile_planner_uses_frozen_repository_wide_syft_scope_without_scanning
         AnalysisCapability.CONFIGURATION_SECURITY: "checkov-source-v1",
         AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING: "osv-dependency-advisory-v1",
         AnalysisCapability.PACKAGE_INVENTORY: "syft-source-v1",
-        AnalysisCapability.PYTHON_SAST: "python-semgrep-v1",
+        AnalysisCapability.SOURCE_SAST: "semgrep-source-v1",
         AnalysisCapability.SECRET_DETECTION: "gitleaks-source-v1",
     }
     assert registry_calls == 1
@@ -497,13 +493,9 @@ def test_exact_pinned_requirements_create_production_osv_topology(
     finally:
         manager.cleanup_workspace(workspace)
 
-    requirements = next(
-        item for item in profile.files if item.relative_path == "requirements.txt"
-    )
+    requirements = next(item for item in profile.files if item.relative_path == "requirements.txt")
     assert requirements.role.value == "manifest"
-    assert AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING in (
-        requirements.eligible_capabilities
-    )
+    assert AnalysisCapability.DEPENDENCY_ADVISORY_MATCHING in (requirements.eligible_capabilities)
     advisory = next(
         entry
         for entry in plan.entries
@@ -544,29 +536,23 @@ def test_pc3d_registry_uses_available_canonical_production_semgrep_binding(
     monkeypatch.setattr(
         cli_source,
         "build_checkov_source_analyzer_snapshot",
-        lambda _binding: analyzer(
-            AnalysisCapability.CONFIGURATION_SECURITY, "checkov-source-v1"
-        ),
+        lambda _binding: analyzer(AnalysisCapability.CONFIGURATION_SECURITY, "checkov-source-v1"),
     )
     monkeypatch.setattr(
         cli_source,
         "build_gitleaks_source_analyzer_snapshot",
-        lambda _binding: analyzer(
-            AnalysisCapability.SECRET_DETECTION, "gitleaks-source-v1"
-        ),
+        lambda _binding: analyzer(AnalysisCapability.SECRET_DETECTION, "gitleaks-source-v1"),
     )
     monkeypatch.setattr(
         cli_source,
         "build_syft_source_analyzer_snapshot",
-        lambda _binding: analyzer(
-            AnalysisCapability.PACKAGE_INVENTORY, "syft-source-v1"
-        ),
+        lambda _binding: analyzer(AnalysisCapability.PACKAGE_INVENTORY, "syft-source-v1"),
     )
 
     def semgrep_snapshot(binding, _registry, _docker):
         captured["image"] = binding.image_reference
         captured["digest"] = binding.binding_digest()
-        return analyzer(AnalysisCapability.PYTHON_SAST, "python-semgrep-v1")
+        return analyzer(AnalysisCapability.SOURCE_SAST, "semgrep-source-v1")
 
     monkeypatch.setattr(
         cli_source,
@@ -575,12 +561,12 @@ def test_pc3d_registry_uses_available_canonical_production_semgrep_binding(
     )
 
     registry = cli_source._analyzer_registry(settings, artifacts, workspaces)
-    semgrep = registry.analyzer_for(AnalysisCapability.PYTHON_SAST)
+    semgrep = registry.analyzer_for(AnalysisCapability.SOURCE_SAST)
 
     assert semgrep is not None and semgrep.available
     assert captured == {
         "image": cli_source.PRODUCTION_SEMGREP_IMAGE_REFERENCE,
-        "digest": "265fd32e59296d6dc50fd7f8b7558f0e35ead821c4ee689f5ff953bf70393ed2",
+        "digest": "1e317bf6e9eb6bb44feafa13ac7260b7d5c487b1117ce870ee1e946e1c60726c",
     }
 
 
@@ -787,11 +773,7 @@ def test_completed_status_keeps_partial_coverage_visibly_incomplete(
     _install_services(
         monkeypatch,
         _services(
-            _Queries(
-                summary=_summary(
-                    SourceProductStatus.COMPLETED, coverage_complete=False
-                )
-            )
+            _Queries(summary=_summary(SourceProductStatus.COMPLETED, coverage_complete=False))
         ),
     )
     result = CliRunner().invoke(cli_main.app, ["status", _RUN_ID])

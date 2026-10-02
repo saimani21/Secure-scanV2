@@ -11,6 +11,7 @@ from securescan.scanners.semgrep import (
     InvalidSemgrepRulesetError,
     TrustedSemgrepRuleset,
     load_baseline_ruleset,
+    load_source_ruleset,
 )
 from securescan.scanners.semgrep.source_result import _TRUSTED_RULESET_IDENTITIES
 from securescan.workspaces import RepositoryWorkspaceManager
@@ -47,14 +48,25 @@ def test_trusted_semgrep_ruleset_rejects_empty_oversized_nul_and_wrong_digest() 
             TrustedSemgrepRuleset("test-rules", "Test rules", "1", content, digest)
 
 
-def test_baseline_ruleset_has_stable_v2_identity_and_curated_rules() -> None:
+def test_frozen_python_baseline_ruleset_retains_stable_v2_identity() -> None:
     ruleset = load_baseline_ruleset()
-    text = ruleset.content.decode("utf-8")
 
     assert ruleset.ruleset_id == "securescan-python-baseline-v2"
     assert ruleset.version == "2"
     assert ruleset.sha256 == "e10fb04e6b5abb35e0b83bdd718c2e973a8026e3630e420dc398db95e59d01a5"
+    assert ruleset.content.count(b"\n  - id: securescan.python.") == 17
+    assert b"securescan.javascript." not in ruleset.content
+
+
+def test_source_ruleset_has_stable_v3_identity_and_curated_rules() -> None:
+    ruleset = load_source_ruleset()
+    text = ruleset.content.decode("utf-8")
+
+    assert ruleset.ruleset_id == "securescan-source-baseline-v3"
+    assert ruleset.version == "3"
+    assert ruleset.sha256 == "f1e345926ebf308cda8bf8caa02c0d4ffc1eb6698cf64cd46aa191a6c3a8b56d"
     assert text.count("\n  - id: securescan.python.") == 17
+    assert text.count("\n  - id: securescan.javascript.") == 6
     assert "securescan.python.dangerous-eval" in text
     assert "securescan.python.subprocess-shell-true" in text
     assert "securescan.python.unsafe-yaml-load" in text
@@ -62,13 +74,17 @@ def test_baseline_ruleset_has_stable_v2_identity_and_curated_rules() -> None:
     assert "\n    fix:" not in text
 
 
-def test_historical_ruleset_identity_allowlist_retains_v1_after_v2_upgrade() -> None:
-    assert frozenset(
-        {
-            ("securescan-python-baseline-v1", "1"),
-            ("securescan-python-baseline-v2", "2"),
-        }
-    ) == _TRUSTED_RULESET_IDENTITIES
+def test_historical_ruleset_identity_allowlist_retains_v1_and_v2() -> None:
+    assert (
+        frozenset(
+            {
+                ("securescan-python-baseline-v1", "1"),
+                ("securescan-python-baseline-v2", "2"),
+                ("securescan-source-baseline-v3", "3"),
+            }
+        )
+        == _TRUSTED_RULESET_IDENTITIES
+    )
 
 
 def test_ruleset_materialization_is_atomic_read_only_and_outside_source(

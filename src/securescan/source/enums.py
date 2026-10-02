@@ -61,6 +61,9 @@ class SourceFileFlag(StrEnum):
 
 class AnalysisCapability(StrEnum):
     REPOSITORY_PROFILING = "repository_profiling"
+    SOURCE_SAST = "source_sast"
+    # Retained for decoding historical V1.2 planning evidence. New V1.3
+    # planning uses SOURCE_SAST and never emits this capability.
     PYTHON_SAST = "python_sast"
     SECRET_DETECTION = "secret_detection"
     DEPENDENCY_ADVISORY_MATCHING = "dependency_advisory_matching"
