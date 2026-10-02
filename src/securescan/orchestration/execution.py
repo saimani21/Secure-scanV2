@@ -664,9 +664,7 @@ class SourceScannerAttemptService:
             raise SourceScannerExecutionConflictError
         try:
             with self._session_factory.begin() as session:
-                row = self._locked_attempt(
-                    session, receipt.job_id, receipt.attempt_number
-                )
+                row = self._locked_attempt(session, receipt.job_id, receipt.attempt_number)
                 mapping = session.get(SourceOrchestrationScannerJobRow, row.job_id)
                 node = session.scalar(
                     select(SourceOrchestrationNodeRow)
@@ -698,21 +696,16 @@ class SourceScannerAttemptService:
                 digest = receipt.sha256()
                 if row.cleanup_receipt_sha256 is not None:
                     if (
-                        row.containment_state
-                        != OrchestrationContainmentState.CLEAN.value
+                        row.containment_state != OrchestrationContainmentState.CLEAN.value
                         or row.cleanup_receipt_sha256 != digest
                         or row.cleanup_receipt_json != receipt.canonical_data()
                     ):
                         raise SourceScannerExecutionConflictError
                     return self._attempt_record(row)
-                if (
-                    row.cleanup_receipt_json is not None
-                    or row.containment_state
-                    not in {
-                        OrchestrationContainmentState.ACTIVE.value,
-                        OrchestrationContainmentState.RECONCILIATION_REQUIRED.value,
-                    }
-                ):
+                if row.cleanup_receipt_json is not None or row.containment_state not in {
+                    OrchestrationContainmentState.ACTIVE.value,
+                    OrchestrationContainmentState.RECONCILIATION_REQUIRED.value,
+                }:
                     raise SourceScannerExecutionConflictError
                 row.cleanup_receipt_sha256 = digest
                 row.cleanup_receipt_json = receipt.canonical_data()
@@ -735,9 +728,7 @@ class SourceScannerAttemptService:
         """Recover only from the exact durable receipt bound to this attempt."""
         try:
             with self._session_factory() as session:
-                attempt = session.get(
-                    SourceOrchestrationAttemptRow, (job_id, attempt_number)
-                )
+                attempt = session.get(SourceOrchestrationAttemptRow, (job_id, attempt_number))
                 if attempt is None:
                     raise SourceScannerExecutionConflictError
                 attempt_token = attempt.attempt_token
@@ -781,12 +772,8 @@ class SourceScannerAttemptService:
                 attempt.containment_state = (
                     OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
                 )
-                node.containment_state = (
-                    OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
-                )
-                node.lifecycle_state = (
-                    OrchestrationNodeLifecycleState.RECONCILIATION_REQUIRED.value
-                )
+                node.containment_state = OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
+                node.lifecycle_state = OrchestrationNodeLifecycleState.RECONCILIATION_REQUIRED.value
                 node.state_version += 1
                 return self._attempt_record(attempt)
         except SourceScannerExecutionError:
@@ -836,8 +823,7 @@ class SourceScannerAttemptService:
                         OrchestrationContainmentState.RECONCILIATION_REQUIRED.value,
                     }
                     or (
-                        attempt.containment_state
-                        == OrchestrationContainmentState.CLEAN.value
+                        attempt.containment_state == OrchestrationContainmentState.CLEAN.value
                         and not _valid_durable_clean_receipt(attempt, mapping)
                     )
                 ):
@@ -1111,8 +1097,7 @@ class SourceScannerAttemptService:
                     or attempt.native_result_sha256 is None
                     or attempt.native_result_size_bytes is None
                     or attempt.native_result_media_type != SAFE_NATIVE_RESULT_MEDIA_TYPE
-                    or attempt.native_result_schema_version
-                    != SAFE_NATIVE_RESULT_SCHEMA_VERSION
+                    or attempt.native_result_schema_version != SAFE_NATIVE_RESULT_SCHEMA_VERSION
                 ):
                     raise SourceScannerResultRejectedError
                 payload = self._artifacts.read_by_sha256(
@@ -1262,67 +1247,254 @@ class SourceScannerAttemptService:
 
 
 class SourceScannerLeaseReconciliationService:
-    """Quarantine expired local attempts; S6C alone may decide retry policy."""
+    """Fence expired scanner attempts; retry only after verified clean containment."""
 
     def __init__(
         self,
         session_factory: sessionmaker[Session],
         *,
         clock: Callable[[], datetime] = utc_now,
+        local_receipt_root: Path | None = None,
+        sandbox_reconcile: Callable[[SourceScannerAttemptRecord], SourceScannerAttemptRecord]
+        | None = None,
     ) -> None:
         self._session_factory = session_factory
         self._clock = clock
+        self._local_receipt_root = local_receipt_root
+        self._sandbox_reconcile = sandbox_reconcile
 
     def quarantine_expired(self, *, limit: int = 100) -> tuple[SourceScannerAttemptRecord, ...]:
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise SourceScannerExecutionError
         now = self._clock()
         try:
-            with self._session_factory.begin() as session:
-                statement = (
-                    select(SourceOrchestrationAttemptRow)
-                    .join(
-                        JobRow,
-                        JobRow.id == SourceOrchestrationAttemptRow.job_id,
+            with self._session_factory() as session:
+                candidates = tuple(
+                    session.execute(
+                        select(
+                            SourceOrchestrationAttemptRow.job_id,
+                            SourceOrchestrationAttemptRow.attempt_number,
+                        )
+                        .join(JobRow, JobRow.id == SourceOrchestrationAttemptRow.job_id)
+                        .where(
+                            SourceOrchestrationAttemptRow.containment_state.in_(
+                                (
+                                    OrchestrationContainmentState.ACTIVE.value,
+                                    OrchestrationContainmentState.CLEAN.value,
+                                )
+                            ),
+                            SourceOrchestrationAttemptRow.acceptance_state == "PENDING",
+                            JobRow.status.in_((JobStatus.LEASED.value, JobStatus.RUNNING.value)),
+                            JobRow.lease_expires_at.is_not(None),
+                            JobRow.lease_expires_at <= now,
+                        )
+                        .order_by(
+                            SourceOrchestrationAttemptRow.job_id,
+                            SourceOrchestrationAttemptRow.attempt_number,
+                        )
+                        .limit(limit)
                     )
-                    .where(
-                        SourceOrchestrationAttemptRow.containment_state
-                        == OrchestrationContainmentState.ACTIVE.value,
-                        JobRow.status.in_([JobStatus.LEASED.value, JobStatus.RUNNING.value]),
-                        JobRow.lease_expires_at.is_not(None),
-                        JobRow.lease_expires_at <= now,
-                    )
-                    .order_by(
-                        SourceOrchestrationAttemptRow.job_id,
-                        SourceOrchestrationAttemptRow.attempt_number,
-                    )
-                    .limit(limit)
-                    .with_for_update()
                 )
-                if session.get_bind().dialect.name == "postgresql":
-                    statement = statement.with_for_update(skip_locked=True)
-                rows = tuple(session.scalars(statement))
-                records: list[SourceScannerAttemptRecord] = []
-                for row in rows:
-                    node = session.get(SourceOrchestrationNodeRow, row.node_id)
-                    if node is None:
-                        raise SourceScannerExecutionError
-                    row.containment_state = (
-                        OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
-                    )
-                    node.containment_state = (
-                        OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
-                    )
-                    node.lifecycle_state = (
-                        OrchestrationNodeLifecycleState.RECONCILIATION_REQUIRED.value
-                    )
-                    node.state_version += 1
-                    records.append(SourceScannerAttemptService._attempt_record(row))
-                return tuple(records)
+            records: list[SourceScannerAttemptRecord] = []
+            for job_id, attempt_number in candidates:
+                record = self._recover_one(job_id, attempt_number, now)
+                if record is not None:
+                    records.append(record)
+            return tuple(records)
         except SourceScannerExecutionError:
             raise
         except SQLAlchemyError:
             raise SourceScannerExecutionError from None
+
+    def _recover_one(
+        self, job_id: str, attempt_number: int, now: datetime
+    ) -> SourceScannerAttemptRecord | None:
+        # The Docker reconciler proves absence before recording its own exact
+        # attempt-bound receipt. It never authorizes retry on inspection failure.
+        if self._sandbox_reconcile is not None:
+            with self._session_factory() as session:
+                mapping = session.get(SourceOrchestrationScannerJobRow, job_id)
+                attempt = session.get(SourceOrchestrationAttemptRow, (job_id, attempt_number))
+                if (
+                    mapping is not None
+                    and attempt is not None
+                    and mapping.authority == SourceAuthority.SEMGREP.value
+                    and attempt.containment_state == OrchestrationContainmentState.ACTIVE.value
+                ):
+                    with suppress(Exception):
+                        self._sandbox_reconcile(
+                            SourceScannerAttemptService._attempt_record(attempt)
+                        )
+                    # Unknown Docker cleanup is quarantined below.
+        with self._session_factory.begin() as session:
+            initial = session.get(SourceOrchestrationScannerJobRow, job_id)
+            if initial is None:
+                return None
+            parent = session.scalar(
+                select(SourceOrchestrationRow)
+                .where(SourceOrchestrationRow.run_id == initial.run_id)
+                .with_for_update()
+            )
+            mapping = session.scalar(
+                select(SourceOrchestrationScannerJobRow)
+                .where(SourceOrchestrationScannerJobRow.job_id == job_id)
+                .with_for_update()
+            )
+            if parent is None or mapping is None:
+                raise SourceScannerExecutionError
+            node = session.scalar(
+                select(SourceOrchestrationNodeRow)
+                .where(SourceOrchestrationNodeRow.node_id == mapping.node_id)
+                .with_for_update()
+            )
+            job = session.scalar(select(JobRow).where(JobRow.id == job_id).with_for_update())
+            attempt = session.scalar(
+                select(SourceOrchestrationAttemptRow)
+                .where(
+                    SourceOrchestrationAttemptRow.job_id == job_id,
+                    SourceOrchestrationAttemptRow.attempt_number == attempt_number,
+                )
+                .with_for_update()
+            )
+            if node is None or job is None or attempt is None:
+                raise SourceScannerExecutionError
+            if (
+                job.status not in (JobStatus.LEASED.value, JobStatus.RUNNING.value)
+                or job.lease_expires_at is None
+                or _as_utc(job.lease_expires_at) > _as_utc(now)
+                or job.attempt_count != attempt_number
+                or job.lease_token != attempt.lease_token
+                or mapping.selected_attempt_number is not None
+                or attempt.acceptance_state != "PENDING"
+                or attempt.containment_state
+                not in (
+                    OrchestrationContainmentState.ACTIVE.value,
+                    OrchestrationContainmentState.CLEAN.value,
+                )
+            ):
+                return None
+            if attempt.containment_state == OrchestrationContainmentState.ACTIVE.value:
+                self._recover_local_receipt(attempt, mapping)
+            if not _valid_durable_clean_receipt(attempt, mapping):
+                attempt.containment_state = (
+                    OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
+                )
+                node.containment_state = OrchestrationContainmentState.RECONCILIATION_REQUIRED.value
+                node.lifecycle_state = OrchestrationNodeLifecycleState.RECONCILIATION_REQUIRED.value
+                node.state_version += 1
+                return SourceScannerAttemptService._attempt_record(attempt)
+
+            # One parent-ordered transaction fences the old token and records
+            # the failed execution before retry can be promoted.
+            tool = ToolExecutionRow(
+                run_id=mapping.run_id,
+                job_id=job_id,
+                attempt_number=attempt_number,
+                adapter_id=mapping.authority,
+                tool_version=SourceScannerAttemptService._scanner_version(session, mapping),
+                adapter_version=_ADAPTER_VERSION,
+                outcome=ExecutionOutcome.INTERNAL_ERROR.value,
+                exit_code=None,
+                duration_ms=0,
+                warning_json=[],
+                error=None,
+                failure_category=JobFailureCategory.WORKER_CRASH.value,
+                retryable=True,
+            )
+            session.add(tool)
+            session.flush()
+            attempt.tool_execution_id = tool.id
+            attempt.acceptance_state = "REJECTED"
+            attempt.failure_code = SourceScannerFailureCode.EXECUTION_FAILURE.value
+            attempt.finished_at = now
+            job.last_error = SourceScannerFailureCode.EXECUTION_FAILURE.value
+            job.updated_at = now
+            job.leased_by = None
+            job.lease_token = None
+            job.lease_expires_at = None
+            if parent.cancel_requested or job.cancel_requested:
+                job.status = JobStatus.CANCELLED.value
+                job.finished_at = now
+                node.lifecycle_state = OrchestrationNodeLifecycleState.TERMINAL.value
+                node.terminal_disposition = OrchestrationNodeDisposition.CANCELLED.value
+            elif (
+                parent.lifecycle_state != OrchestrationLifecycleState.ACTIVE.value
+                or _as_utc(parent.deadline_at) <= _as_utc(now)
+                or job.attempt_count >= job.max_attempts
+            ):
+                job.status = JobStatus.FAILED.value
+                job.finished_at = now
+                node.lifecycle_state = OrchestrationNodeLifecycleState.TERMINAL.value
+                node.terminal_disposition = OrchestrationNodeDisposition.FAILED.value
+                node.terminal_reason_code = (
+                    "DEADLINE_EXCEEDED"
+                    if (_as_utc(parent.deadline_at) <= _as_utc(now))
+                    else SourceScannerFailureCode.EXECUTION_FAILURE.value
+                )
+            else:
+                job.status = JobStatus.RETRY_PENDING.value
+                node.lifecycle_state = OrchestrationNodeLifecycleState.RETRY_PENDING.value
+            node.containment_state = OrchestrationContainmentState.CLEAN.value
+            node.state_version += 1
+            return SourceScannerAttemptService._attempt_record(attempt)
+
+    def _recover_local_receipt(
+        self,
+        attempt: SourceOrchestrationAttemptRow,
+        mapping: SourceOrchestrationScannerJobRow,
+    ) -> None:
+        if self._local_receipt_root is None or mapping.authority not in {
+            SourceAuthority.GITLEAKS.value,
+            SourceAuthority.SYFT.value,
+            SourceAuthority.CHECKOV.value,
+        }:
+            return
+        directory = self._local_receipt_root / attempt.job_id / str(attempt.attempt_number)
+        filename = f"{attempt.job_id}-{attempt.attempt_number}-{attempt.attempt_token}.json"
+        try:
+            receipt = SourceAttemptCleanupReceipt.from_json(
+                _read_stable_cleanup_receipt(directory, filename)
+            )
+            supplied = (
+                receipt.supervisor_identity,
+                receipt.supervisor_pid,
+                receipt.supervisor_start_ticks,
+                receipt.scanner_pid,
+                receipt.scanner_pgid,
+                receipt.scanner_start_ticks,
+            )
+            existing = (
+                attempt.supervisor_identity,
+                attempt.supervisor_pid,
+                attempt.supervisor_start_ticks,
+                attempt.scanner_pid,
+                attempt.scanner_pgid,
+                attempt.scanner_start_ticks,
+            )
+            if (
+                receipt.job_id != attempt.job_id
+                or receipt.attempt_number != attempt.attempt_number
+                or receipt.attempt_token != attempt.attempt_token
+                or receipt.cleanup_outcome.value != OrchestrationContainmentState.CLEAN.value
+                or not receipt.process_tree_empty
+                or any(value is None for value in supplied)
+                or (any(value is not None for value in existing) and existing != supplied)
+                or not _scanner_process_tree_absent(receipt)
+            ):
+                return
+            (
+                attempt.supervisor_identity,
+                attempt.supervisor_pid,
+                attempt.supervisor_start_ticks,
+                attempt.scanner_pid,
+                attempt.scanner_pgid,
+                attempt.scanner_start_ticks,
+            ) = supplied
+            attempt.cleanup_receipt_sha256 = receipt.sha256()
+            attempt.cleanup_receipt_json = receipt.canonical_data()
+            attempt.containment_state = OrchestrationContainmentState.CLEAN.value
+        except (OSError, ValueError, SourceScannerExecutionIntegrityError):
+            return
 
 
 def is_orchestrated_scanner_job(session: Session, job_id: str) -> bool:
@@ -1486,10 +1658,9 @@ def _read_stable_cleanup_receipt(directory: Path, filename: str) -> bytes:
             | getattr(os, "O_DIRECTORY", 0),
         )
         directory_opened = os.fstat(directory_descriptor)
-        if (
-            not stat.S_ISDIR(directory_opened.st_mode)
-            or _stat_identity(directory_before) != _stat_identity(directory_opened)
-        ):
+        if not stat.S_ISDIR(directory_opened.st_mode) or _stat_identity(
+            directory_before
+        ) != _stat_identity(directory_opened):
             raise OSError
         receipt_before = os.stat(filename, dir_fd=directory_descriptor, follow_symlinks=False)
         if (
@@ -1507,10 +1678,9 @@ def _read_stable_cleanup_receipt(directory: Path, filename: str) -> bytes:
             dir_fd=directory_descriptor,
         )
         receipt_opened = os.fstat(receipt_descriptor)
-        if (
-            not stat.S_ISREG(receipt_opened.st_mode)
-            or _stat_identity(receipt_before) != _stat_identity(receipt_opened)
-        ):
+        if not stat.S_ISREG(receipt_opened.st_mode) or _stat_identity(
+            receipt_before
+        ) != _stat_identity(receipt_opened):
             raise OSError
         payload = bytearray()
         while len(payload) <= _MAX_CLEANUP_RECEIPT_BYTES:

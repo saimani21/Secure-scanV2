@@ -22,6 +22,10 @@ from securescan.persistence.database import (
     SourceLineageRunRow,
     SourceTargetLineageRow,
 )
+from securescan.product_core.finding_index import (
+    ProductCoreIndexError,
+    SourceFindingIndexService,
+)
 from securescan.product_core.lifecycle import (
     ProductCoreLifecycleError,
     SourceFindingLifecycleService,
@@ -91,6 +95,7 @@ class SourceFindingProductViewService:
         artifact_store: ContentAddressedArtifactStore,
     ) -> None:
         self._sessions = session_factory
+        self._index = SourceFindingIndexService(session_factory, artifact_store)
         self._lifecycle = SourceFindingLifecycleService(session_factory, artifact_store)
 
     def list_for_run(
@@ -160,6 +165,9 @@ class SourceFindingProductViewService:
                     or membership.lifecycle_evaluated_at is None
                 ):
                     raise ProductViewNotReadyError
+                # Indexed findings are not trusted if their published S4 CAS
+                # object is missing or no longer matches the frozen report.
+                self._index.load_verified_published_report(run_id=run_id)
                 # Reuse the frozen lifecycle digest and transition-chain validator.
                 # A simple occurrence/event join would expose tampered history.
                 self._lifecycle.load_candidate_facts_in_session(
@@ -208,7 +216,13 @@ class SourceFindingProductViewService:
                 return FindingProductPage(items, int(total or 0), limit, offset)
         except ProductViewError:
             raise
-        except (ProductCoreLifecycleError, SQLAlchemyError, TypeError, ValueError):
+        except (
+            ProductCoreIndexError,
+            ProductCoreLifecycleError,
+            SQLAlchemyError,
+            TypeError,
+            ValueError,
+        ):
             raise ProductViewUnavailableError from None
 
     @staticmethod

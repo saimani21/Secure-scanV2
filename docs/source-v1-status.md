@@ -214,6 +214,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.2F | Deterministic Policy Engine | COMPLETE - FROZEN |
 | V1.2G | Deterministic Finding Guidance | COMPLETE - FROZEN |
 | V1.2H | Unified API, CLI and Web product experience | COMPLETE - FROZEN |
+| V1.2I | Hostile full-product acceptance and recovery/integrity repair | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -357,6 +358,18 @@ historical branch-binding exclusions, and zero unexplained current-branch
 failures or unclassified missing cases. A fresh disposable PostgreSQL gate and
 consolidated real operator/export flow passed. See
 `docs/source-v1.2h-unified-product-experience.md`.
+
+V1.2I closes two proven frozen-contract defects: stranded scanner attempts after
+worker death without a valid clean-containment retry, and indexed finding reads
+that did not reverify published S4 CAS evidence. The final campaign reconciled
+942 distinct passing selected tests, including the complete 164-case disposable
+PostgreSQL file set; no selected skip or unresolved failure remained. Real
+disposable Ctrl+C, API restart, database outage/restart, hostile headless-browser
+rendering, and fresh two-scan baseline/Delta/policy/JSON/SARIF E2E gates passed.
+There was no migration or preserved-deployment mutation. The 62 historical
+branch-locked benchmark IDs and one unconfigured second-Checkov opt-in remain
+separately documented limitations, not claimed passes. V1.2R has not started.
+See `docs/source-v1.2i-hostile-acceptance-plan.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -10,7 +11,7 @@ from sqlalchemy import create_engine, select, text
 from test_source_orchestration_s6a import _DEADLINE, _NOW, _RUN_ID
 from test_source_orchestration_s6b import _LEASE_TOKEN, _Environment
 
-from securescan.domain.enums import ExecutionOutcome
+from securescan.domain.enums import ExecutionOutcome, JobStatus
 from securescan.jobs.lease_recovery import JobLeaseRecoveryService
 from securescan.orchestration.execution import (
     SourceScannerAttemptBlockedError,
@@ -19,11 +20,18 @@ from securescan.orchestration.execution import (
     SourceScannerResultRejectedError,
 )
 from securescan.orchestration.execution_models import SafeSourceNativeResult
-from securescan.orchestration.models import SourceAuthority
+from securescan.orchestration.models import (
+    SourceAuthority,
+    orchestration_request_digest,
+)
+from securescan.orchestration.worker import SourceMappedJobLeasingService
 from securescan.persistence.database import (
+    AnalysisRunRow,
     JobRow,
     SourceOrchestrationAttemptRow,
+    SourceOrchestrationRow,
     SourceOrchestrationScannerJobRow,
+    ToolExecutionRow,
 )
 from securescan.scanners.gitleaks import (
     GITLEAKS_SCANNER_ID,
@@ -238,6 +246,96 @@ def test_generic_lease_recovery_cannot_bypass_reconciliation(
         postgres_s6b.factory, clock=lambda: _DEADLINE
     ).quarantine_expired()
     assert len(quarantined) == 1
+
+
+def _expire_with_future_parent(postgres_s6b: _Environment, job_id: str, now: datetime) -> int:
+    with postgres_s6b.factory.begin() as session:
+        durable = session.get(JobRow, job_id)
+        parent = session.get(SourceOrchestrationRow, str(_RUN_ID))
+        run = session.get(AnalysisRunRow, str(_RUN_ID))
+        assert durable is not None and parent is not None and run is not None
+        durable.lease_expires_at = now - timedelta(seconds=1)
+        parent.deadline_at = now + timedelta(hours=1)
+        parent.creation_request_digest = orchestration_request_digest(
+            target_id=run.target_id,
+            idempotency_key=parent.idempotency_key,
+            deadline_iso=parent.deadline_at.isoformat(),
+            profile_digest=parent.profile_digest,
+            plan_digest=parent.plan_digest,
+            roster_digest=parent.roster_digest,
+        )
+        return parent.state_version
+
+
+def test_two_recovery_cycles_fence_one_expired_clean_attempt(
+    postgres_s6b: _Environment,
+) -> None:
+    _node, job, _attempt = postgres_s6b.start_attempt(clean=True)
+    now = datetime.now(UTC)
+    _expire_with_future_parent(postgres_s6b, job.job_id, now)
+    barrier = threading.Barrier(2)
+
+    def recover() -> int:
+        barrier.wait()
+        return len(
+            SourceScannerLeaseReconciliationService(
+                postgres_s6b.factory, clock=lambda: now
+            ).quarantine_expired()
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = tuple(pool.map(lambda _value: recover(), range(2)))
+    assert sorted(results) == [0, 1]
+    with postgres_s6b.factory() as session:
+        durable = session.get(JobRow, job.job_id)
+        attempt = session.get(SourceOrchestrationAttemptRow, (job.job_id, 1))
+        assert durable is not None and durable.status == JobStatus.RETRY_PENDING.value
+        assert attempt is not None and attempt.acceptance_state == "REJECTED"
+        assert (
+            session.scalar(select(ToolExecutionRow.id).where(ToolExecutionRow.job_id == job.job_id))
+            == attempt.tool_execution_id
+        )
+
+
+def test_cancellation_racing_clean_recovery_cannot_release_new_attempt(
+    postgres_s6b: _Environment,
+) -> None:
+    _node, job, _attempt = postgres_s6b.start_attempt(clean=True)
+    now = datetime.now(UTC)
+    version = _expire_with_future_parent(postgres_s6b, job.job_id, now)
+    barrier = threading.Barrier(2)
+
+    def recover() -> None:
+        barrier.wait()
+        SourceScannerLeaseReconciliationService(
+            postgres_s6b.factory, clock=lambda: now
+        ).quarantine_expired()
+
+    def cancel() -> None:
+        barrier.wait()
+        postgres_s6b.orchestrations.request_cancellation(str(_RUN_ID), version)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = (pool.submit(recover), pool.submit(cancel))
+        for future in futures:
+            future.result()
+    assert (
+        SourceMappedJobLeasingService(postgres_s6b.factory).lease_next(
+            worker_id="post-cancel-worker"
+        )
+        is None
+    )
+    with postgres_s6b.factory() as session:
+        parent = session.get(SourceOrchestrationRow, str(_RUN_ID))
+        durable = session.get(JobRow, job.job_id)
+        attempt = session.get(SourceOrchestrationAttemptRow, (job.job_id, 1))
+        assert parent is not None and parent.cancel_requested
+        assert durable is not None and durable.status in {
+            JobStatus.RETRY_PENDING.value,
+            JobStatus.CANCELLED.value,
+        }
+        assert attempt is not None and attempt.acceptance_state == "REJECTED"
+        assert session.get(SourceOrchestrationAttemptRow, (job.job_id, 2)) is None
 
 
 def test_result_acceptance_vs_lease_reconciliation_fails_closed(

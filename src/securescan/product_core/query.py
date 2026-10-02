@@ -144,9 +144,7 @@ class ProductCoreNotReadyError(SourceScanQueryError):
 
 class InvalidScanFilterError(SourceScanQueryError):
     def __init__(self) -> None:
-        super().__init__(
-            SourceScanQueryErrorCode.INVALID_FILTER, "Source scan filter is invalid"
-        )
+        super().__init__(SourceScanQueryErrorCode.INVALID_FILTER, "Source scan filter is invalid")
 
 
 class InvalidScanPaginationError(SourceScanQueryError):
@@ -312,9 +310,7 @@ class SourceScanQueryService:
             with self._sessions() as session:
                 context = self._context(session, normalized)
                 status = self._status(session, context)
-                finding_count, priorities, categories = self._finding_counts(
-                    session, context
-                )
+                finding_count, priorities, categories = self._finding_counts(session, context)
                 published_at = context.parent.published_at
                 finalized_at = context.submission.finalized_at
                 created_at = context.submission.created_at
@@ -376,9 +372,7 @@ class SourceScanQueryService:
         offset: int = 0,
     ) -> SourceScanPage[SourceScanListItem]:
         self._validate_pagination(limit, offset)
-        normalized_project = (
-            None if project_id is None else self._normalize_project_id(project_id)
-        )
+        normalized_project = None if project_id is None else self._normalize_project_id(project_id)
         try:
             with self._sessions() as session:
                 if (
@@ -402,8 +396,7 @@ class SourceScanQueryService:
                     )
                     .join(
                         SourceTargetLineageRow,
-                        SourceTargetLineageRow.lineage_id
-                        == SourceScanSubmissionRow.lineage_id,
+                        SourceTargetLineageRow.lineage_id == SourceScanSubmissionRow.lineage_id,
                     )
                     .where(*predicates)
                 )
@@ -425,13 +418,11 @@ class SourceScanQueryService:
                         .join(TargetRow, TargetRow.id == AnalysisRunRow.target_id)
                         .join(
                             SourceOrchestrationRow,
-                            SourceOrchestrationRow.run_id
-                            == SourceScanSubmissionRow.run_id,
+                            SourceOrchestrationRow.run_id == SourceScanSubmissionRow.run_id,
                         )
                         .join(
                             SourceTargetLineageRow,
-                            SourceTargetLineageRow.lineage_id
-                            == SourceScanSubmissionRow.lineage_id,
+                            SourceTargetLineageRow.lineage_id == SourceScanSubmissionRow.lineage_id,
                         )
                         .outerjoin(
                             SourceLineageRunRow,
@@ -457,17 +448,14 @@ class SourceScanQueryService:
                                 membership.lineage_id != submission.lineage_id
                                 or membership.sequence_number
                                 != submission.submission_sequence_number
-                                or membership.predecessor_run_id
-                                != submission.predecessor_run_id
+                                or membership.predecessor_run_id != submission.predecessor_run_id
                                 or membership.predecessor_sequence_number
                                 != submission.predecessor_sequence_number
                             )
                         )
                     ):
                         raise SourceScanQueryPersistenceError
-                    contexts.append(
-                        _ScanContext(run, target, submission, parent, membership)
-                    )
+                    contexts.append(_ScanContext(run, target, submission, parent, membership))
 
                 predecessor_ids = tuple(
                     context.submission.predecessor_run_id
@@ -486,23 +474,19 @@ class SourceScanQueryService:
                         .where(SourceScanSubmissionRow.run_id.in_(predecessor_ids))
                     )
                     for predecessor_submission, predecessor_membership in predecessor_rows:
-                        predecessor_submissions[
-                            predecessor_submission.run_id
-                        ] = predecessor_submission
+                        predecessor_submissions[predecessor_submission.run_id] = (
+                            predecessor_submission
+                        )
                         if predecessor_membership is not None:
-                            predecessor_memberships[
-                                predecessor_membership.run_id
-                            ] = predecessor_membership
+                            predecessor_memberships[predecessor_membership.run_id] = (
+                                predecessor_membership
+                            )
 
                 items = tuple(
                     self._list_item(
                         context,
-                        predecessor_submissions.get(
-                            context.submission.predecessor_run_id or ""
-                        ),
-                        predecessor_memberships.get(
-                            context.submission.predecessor_run_id or ""
-                        ),
+                        predecessor_submissions.get(context.submission.predecessor_run_id or ""),
+                        predecessor_memberships.get(context.submission.predecessor_run_id or ""),
                     )
                     for context in contexts
                 )
@@ -614,13 +598,14 @@ class SourceScanQueryService:
         authority = self._normalize_filter(authority, _FINDING_AUTHORITIES)
         category = self._normalize_filter(category, _CATEGORIES)
         priority = self._normalize_filter(priority, _PRIORITIES)
-        lifecycle_state = self._normalize_filter(
-            lifecycle_state, _LIFECYCLE_STATES
-        )
+        lifecycle_state = self._normalize_filter(lifecycle_state, _LIFECYCLE_STATES)
         try:
             with self._sessions() as session:
                 context = self._context(session, normalized)
                 self._require_product_ready(context)
+                # Legacy scan-finding reads must honor the same published S4
+                # integrity boundary as the exact-run product view.
+                self._index.load_verified_published_report(run_id=normalized)
                 predicates = [
                     SourceFindingOccurrenceRow.run_id == normalized,
                     SourceFindingOccurrenceRow.lineage_id == context.submission.lineage_id,
@@ -633,10 +618,8 @@ class SourceScanQueryService:
                 )
                 predicates.extend(column == value for column, value in optional if value)
                 join_condition = and_(
-                    SourceFindingLifecycleRow.lineage_id
-                    == SourceFindingOccurrenceRow.lineage_id,
-                    SourceFindingLifecycleRow.finding_id
-                    == SourceFindingOccurrenceRow.finding_id,
+                    SourceFindingLifecycleRow.lineage_id == SourceFindingOccurrenceRow.lineage_id,
+                    SourceFindingLifecycleRow.finding_id == SourceFindingOccurrenceRow.finding_id,
                 )
                 total = session.scalar(
                     select(func.count())
@@ -662,7 +645,7 @@ class SourceScanQueryService:
             return SourceScanPage(items, int(total or 0), limit, offset)
         except SourceScanQueryError:
             raise
-        except (SQLAlchemyError, TypeError, ValueError):
+        except (ProductCoreIndexError, SQLAlchemyError, TypeError, ValueError):
             raise SourceScanQueryPersistenceError from None
 
     def list_components(
@@ -798,10 +781,8 @@ class SourceScanQueryService:
                 membership is not None
                 and (
                     membership.lineage_id != submission.lineage_id
-                    or membership.sequence_number
-                    != submission.submission_sequence_number
-                    or membership.predecessor_run_id
-                    != submission.predecessor_run_id
+                    or membership.sequence_number != submission.submission_sequence_number
+                    or membership.predecessor_run_id != submission.predecessor_run_id
                     or membership.predecessor_sequence_number
                     != submission.predecessor_sequence_number
                 )
@@ -952,9 +933,7 @@ class SourceScanQueryService:
         if predecessor is not None:
             predecessor_submission = session.get(SourceScanSubmissionRow, predecessor)
             predecessor_membership = session.get(SourceLineageRunRow, predecessor)
-        return self._status_from_material(
-            context, predecessor_submission, predecessor_membership
-        )
+        return self._status_from_material(context, predecessor_submission, predecessor_membership)
 
     @staticmethod
     def _status_from_material(
@@ -1038,8 +1017,7 @@ class SourceScanQueryService:
                 and membership.indexed_at is not None
             ),
             lifecycle_evaluated=(
-                membership is not None
-                and membership.lifecycle_evaluated_at is not None
+                membership is not None and membership.lifecycle_evaluated_at is not None
             ),
         )
 
@@ -1147,8 +1125,7 @@ class SourceScanQueryService:
     def _source_scan_predicates(project_id: str | None):
         predicates = (
             TargetRow.target_type == TargetType.SOURCE_REPOSITORY.value,
-            SourceScanSubmissionRow.intake_kind
-            == SourceIntakeKind.MANAGED_WORKSPACE_V1.value,
+            SourceScanSubmissionRow.intake_kind == SourceIntakeKind.MANAGED_WORKSPACE_V1.value,
             SourceScanSubmissionRow.intake_ref == TargetRow.source_path,
             TargetRow.project_id == SourceTargetLineageRow.project_id,
         )
@@ -1169,9 +1146,7 @@ class SourceScanQueryService:
             raise InvalidScanPaginationError
 
     @staticmethod
-    def _normalize_filter(
-        value: str | None, allowed: frozenset[str]
-    ) -> str | None:
+    def _normalize_filter(value: str | None, allowed: frozenset[str]) -> str | None:
         if value is None:
             return None
         if (

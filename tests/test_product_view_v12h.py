@@ -62,6 +62,9 @@ def test_historical_run_state_survives_real_later_transition(
     lifecycle.evaluate(lineage_id=lineage.lineage_id, run_id=_RUN_IDS[0])
 
     service = SourceFindingProductViewService(environment.factory, environment.store)
+    # The second run is a synthetic published clone: preserve the fixture's
+    # trusted-report override for the new read-time integrity check as well.
+    monkeypatch.setattr(service._index, "_rebuild_trusted_report", reports.__getitem__)
     historical = service.list_for_run(
         project_id=lineage.project_id,
         lineage_id=lineage.lineage_id,

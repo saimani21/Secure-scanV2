@@ -12,11 +12,14 @@ from securescan.adapters.sandbox_policy import (
 from securescan.adapters.trusted_registry import TrustedAdapterDefinition
 from securescan.execution import CancellableProcessResult
 from securescan.execution.docker_sandbox import (
+    DockerContainerCleanupError,
     DockerContainerCreationError,
     DockerControlCommandResult,
+    DockerImageUnavailableError,
     DockerSandboxExecutionRequest,
     DockerSandboxExecutor,
     DockerSandboxTimeoutError,
+    DockerUnavailableError,
 )
 
 IMAGE = "private.invalid/token-scanner@sha256:" + "d" * 64
@@ -210,9 +213,7 @@ def test_executor_creates_starts_inspects_and_removes_container(tmp_path: Path) 
         "inspect",
     ]
     prerequisite_operations = [
-        command[1]
-        for command in runner.commands
-        if command[1] in {"version", "image"}
+        command[1] for command in runner.commands if command[1] in {"version", "image"}
     ]
     assert prerequisite_operations == ["version", "image"]
     assert attached.close_calls == 1
@@ -234,6 +235,62 @@ def test_executor_create_failure_does_not_start_container(tmp_path: Path) -> Non
         "rm",
         "image",
     ]
+
+
+@pytest.mark.parametrize(
+    ("failing_operation", "error_type"),
+    [
+        ("version", DockerUnavailableError),
+        ("image", DockerImageUnavailableError),
+    ],
+)
+def test_unavailable_docker_or_image_fails_before_create_without_pull(
+    tmp_path: Path,
+    failing_operation: str,
+    error_type: type[Exception],
+) -> None:
+    events: list[str] = []
+    attached = _Attached(events, _process_result())
+
+    class _UnavailableRunner(_Runner):
+        def run_control_command(
+            self, argv: tuple[str, ...], timeout_seconds: float
+        ) -> DockerControlCommandResult:
+            if argv[1] == failing_operation:
+                self.commands.append(argv)
+                return DockerControlCommandResult(1, b"", b"untrusted docker stderr")
+            return super().run_control_command(argv, timeout_seconds)
+
+    runner = _UnavailableRunner(attached)
+
+    with pytest.raises(error_type) as raised:
+        _executor(runner).execute(_request(tmp_path))
+
+    assert runner.start_calls == 0
+    assert all(command[1] in {"version", "image"} for command in runner.commands)
+    assert "untrusted docker stderr" not in str(raised.value)
+
+
+def test_cleanup_failure_cannot_publish_completed_scanner_result(tmp_path: Path) -> None:
+    events: list[str] = []
+    attached = _Attached(events, _process_result())
+
+    class _UnremovedRunner(_Runner):
+        def run_control_command(
+            self, argv: tuple[str, ...], timeout_seconds: float
+        ) -> DockerControlCommandResult:
+            if argv[1] == "inspect" and len(argv) == 3:
+                self.commands.append(argv)
+                return DockerControlCommandResult(0, b"still exists", b"")
+            return super().run_control_command(argv, timeout_seconds)
+
+    runner = _UnremovedRunner(attached)
+
+    with pytest.raises(DockerContainerCleanupError):
+        _executor(runner).execute(_request(tmp_path))
+
+    assert attached.close_calls >= 1
+    assert [command[1] for command in runner.commands].count("rm") >= 1
 
 
 def test_executor_timeout_stops_kills_and_removes_container(tmp_path: Path) -> None:

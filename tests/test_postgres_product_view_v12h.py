@@ -40,6 +40,9 @@ def test_postgres_historical_finding_is_stable_after_real_later_scan(
 
     _add_run(context["pc2"], monkeypatch, _RUN_IDS[0], present=True, ordinal=2)
     context["lifecycle"].evaluate(lineage_id=lineage_id, run_id=_RUN_IDS[0])
+    # The later scan is a synthetic published clone, so share its trusted
+    # report override with the read-time published-S4 integrity check.
+    monkeypatch.setattr(service._index, "_rebuild_trusted_report", context["pc2"][4].__getitem__)
     previous = service.list_for_run(
         project_id=project_id, lineage_id=lineage_id, run_id=str(_RUN_ID)
     )

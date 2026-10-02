@@ -46,6 +46,9 @@ from securescan.orchestration.production import (
     SourceProductionDispatcherDependencies,
     create_source_production_authority_dispatcher,
 )
+from securescan.orchestration.sandbox_execution import (
+    SourceSandboxReconciliationService,
+)
 from securescan.orchestration.worker import (
     SourceMappedJobLeasingService,
     SourceOrchestrationWorkerCycle,
@@ -274,42 +277,34 @@ class SourceRuntimeWorkDiscovery:
         try:
             with self._sessions() as session:
                 ready_node = exists().where(
-                    SourceOrchestrationNodeRow.run_id
-                    == SourceOrchestrationRow.run_id,
+                    SourceOrchestrationNodeRow.run_id == SourceOrchestrationRow.run_id,
                     SourceOrchestrationNodeRow.lifecycle_state
                     == OrchestrationNodeLifecycleState.READY.value,
                 )
                 due_retry = exists().where(
-                    SourceOrchestrationNodeRow.run_id
-                    == SourceOrchestrationRow.run_id,
+                    SourceOrchestrationNodeRow.run_id == SourceOrchestrationRow.run_id,
                     SourceOrchestrationNodeRow.lifecycle_state
                     == OrchestrationNodeLifecycleState.RETRY_PENDING.value,
-                    SourceOrchestrationScannerJobRow.node_id
-                    == SourceOrchestrationNodeRow.node_id,
-                    SourceOrchestrationScannerJobRow.run_id
-                    == SourceOrchestrationRow.run_id,
+                    SourceOrchestrationScannerJobRow.node_id == SourceOrchestrationNodeRow.node_id,
+                    SourceOrchestrationScannerJobRow.run_id == SourceOrchestrationRow.run_id,
                     JobRow.id == SourceOrchestrationScannerJobRow.job_id,
                     JobRow.available_at <= func.now(),
                 )
                 syft_terminal = exists().where(
-                    SourceOrchestrationNodeRow.run_id
-                    == SourceOrchestrationRow.run_id,
-                    SourceOrchestrationNodeRow.authority
-                    == SourceAuthority.SYFT.value,
+                    SourceOrchestrationNodeRow.run_id == SourceOrchestrationRow.run_id,
+                    SourceOrchestrationNodeRow.authority == SourceAuthority.SYFT.value,
                     SourceOrchestrationNodeRow.lifecycle_state
                     == OrchestrationNodeLifecycleState.TERMINAL.value,
                     SourceOrchestrationNodeRow.terminal_disposition.is_not(None),
                 )
                 waiting_osv = exists().where(
-                    SourceOrchestrationNodeRow.run_id
-                    == SourceOrchestrationRow.run_id,
+                    SourceOrchestrationNodeRow.run_id == SourceOrchestrationRow.run_id,
                     SourceOrchestrationNodeRow.authority == SourceAuthority.OSV.value,
                     SourceOrchestrationNodeRow.lifecycle_state
                     == OrchestrationNodeLifecycleState.WAITING_DEPENDENCY.value,
                 )
                 all_nodes_terminal = ~exists().where(
-                    SourceOrchestrationNodeRow.run_id
-                    == SourceOrchestrationRow.run_id,
+                    SourceOrchestrationNodeRow.run_id == SourceOrchestrationRow.run_id,
                     SourceOrchestrationNodeRow.lifecycle_state
                     != OrchestrationNodeLifecycleState.TERMINAL.value,
                 )
@@ -433,9 +428,7 @@ class SourceRuntimeService:
             )
             dispatched = self._dispatch_jobs()
             post = self._advance_phase(
-                max_advances=(
-                    self._limits.max_orchestration_advances_per_cycle - pre[1]
-                )
+                max_advances=(self._limits.max_orchestration_advances_per_cycle - pre[1])
             )
             assemblies = self._publish_ready()
             finalization = self._finalizer.finalize_ready(
@@ -469,9 +462,7 @@ class SourceRuntimeService:
     def _advance_phase(self, *, max_advances: int) -> tuple[int, int, int, int]:
         if max_advances == 0:
             return 0, 0, 0, 0
-        candidates = self._discovery.orchestration_candidates(
-            limit=SOURCE_RUNTIME_DISCOVERY_LIMIT
-        )
+        candidates = self._discovery.orchestration_candidates(limit=SOURCE_RUNTIME_DISCOVERY_LIMIT)
         examined = 0
         attempted = 0
         changed = 0
@@ -615,6 +606,11 @@ def create_source_runtime(
         semgrep_binding = create_production_semgrep_source_binding(
             definition=definition, ruleset=ruleset
         )
+        sandbox_reconciliation = SourceSandboxReconciliationService(
+            attempt_persistence=attempts,
+            binding=semgrep_binding,
+            definition=definition,
+        )
         dispatcher = create_source_production_authority_dispatcher(
             SourceProductionDispatcherDependencies(
                 session_factory=sessions,
@@ -650,7 +646,11 @@ def create_source_runtime(
             workspace_resolver=submissions,
             coordinator=coordinator,
             worker=worker,
-            reconciliation=SourceScannerLeaseReconciliationService(sessions),
+            reconciliation=SourceScannerLeaseReconciliationService(
+                sessions,
+                local_receipt_root=trusted_settings.source_runtime_receipt_root / "local",
+                sandbox_reconcile=sandbox_reconciliation.reconcile,
+            ),
             assembly=SourceResultAssemblyService(sessions, artifacts),
             finalizer=SourceProductFinalizationRunner(sessions, submissions),
             limits=limits,
