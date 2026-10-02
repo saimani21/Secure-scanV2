@@ -1,6 +1,10 @@
 # SecureScan Source V1.2I hostile full-product acceptance plan
 
 Status: **V1.2I COMPLETE / FROZEN** (2026-10-02)
+
+The intermediate checkpoint and manual worksheet sections below are historical
+evidence; the final closure section records the accepted V1.2I result.
+
 Branch: `source/v1.2I-hostile-product-acceptance`
 Frozen parent: `b88b942a4ab3c2a8f3d36874d4d2af1026d9a395`
 Initial worktree: clean. Migration: **none proposed**.
@@ -289,4 +293,4 @@ chmod -R u+w "$I_ROOT"
 rm -r -- "$I_ROOT"
 ```
 
-No manual gate may be reported `PASS` merely because a command exited zero. Capture the before/after durable state, error semantics and cleanup for each; stop on any actual contract violation. Do not commit this plan until reviewed. V1.2R is out of scope.
+No manual gate may be reported `PASS` merely because a command exited zero. Capture the before/after durable state, error semantics and cleanup for each; stop on any actual contract violation. This worksheet is retained as historical V1.2I evidence; its final accepted closure is recorded above.

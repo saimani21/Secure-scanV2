@@ -13,11 +13,12 @@ Core v0.1 supports local directories only. It does not clone repositories, authe
 users, provide multi-tenant isolation, cover multiple languages, or represent a complete
 Semgrep ruleset. See [limitations](docs/core-v0.1-limitations.md).
 
-SecureScan Source v1.1.0 is the assembled local product release built on this frozen
+SecureScan Source v1.2.0 is the current local product release built on this frozen
 Core. The Python distribution and API retain their independent Core version `0.1.0`;
-the annotated Git tag `source-v1.1.0` identifies the Source product release. See the
-[Source v1.1 release notes](docs/source-v1.1-release.md) for supported workflows,
-security boundaries, validation evidence, and limitations.
+the annotated Git tag `source-v1.2.0` identifies the Source product release. See the
+[Source v1.2 release notes](docs/source-v1.2-release.md) for supported workflows,
+security boundaries, validation evidence, and limitations. The
+[v1.1 release notes](docs/source-v1.1-release.md) remain the frozen prior record.
 
 ## Local setup
 

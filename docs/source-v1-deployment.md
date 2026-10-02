@@ -1,10 +1,12 @@
 # SecureScan Source v1 single-node deployment
 
-This guide applies to the SecureScan Source v1.1.0 product release identified by
-the annotated tag `source-v1.1.0`. The installed Python distribution and API report
-the independent SecureScan Core version `0.1.0`; that value is not the Source
-product release number. See the [V1.1 release notes](source-v1.1-release.md) for
-the complete supported surface and final acceptance record.
+This single-node deployment topology applies to SecureScan Source v1.1.0 and
+v1.2.0; V1.2 did not move the trusted-host worker into Compose or add browser
+repository intake. Their annotated product tags are `source-v1.1.0` and
+`source-v1.2.0`. The Python distribution and API report the independent
+SecureScan Core version `0.1.0`, not the Source product version. See the
+[V1.2 release notes](source-v1.2-release.md) for the current product surface
+and the [V1.1 record](source-v1.1-release.md) for prior-release acceptance.
 
 ## Boundary
 

@@ -215,6 +215,8 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.2G | Deterministic Finding Guidance | COMPLETE - FROZEN |
 | V1.2H | Unified API, CLI and Web product experience | COMPLETE - FROZEN |
 | V1.2I | Hostile full-product acceptance and recovery/integrity repair | COMPLETE - FROZEN |
+| V1.2R | Final release verification and product tag | COMPLETE - FROZEN |
+| V1.2 | SecureScan Source v1.2.0 | COMPLETE - FROZEN |
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with
@@ -368,8 +370,28 @@ disposable Ctrl+C, API restart, database outage/restart, hostile headless-browse
 rendering, and fresh two-scan baseline/Delta/policy/JSON/SARIF E2E gates passed.
 There was no migration or preserved-deployment mutation. The 62 historical
 branch-locked benchmark IDs and one unconfigured second-Checkov opt-in remain
-separately documented limitations, not claimed passes. V1.2R has not started.
+separately documented limitations, not claimed passes. At the V1.2I freeze,
+V1.2R had not started.
 See `docs/source-v1.2i-hostile-acceptance-plan.md`.
+
+V1.2R verified the exact clean V1.2I parent and audited all 119 changed paths
+since `source-v1.1.0`; they are scoped to V1.2 product, tests, migrations, and
+release documentation. One fresh disposable PostgreSQL database migrated from
+empty to the single head `f8c2d6e1a305` with no Alembic model drift. Its
+V1.1-to-V1.2 copy/round-trip and product/recovery smoke passed 18/18 cases.
+The isolated cross-layer smoke passed 208/208; Gitleaks parser and hostile
+guidance confidentiality tests passed 140/140. JUnit identity reconciliation
+gives **366 distinct V1.2R smoke passes**, zero failures and zero skips. A
+separate fresh disposable startup completed migration, init, CLI/worker/API/Web,
+project creation, two real local scans, Product View, hostile browser rendering,
+governance, explicit baseline promotion, Delta, policy, JSON, and SARIF. No
+preserved deployment was mutated. Ruff lint, compilation, diff checks, wheel
+content inspection, and touched-file formatting passed. The 326 unchanged
+legacy files flagged by whole-repository formatting remain documented debt,
+not a release change. The annotated `source-v1.2.0` product tag identifies
+the release; package/API Core version remains `0.1.0`. V1.2R changed only
+release documentation, not production behavior or schema. See
+`docs/source-v1.2-release.md`.
 
 V1.1A adds a private persistent operator profile, read-only doctor, deterministic
 Compose project management, authoritative API readiness waits, and exactly one
