@@ -34,8 +34,14 @@ from securescan.persistence.database import (
     SourceOrchestrationRow,
     SourceTargetLineageRow,
     TargetRow,
+    ToolExecutionRow,
 )
 from securescan.product_core import ProductCoreIndexError, SourceFindingIndexService
+from securescan.product_core.interoperability import SourceInteroperabilityService
+from securescan.product_core.verified_read import (
+    VerifiedPublishedRunError,
+    VerifiedPublishedRunGateway,
+)
 from tests.test_source_engine_closure import _with_controlled_finding
 from tests.test_source_orchestration_s6b import (
     _CONTROLLED_SECRET,
@@ -180,6 +186,69 @@ def test_lineage_creation_is_explicit_and_server_owned(indexed_context) -> None:
         assert row.project_id == lineage.project_id
     assert lineage.lineage_id == str(_LINEAGE_IDS[0])
     assert lineage.created is True
+
+
+def test_verified_read_gateway_rejects_wrong_scope_and_published_json_tampering(
+    published_environment: _Environment,
+) -> None:
+    gateway = VerifiedPublishedRunGateway(
+        published_environment.factory, published_environment.store
+    )
+    trusted = gateway.load(run_id=str(_RUN_ID))
+    assert trusted.run_id == str(_RUN_ID)
+    with pytest.raises(VerifiedPublishedRunError):
+        gateway.load(
+            run_id=str(_RUN_ID),
+            expected_project_id="ffffffff-ffff-4fff-8fff-ffffffffffff",
+        )
+
+    with published_environment.factory.begin() as session:
+        row = session.get(AnalysisRunRow, str(_RUN_ID))
+        assert row is not None and row.report_json is not None
+        row.report_json = {**row.report_json, "tampered": True}
+    with pytest.raises(VerifiedPublishedRunError):
+        gateway.load(run_id=str(_RUN_ID))
+
+
+def test_interoperability_exports_use_real_verified_planning_and_execution_facts(
+    published_environment: _Environment,
+) -> None:
+    service = SourceInteroperabilityService(
+        published_environment.factory, published_environment.store
+    )
+    cyclonedx = service.cyclonedx(run_id=str(_RUN_ID))
+    manifest = service.toolchain_manifest(run_id=str(_RUN_ID))
+    assert cyclonedx["bomFormat"] == "CycloneDX"
+    assert cyclonedx["specVersion"] == "1.7"
+    assert manifest["run_id"] == str(_RUN_ID)
+    assert manifest["planned_authorities"]
+    assert manifest["planned_nodes"]
+    assert all("selected_paths" not in node for node in manifest["planned_nodes"])
+
+
+def test_toolchain_manifest_ignores_unaccepted_poison_execution_row(
+    published_environment: _Environment,
+) -> None:
+    service = SourceInteroperabilityService(
+        published_environment.factory, published_environment.store
+    )
+    before = service.toolchain_manifest(run_id=str(_RUN_ID))
+    with published_environment.factory.begin() as session:
+        session.add(
+            ToolExecutionRow(
+                run_id=str(_RUN_ID),
+                job_id=None,
+                attempt_number=None,
+                adapter_id="untrusted-poison",
+                tool_version="999",
+                adapter_version="999",
+                outcome="SUCCEEDED_NO_OBSERVATIONS",
+                exit_code=0,
+                duration_ms=1,
+                warning_json=[],
+            )
+        )
+    assert service.toolchain_manifest(run_id=str(_RUN_ID)) == before
 
 
 def test_attach_sequence_one_and_exact_duplicate_are_idempotent(indexed_context) -> None:

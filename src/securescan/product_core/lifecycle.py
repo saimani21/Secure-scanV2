@@ -221,7 +221,7 @@ class SourceFindingLifecycleService:
                 ):
                     raise ProductCoreLifecycleError
                 run, parent = self._locked_run_and_parent(session, run_id)
-                self._verify_report(run, parent, current_report)
+                self._verify_report(session, run, parent, current_report)
                 transition_at = self._published_at(parent)
                 self._verify_occurrence_index(session, membership, current_report)
                 predecessor = self._predecessor(session, membership)
@@ -370,7 +370,7 @@ class SourceFindingLifecycleService:
                     origin_run, origin_parent = self._locked_run_and_parent(
                         session, origin_membership.run_id
                     )
-                    self._verify_report(origin_run, origin_parent, origin_report)
+                    self._verify_report(session, origin_run, origin_parent, origin_report)
                     origin_finding = next(
                         (
                             item
@@ -1040,12 +1040,13 @@ class SourceFindingLifecycleService:
 
     def _verify_report(
         self,
+        session: Session,
         run: AnalysisRunRow,
         parent: SourceOrchestrationRow,
         report: SecureScanEvidenceReport,
     ) -> None:
         try:
-            self._index._verify_published_report(run, parent, report)
+            self._index._verify_published_report(run, parent, report, session=session)
         except ProductCoreIndexError:
             raise ProductCoreLifecycleError from None
 

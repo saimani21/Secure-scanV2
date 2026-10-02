@@ -11,6 +11,7 @@ import typer
 
 from securescan.api.policy_schemas import TrustedPolicyResponse
 from securescan.product_core import PolicyError
+from securescan.product_core.interoperability import SourceInteroperabilityError
 
 from .product_policy import policy_evaluation_data, policy_exit_code
 from .source import SourceCliError, SourceCliServices, canonical_json, query_scan
@@ -25,6 +26,70 @@ def register_product_commands(
         no_args_is_help=True, help="Inspect or explicitly evaluate trusted policy"
     )
     app.add_typer(policy_app, name="policy")
+
+    @app.command("sbom")
+    def export_sbom(
+        run_id: Annotated[str, typer.Argument()],
+        export_format: Annotated[
+            str, typer.Option("--format", help="Export format: cyclonedx-json")
+        ] = "cyclonedx-json",
+    ) -> None:
+        """Export one verified published run as deterministic CycloneDX 1.7 JSON."""
+
+        if export_format != "cyclonedx-json":
+            fail(
+                SourceCliError("EXPORT_INVALID", "Unsupported SBOM export format", 2),
+                json_output=True,
+            )
+            return
+        try:
+            with services_factory() as services:
+                if services.interoperability is None:
+                    raise SourceCliError("EXPORT_UNAVAILABLE", "SBOM export is unavailable", 5)
+                document = services.interoperability.cyclonedx(run_id=run_id)
+        except SourceCliError as error:
+            fail(error, json_output=True)
+            return
+        except SourceInteroperabilityError:
+            fail(
+                SourceCliError("EXPORT_UNAVAILABLE", "SBOM export is unavailable", 5),
+                json_output=True,
+            )
+            return
+        typer.echo(canonical_json(document))
+
+    @app.command("toolchain")
+    def export_toolchain(
+        run_id: Annotated[str, typer.Argument()],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        """Show the deterministic toolchain facts proven for one published run."""
+
+        try:
+            with services_factory() as services:
+                if services.interoperability is None:
+                    raise SourceCliError(
+                        "EXPORT_UNAVAILABLE", "Toolchain manifest is unavailable", 5
+                    )
+                document = services.interoperability.toolchain_manifest(run_id=run_id)
+        except SourceCliError as error:
+            fail(error, json_output=json_output)
+            return
+        except SourceInteroperabilityError:
+            fail(
+                SourceCliError(
+                    "EXPORT_UNAVAILABLE", "Toolchain manifest is unavailable", 5
+                ),
+                json_output=json_output,
+            )
+            return
+        if json_output:
+            typer.echo(canonical_json(document))
+        else:
+            typer.echo("SecureScan Toolchain Manifest")
+            typer.echo(f"Run          {document['run_id']}")
+            typer.echo(f"Digest       {document['manifest_sha256']}")
+            typer.echo(f"Authorities  {len(document['authorities'])}")
 
     @policy_app.command("evaluate")
     def policy_evaluate(

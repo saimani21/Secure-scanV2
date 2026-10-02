@@ -57,6 +57,7 @@ from securescan.product_core import (
     SourceTrustedBaselineService,
 )
 from securescan.product_core.guidance import FindingGuidanceService
+from securescan.product_core.interoperability import SourceInteroperabilityService
 from securescan.product_core.product_view import SourceFindingProductViewService
 from securescan.scanners.checkov import (
     CHECKOV_EXECUTABLE_UNAVAILABLE,
@@ -202,6 +203,7 @@ class SourceCliServices:
     baseline: SourceTrustedBaselineService | None = None
     delta: SourceSecurityDeltaService | None = None
     effective_governance: EffectiveGovernanceService | None = None
+    interoperability: SourceInteroperabilityService | None = None
     monotonic: Callable[[], float] = time.monotonic
     sleep: Callable[[float], None] = time.sleep
 
@@ -395,6 +397,7 @@ def create_source_cli_services() -> Iterator[SourceCliServices]:
             baseline=SourceTrustedBaselineService(session_factory, artifacts),
             delta=SourceSecurityDeltaService(session_factory, artifacts),
             effective_governance=EffectiveGovernanceService(session_factory),
+            interoperability=SourceInteroperabilityService(session_factory, artifacts),
         )
     finally:
         engine.dispose()

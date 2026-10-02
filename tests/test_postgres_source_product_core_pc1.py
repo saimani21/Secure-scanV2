@@ -15,6 +15,7 @@ from securescan.persistence.database import (
     TargetRow,
 )
 from securescan.product_core import ProductCoreIndexError, SourceFindingIndexService
+from securescan.product_core.interoperability import SourceInteroperabilityService
 from tests.test_source_orchestration_s6b import _RUN_ID, _Environment
 from tests.test_source_product_core_pc1 import (
     _INDEXED_AT,
@@ -64,6 +65,18 @@ def _project_id(environment: _Environment) -> str:
         target = session.get(TargetRow, run.target_id)
         assert target is not None
         return target.project_id
+
+
+def test_postgres_verified_cyclonedx_and_toolchain_exports(
+    postgres_pc1: _Environment,
+) -> None:
+    service = SourceInteroperabilityService(postgres_pc1.factory, postgres_pc1.store)
+    cyclonedx = service.cyclonedx(run_id=str(_RUN_ID))
+    toolchain = service.toolchain_manifest(run_id=str(_RUN_ID))
+    assert cyclonedx["specVersion"] == "1.7"
+    assert toolchain["run_id"] == str(_RUN_ID)
+    assert toolchain["planned_nodes"]
+    assert toolchain["execution_identities"]
 
 
 def test_concurrent_attachments_receive_distinct_ordered_sequences(

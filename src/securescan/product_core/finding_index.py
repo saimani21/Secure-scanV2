@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import dataclass
@@ -15,18 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from securescan.artifacts.store import ContentAddressedArtifactStore
-from securescan.domain.enums import RunStatus
 from securescan.evidence import SecureScanEvidenceReport
-from securescan.orchestration.assembly import (
-    SOURCE_FINAL_RESULT_MEDIA_TYPE,
-    SOURCE_FINAL_RESULT_SCHEMA_VERSION,
-    SourceResultAssemblyError,
-    SourceResultAssemblyService,
-)
-from securescan.orchestration.models import (
-    OrchestrationLifecycleState,
-    OrchestrationTerminalOutcome,
-)
 from securescan.persistence.database import (
     AnalysisRunRow,
     ProjectRow,
@@ -36,6 +24,11 @@ from securescan.persistence.database import (
     SourceTargetLineageRow,
     TargetRow,
     utc_now,
+)
+from securescan.product_core.verified_read import (
+    VerifiedPublishedRun,
+    VerifiedPublishedRunError,
+    VerifiedPublishedRunGateway,
 )
 
 
@@ -49,11 +42,6 @@ class _IndexingState(StrEnum):
     INDEXED = "INDEXED"
 
 
-_EXPECTED_RUN_STATUS = {
-    OrchestrationTerminalOutcome.COMPLETED.value: RunStatus.COMPLETED.value,
-    OrchestrationTerminalOutcome.PARTIAL.value: RunStatus.PARTIAL.value,
-    OrchestrationTerminalOutcome.FAILED.value: RunStatus.FAILED.value,
-}
 _PREDECESSOR_UNSPECIFIED = object()
 
 
@@ -130,6 +118,7 @@ class SourceFindingIndexService:
             raise ProductCoreIndexError
         self._sessions = session_factory
         self._artifacts = artifact_store
+        self._verified_runs = VerifiedPublishedRunGateway(session_factory, artifact_store)
         self._clock = clock
         self._lineage_id_factory = lineage_id_factory
 
@@ -160,19 +149,44 @@ class SourceFindingIndexService:
     ) -> SecureScanEvidenceReport:
         """Load S4 only after typed, CAS, and published-JSON bytes agree."""
 
-        self._require_uuid(run_id)
-        report = self._rebuild_trusted_report(run_id)
+        return self.load_verified_published_run(run_id=run_id).report
+
+    def load_verified_published_run(self, *, run_id: str) -> VerifiedPublishedRun:
+        """Return the typed verified-read envelope used by new public consumers."""
+
         try:
+            self._require_uuid(run_id)
+            # Keep reconstruction replaceable for controlled synthetic-run tests;
+            # all trust decisions remain owned by the verified-read gateway.
+            report = self._rebuild_trusted_report(run_id)
             with self._sessions() as session:
-                run = session.get(AnalysisRunRow, run_id)
-                parent = session.get(SourceOrchestrationRow, run_id)
-                if run is None or parent is None:
+                run_row = session.execute(
+                    select(AnalysisRunRow, TargetRow)
+                    .join(TargetRow, TargetRow.id == AnalysisRunRow.target_id)
+                    .where(AnalysisRunRow.id == run_id)
+                ).one_or_none()
+                publication_row = session.execute(
+                    select(SourceOrchestrationRow, SourceLineageRunRow)
+                    .outerjoin(
+                        SourceLineageRunRow,
+                        SourceLineageRunRow.run_id == SourceOrchestrationRow.run_id,
+                    )
+                    .where(SourceOrchestrationRow.run_id == run_id)
+                ).one_or_none()
+                if run_row is None or publication_row is None:
                     raise ProductCoreIndexError
-                self._verify_published_report(run, parent, report)
-            return report
-        except ProductCoreIndexError:
-            raise
-        except (SQLAlchemyError, TypeError, ValueError):
+                run, target = run_row
+                parent, membership = publication_row
+                return self._verified_runs.verify_loaded(
+                    session,
+                    run,
+                    parent,
+                    report,
+                    target=target,
+                    membership=membership,
+                    ownership_loaded=True,
+                )
+        except (ProductCoreIndexError, VerifiedPublishedRunError):
             raise ProductCoreIndexError from None
 
     def attach_published_run(
@@ -195,7 +209,7 @@ class SourceFindingIndexService:
                 lineage = self._locked_lineage(session, lineage_id)
                 run, parent = self._locked_run_and_parent(session, run_id)
                 self._require_lineage_project(session, lineage, run)
-                self._verify_published_report(run, parent, report)
+                self._verify_published_report(run, parent, report, session=session)
 
                 existing = session.get(SourceLineageRunRow, run_id)
                 if existing is not None:
@@ -260,7 +274,7 @@ class SourceFindingIndexService:
                 if membership is None or membership.lineage_id != lineage_id:
                     raise ProductCoreIndexError
                 run, parent = self._locked_run_and_parent(session, run_id)
-                self._verify_published_report(run, parent, report)
+                self._verify_published_report(run, parent, report, session=session)
                 self._verify_membership_artifact(membership, parent)
 
                 existing = tuple(
@@ -355,59 +369,22 @@ class SourceFindingIndexService:
         session: Session | None = None,
     ) -> SecureScanEvidenceReport:
         try:
-            # The frozen S6D builder is the strict S4 validation boundary. PC1
-            # deliberately does not deserialize a weaker subset of report JSON.
-            report = SourceResultAssemblyService(
-                self._sessions, self._artifacts
-            )._build_report(run_id, session=session)
-        except (OSError, SourceResultAssemblyError, TypeError, UnicodeError, ValueError):
+            return self._verified_runs._rebuild_unverified(run_id, session=session)
+        except VerifiedPublishedRunError:
             raise ProductCoreIndexError from None
-        if not isinstance(report, SecureScanEvidenceReport):
-            raise ProductCoreIndexError
-        return report
 
     def _verify_published_report(
         self,
         run: AnalysisRunRow,
         parent: SourceOrchestrationRow,
         report: SecureScanEvidenceReport,
+        *,
+        session: Session,
     ) -> None:
-        if (
-            parent.run_id != run.id
-            or parent.cancel_requested
-            or parent.lifecycle_state != OrchestrationLifecycleState.TERMINAL.value
-            or parent.terminal_outcome not in _EXPECTED_RUN_STATUS
-            or run.status != _EXPECTED_RUN_STATUS[parent.terminal_outcome]
-            or parent.published_at is None
-            or parent.assembled_at is None
-            or run.report_json is None
-            or parent.assembly_artifact_sha256 is None
-            or parent.assembly_artifact_size_bytes is None
-            or parent.assembly_artifact_media_type != SOURCE_FINAL_RESULT_MEDIA_TYPE
-            or parent.assembly_schema_version != SOURCE_FINAL_RESULT_SCHEMA_VERSION
-            or parent.assembly_artifact_storage_path
-            != (
-                "sha256/"
-                f"{parent.assembly_artifact_sha256[:2]}/"
-                f"{parent.assembly_artifact_sha256}"
-            )
-            or report.scope.source_run_id != run.id
-            or report.scope.repository_digest != parent.repository_digest
-            or report.scope.profile_digest != parent.profile_digest
-            or report.scope.plan_digest != parent.plan_digest
-        ):
-            raise ProductCoreIndexError
-        payload = report.canonical_json()
         try:
-            stored = self._artifacts.read_by_sha256(
-                parent.assembly_artifact_sha256,
-                expected_size_bytes=parent.assembly_artifact_size_bytes,
-            )
-            published = self._canonical_json(run.report_json)
-        except (OSError, TypeError, ValueError, UnicodeError):
+            self._verified_runs.verify_loaded(session, run, parent, report)
+        except VerifiedPublishedRunError:
             raise ProductCoreIndexError from None
-        if stored != payload or published != payload:
-            raise ProductCoreIndexError
 
     @staticmethod
     def _occurrence_material(
@@ -535,19 +512,6 @@ class SourceFindingIndexService:
         if run is None or parent is None:
             raise ProductCoreIndexError
         return run, parent
-
-    @staticmethod
-    def _canonical_json(value: object) -> bytes:
-        return (
-            json.dumps(
-                value,
-                allow_nan=False,
-                ensure_ascii=True,
-                separators=(",", ":"),
-                sort_keys=True,
-            ).encode("utf-8")
-            + b"\n"
-        )
 
     @staticmethod
     def _require_uuid(value: object) -> None:

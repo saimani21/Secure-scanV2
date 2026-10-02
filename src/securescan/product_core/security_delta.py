@@ -257,7 +257,7 @@ class SourceSecurityDeltaService:
             or parent.published_at is None
         ):
             raise SecurityDeltaPersistenceError
-        self._index._verify_published_report(run, parent, report)
+        self._index._verify_published_report(run, parent, report, session=session)
         if report.schema_version != membership.report_schema_version:
             raise SecurityDeltaPersistenceError
         return report

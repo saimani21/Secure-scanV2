@@ -159,6 +159,11 @@ from .trusted_baseline import (
     TrustedBaselineState,
     TrustedBaselineValidationError,
 )
+from .verified_read import (
+    VerifiedPublishedRun,
+    VerifiedPublishedRunError,
+    VerifiedPublishedRunGateway,
+)
 
 __all__ = [
     "DEFAULT_POLICY",
@@ -294,4 +299,7 @@ __all__ = [
     "SourceScanSummary",
     "SourceStageProgressState",
     "SourceStageSummary",
+    "VerifiedPublishedRun",
+    "VerifiedPublishedRunError",
+    "VerifiedPublishedRunGateway",
 ]
