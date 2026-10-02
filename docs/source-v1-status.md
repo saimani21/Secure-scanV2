@@ -220,6 +220,7 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.3P1 | Trust + Components + Interoperability | COMPLETE - FROZEN |
 | V1.3P2 | Validated JS/TS + Research-Grade Validation | COMPLETE - FROZEN |
 | V1.3 | SecureScan Source v1.3.0 | COMPLETE - FROZEN |
+| V1.5P1 | Vulnerability Intelligence + Assurance Core | COMPLETE - CHECKPOINT |
 
 V1.3 adds the verified published-run gateway, stable security-invariant
 catalog, canonical package/PURL identity, CycloneDX 1.7, deterministic
@@ -229,6 +230,27 @@ passing release evidence, 62 explicit historical branch-bound exclusions, one
 optional second-Checkov-environment skip, and no unresolved mandatory failure.
 The release introduces no database migration. See
 `docs/source-v1.3-release.md`.
+
+V1.5 Prompt 1 adds exact OSV-alias CVE correlation, immutable CISA KEV and
+FIRST EPSS snapshots, exact-CVE NVD 2.0 enrichment, explicit intelligence
+bundles, append-only threat assessments, read-only Finding Intelligence and Run
+Assurance projections, and deterministic threat-aware policy decision proofs.
+The additive migration `1a5c7e9d2b04` advances the head from
+`f8c2d6e1a305`; it does not rewrite V1.3 evidence or fabricate intelligence for
+historical runs.
+
+The Prompt-1 checkpoint has pass evidence for 1,100 distinct selected tests:
+253 OSV/S4/components/V1.3 cases, 275 Product Core cases, 97 API/CLI/SARIF/UI
+cases, 34 new intelligence/performance cases, 10 SQLite migration/readiness
+cases, 192 PostgreSQL cases, 35 JS/TS and Semgrep contract cases, and 204
+Gitleaks/Syft/Checkov parser cases. Four PostgreSQL strict-release cases were
+initially excluded by their explicit opt-in guard and three readiness cases
+were initially misconfigured by a stale deploy-root override; all seven were
+then executed directly and passed. No mandatory selected case remains skipped
+or failed. The PostgreSQL migration/concurrency evidence used a disposable
+database, and no preserved deployment was mutated. See
+`docs/source-v1.5-intelligence-assurance-contract.md` and
+`docs/source-v1.5-performance.md`.
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with

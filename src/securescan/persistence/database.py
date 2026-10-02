@@ -810,6 +810,168 @@ class SourcePolicyEvaluationRow(Base):
     evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class SourceIntelligenceSnapshotRow(Base):
+    __tablename__ = "source_intelligence_snapshots"
+
+    __table_args__ = (
+        CheckConstraint("source IN ('CISA_KEV', 'FIRST_EPSS')", name="ck_intel_snapshot_source"),
+        CheckConstraint("validity_state = 'VALID'", name="ck_intel_snapshot_validity"),
+        CheckConstraint("length(content_sha256) = 64", name="ck_intel_snapshot_sha"),
+        CheckConstraint("artifact_size_bytes >= 0", name="ck_intel_snapshot_size"),
+        CheckConstraint("record_count >= 0", name="ck_intel_snapshot_count"),
+        UniqueConstraint(
+            "source",
+            "content_sha256",
+            "parser_contract_version",
+            name="uq_intel_snapshot_content",
+        ),
+        Index("ix_intel_snapshot_source_retrieved", "source", "retrieved_at"),
+    )
+
+    snapshot_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    source: Mapped[str] = mapped_column(String(24), nullable=False)
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    source_effective_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    parser_contract_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_schema: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_metadata_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    record_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    records_json: Mapped[list] = mapped_column(JSON, nullable=False)
+    validity_state: Mapped[str] = mapped_column(String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourceNvdEnrichmentRow(Base):
+    __tablename__ = "source_nvd_enrichments"
+
+    __table_args__ = (
+        CheckConstraint("length(content_sha256) = 64", name="ck_nvd_enrichment_sha"),
+        CheckConstraint("artifact_size_bytes >= 0", name="ck_nvd_enrichment_size"),
+        UniqueConstraint(
+            "cve_id",
+            "content_sha256",
+            "parser_contract_version",
+            name="uq_nvd_enrichment_content",
+        ),
+        Index("ix_nvd_enrichment_cve_retrieved", "cve_id", "retrieved_at"),
+    )
+
+    enrichment_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    cve_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    retrieved_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    artifact_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    parser_contract_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_schema: Mapped[str] = mapped_column(String(128), nullable=False)
+    normalized_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourceIntelligenceBundleRow(Base):
+    __tablename__ = "source_intelligence_bundles"
+
+    bundle_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    kev_snapshot_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("source_intelligence_snapshots.snapshot_id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    epss_snapshot_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("source_intelligence_snapshots.snapshot_id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    nvd_enrichment_ids_json: Mapped[list] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourceThreatAssessmentRow(Base):
+    __tablename__ = "source_threat_assessments"
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["lineage_id", "run_id"],
+            ["source_lineage_runs.lineage_id", "source_lineage_runs.run_id"],
+            name="fk_threat_assessment_run",
+            ondelete="RESTRICT",
+        ),
+        UniqueConstraint(
+            "run_id",
+            "finding_id",
+            "advisory_id",
+            "cve_id",
+            "bundle_id",
+            name="uq_threat_assessment_inputs",
+        ),
+        Index("ix_threat_assessment_run", "run_id", "evaluated_at"),
+    )
+
+    assessment_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("projects.id", ondelete="RESTRICT"), nullable=False
+    )
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_target_lineages.lineage_id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    run_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    finding_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    advisory_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    cve_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    bundle_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("source_intelligence_bundles.bundle_id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    kev_evidence_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    epss_evidence_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    nvd_enrichment_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("source_nvd_enrichments.enrichment_id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class SourcePolicyDecisionProofRow(Base):
+    __tablename__ = "source_policy_decision_proofs"
+
+    __table_args__ = (
+        CheckConstraint(
+            "result IN ('PASS', 'FAIL', 'ERROR')", name="ck_policy_decision_proof_result"
+        ),
+        UniqueConstraint("proof_sha256", name="uq_policy_decision_proof_digest"),
+        Index("ix_policy_decision_proof_run", "candidate_run_id", "evaluated_at"),
+    )
+
+    proof_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    proof_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    lineage_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("source_target_lineages.lineage_id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    candidate_run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("analysis_runs.id", ondelete="RESTRICT"), nullable=False
+    )
+    bundle_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("source_intelligence_bundles.bundle_id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    policy_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    policy_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    policy_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    result: Mapped[str] = mapped_column(String(8), nullable=False)
+    proof_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    evaluated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class SourceFindingOccurrenceRow(Base):
     __tablename__ = "source_finding_occurrences"
 

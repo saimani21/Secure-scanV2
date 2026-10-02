@@ -78,6 +78,9 @@ class ArtifactKind(StrEnum):
     SECURESCAN_REPORT = "securescan_report"
     SARIF = "sarif"
     SBOM = "sbom"
+    THREAT_INTELLIGENCE = "threat_intelligence"
+
+
 class JobStatus(StrEnum):
     SUBMITTED = "submitted"
     QUEUED = "queued"

@@ -30,6 +30,22 @@ hostile regression named for the affected identifier.
 | GUIDE-001 | Guidance is derived from the exact verified run/finding and cannot mutate governance. | Guidance service verified read. |
 | SEC-001 | Project and lineage ownership are checked at the verified-read boundary when supplied by a consumer. | Gateway ownership checks. |
 | TIME-001 | Wall-clock time is not part of component, CycloneDX, or toolchain identity. | Canonical deterministic serializers. |
+| THR-001 | KEV, EPSS, and NVD correlation requires an exact valid CVE from OSV `aliases`; related, upstream, descriptions, package similarity, CWE, CPE, fuzzy matching, and AI cannot establish identity. | Canonical CVE validator and verified S4 OSV group projection. |
+| THR-002 | Absence from a valid KEV snapshot means `NOT_LISTED_IN_SNAPSHOT`, never not exploited. | Typed KEV assessment state. |
+| THR-003 | Missing EPSS evidence never becomes zero. | Typed `NOT_SCORED`, `UNAVAILABLE`, and `SNAPSHOT_INVALID` states. |
+| THR-004 | Intelligence cannot alter canonical finding identity. | Read-only correlation keyed by frozen S4 finding ID. |
+| THR-005 | Intelligence cannot mutate lifecycle. | Append-only assessment tables have no lifecycle write path. |
+| THR-006 | Intelligence cannot mutate a trusted baseline. | Explicit baseline service remains the sole promotion path. |
+| THR-007 | A failed refresh cannot replace or corrupt the last valid snapshot. | Validate before insert; immutable content identity. |
+| THR-008 | Only completely bounded, validated, normalized, CAS-persisted snapshots are eligible. | Atomic snapshot importer and verified reads. |
+| THR-009 | Policy-required unavailable, invalid, corrupt, or stale intelligence produces `ERROR`. | Threat-policy required-source and freshness rules. |
+| THR-010 | KEV, EPSS, CVSS, delta, governance, and policy remain separate; no composite risk score exists. | Typed source evidence and explicit rules. |
+| THR-011 | Every exact CVE alias on one OSV advisory retains independent NVD, KEV, and EPSS evidence. | One assessment row per finding, advisory, CVE, and bundle. |
+| THR-012 | AI cannot correlate or interpret Prompt-1 intelligence and cannot influence policy. | No AI dependency or call path. |
+| THR-013 | Intelligence requests, artifacts, logs, and projections contain no source or raw secret material. | Exact-CVE NVD requests and generic feed imports only. |
+| THR-014 | Every assessment records the exact immutable bundle and evidence references used. | Bundle foreign key and per-source evidence state. |
+| THR-015 | Intelligence refresh and assessment do not require a source rescan. | Separate import and evaluation services. |
+| THR-016 | Historical assessments are append-only and newer intelligence cannot rewrite them. | Content-derived identity and immutable unique inputs. |
 
 ## Prompt 1 acceptance mapping
 
@@ -37,3 +53,7 @@ hostile regression named for the affected identifier.
 SEC-001, and TIME-001. `tests/test_source_product_core_pc1.py` covers EVI-001/002/003 and hostile
 published-state/CAS/DB disagreement. Existing V1.2 lifecycle, governance, baseline, delta, policy,
 guidance, scanner, API, CLI, SARIF, and UI suites retain the remaining contract coverage.
+
+V1.5 Prompt 1 tests cover THR-001 through THR-016 with hostile KEV/EPSS/NVD parsing,
+CAS-corruption checks, exact-alias correlation, append-only replay, PostgreSQL races, and
+deterministic decision-proof tests.

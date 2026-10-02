@@ -46,6 +46,7 @@ from .developer import (
     waited_scan_data,
 )
 from .developer_commands import register_developer_commands
+from .intelligence import register_intelligence_commands
 from .presentation import terminal_text
 from .product_assurance import register_assurance_commands
 from .product_commands import register_product_commands
@@ -710,6 +711,7 @@ register_developer_commands(app, lambda: create_source_cli_services(), _fail)
 register_product_commands(app, lambda: create_source_cli_services(), _fail)
 register_assurance_commands(app, lambda: create_source_cli_services(), _fail)
 register_guidance_commands(app, lambda: create_source_cli_services(), _fail)
+register_intelligence_commands(app)
 
 
 if __name__ == "__main__":

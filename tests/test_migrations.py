@@ -15,7 +15,7 @@ from securescan.config import get_settings
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ALEMBIC_INI_PATH = REPOSITORY_ROOT / "alembic.ini"
 MIGRATIONS_PATH = REPOSITORY_ROOT / "migrations"
-HEAD_REVISION = "f8c2d6e1a305"
+HEAD_REVISION = "1a5c7e9d2b04"
 
 APPLICATION_TABLES = {
     "projects",
@@ -44,6 +44,11 @@ APPLICATION_TABLES = {
     "source_trusted_baseline_promotions",
     "source_policy_definitions",
     "source_policy_evaluations",
+    "source_intelligence_snapshots",
+    "source_nvd_enrichments",
+    "source_intelligence_bundles",
+    "source_threat_assessments",
+    "source_policy_decision_proofs",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {

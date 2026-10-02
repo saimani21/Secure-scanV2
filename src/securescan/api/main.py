@@ -11,6 +11,7 @@ from securescan.adapters.fake_scanner import FakeScannerAdapter
 from securescan.api.effective_governance_routes import router as effective_governance_router
 from securescan.api.governance_routes import router as governance_router
 from securescan.api.guidance_routes import router as guidance_router
+from securescan.api.intelligence_routes import router as intelligence_router
 from securescan.api.job_routes import router as job_router
 from securescan.api.operations_routes import router as operations_router
 from securescan.api.policy_routes import router as policy_router
@@ -25,6 +26,7 @@ from securescan.config import get_settings
 from securescan.domain.enums import TargetType
 from securescan.domain.models import ScanReport, TargetProfile
 from securescan.execution.local_executor import LocalProcessExecutor
+from securescan.intelligence import AssuranceService, IntelligenceService
 from securescan.jobs import (
     JobCancellationService,
     JobRepository,
@@ -124,6 +126,10 @@ async def lifespan(application: FastAPI):
         application.state.source_policy_service = SourcePolicyService(
             session_factory, artifact_store
         )
+        application.state.intelligence_service = IntelligenceService(
+            session_factory, artifact_store
+        )
+        application.state.assurance_service = AssuranceService(session_factory, artifact_store)
         application.state.source_orchestration_coordinator_service = (
             SourceOrchestrationCoordinatorService(
                 session_factory,
@@ -150,6 +156,7 @@ app.include_router(effective_governance_router)
 app.include_router(guidance_router)
 app.include_router(trusted_baseline_router)
 app.include_router(policy_router)
+app.include_router(intelligence_router)
 app.include_router(product_view_router)
 app.include_router(source_scan_router)
 app.include_router(frontend_router)

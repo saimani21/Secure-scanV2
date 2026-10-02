@@ -24,7 +24,8 @@ V12B_HEAD_REVISION = "a2b7c4d9e105"
 V12C_HEAD_REVISION = "c4e8a1f6b203"
 V12D_HEAD_REVISION = "d6f9b2c7a104"
 V12E_HEAD_REVISION = "e7a1b3c5d902"
-HEAD_REVISION = "f8c2d6e1a305"
+V13_HEAD_REVISION = "f8c2d6e1a305"
+HEAD_REVISION = "1a5c7e9d2b04"
 
 APPLICATION_TABLES = {
     "projects",
@@ -53,6 +54,11 @@ APPLICATION_TABLES = {
     "source_trusted_baseline_promotions",
     "source_policy_definitions",
     "source_policy_evaluations",
+    "source_intelligence_snapshots",
+    "source_nvd_enrichments",
+    "source_intelligence_bundles",
+    "source_threat_assessments",
+    "source_policy_decision_proofs",
 }
 EXPECTED_TABLES = APPLICATION_TABLES | {"alembic_version"}
 EXPECTED_JOB_CHECK_CONSTRAINTS = {
@@ -587,10 +593,63 @@ def test_postgres_upgrade_from_v12e_adds_empty_policy_history(
         assert "source_policy_evaluations" not in before
         command.upgrade(config, "head")
         after = set(inspect(engine).get_table_names())
-        assert after - before == {"source_policy_definitions", "source_policy_evaluations"}
+        assert after - before == {
+            "source_policy_definitions",
+            "source_policy_evaluations",
+            "source_intelligence_snapshots",
+            "source_nvd_enrichments",
+            "source_intelligence_bundles",
+            "source_threat_assessments",
+            "source_policy_decision_proofs",
+        }
         with engine.connect() as connection:
             assert connection.scalar(text("SELECT count(*) FROM source_policy_definitions")) == 0
             assert connection.scalar(text("SELECT count(*) FROM source_policy_evaluations")) == 0
+        assert _current_revision(engine) == HEAD_REVISION
+    finally:
+        engine.dispose()
+
+
+def test_postgres_upgrade_from_v13_adds_empty_intelligence_history(
+    postgres_migration_environment: tuple[Config, str],
+) -> None:
+    config, database_url = postgres_migration_environment
+    engine = create_engine(database_url)
+    project_id = "11111111-1111-4111-8111-111111111111"
+    intelligence_tables = {
+        "source_intelligence_snapshots",
+        "source_nvd_enrichments",
+        "source_intelligence_bundles",
+        "source_threat_assessments",
+        "source_policy_decision_proofs",
+    }
+    try:
+        command.upgrade(config, V13_HEAD_REVISION)
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO projects (id, name, created_at) VALUES (:id, :name, :created_at)"
+                ),
+                {
+                    "id": project_id,
+                    "name": "v13-upgrade-proof",
+                    "created_at": "2026-10-02T00:00:00+00:00",
+                },
+            )
+        assert intelligence_tables.isdisjoint(inspect(engine).get_table_names())
+
+        command.upgrade(config, "head")
+
+        assert intelligence_tables <= set(inspect(engine).get_table_names())
+        with engine.connect() as connection:
+            assert (
+                connection.scalar(
+                    text("SELECT name FROM projects WHERE id = :id"), {"id": project_id}
+                )
+                == "v13-upgrade-proof"
+            )
+            for table in sorted(intelligence_tables):
+                assert connection.scalar(text(f"SELECT count(*) FROM {table}")) == 0
         assert _current_revision(engine) == HEAD_REVISION
     finally:
         engine.dispose()
