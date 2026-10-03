@@ -44,6 +44,7 @@ cd ~/projects/securescan-core-step1
 cp .env.example .env
 # Edit .env, then import its data without executing it as shell code.
 ./.venv/bin/securescan system configure --from-env-file .env
+./.venv/bin/securescan system config
 ./.venv/bin/securescan doctor
 ```
 
@@ -53,10 +54,22 @@ generate two different 32-byte hex values with `openssl rand -hex 32`; do not
 print them in logs or commit `.env`. The same HMAC key must be supplied to the
 API and host worker.
 
-The import writes `~/.config/securescan/operator.json` (or
-`$XDG_CONFIG_HOME/securescan/operator.json`) as a mode `0600` JSON file inside
-a mode `0700` directory. It never sources the input. Operator commands ignore
-arbitrary current-directory `.env` files. Their runtime precedence is process
+The import writes `~/.config/securescan/operator.json` (or the path selected by
+`SECURESCAN_OPERATOR_PROFILE`) as a mode `0600` JSON file inside a mode `0700`
+directory. This is SecureScan application configuration, not a shell env file.
+Export the path when selecting a profile:
+
+```bash
+export SECURESCAN_OPERATOR_PROFILE="$HOME/.config/securescan/operator.json"
+```
+
+Do **not** run `source "$SECURESCAN_OPERATOR_PROFILE"`. SecureScan loads the
+profile automatically. `securescan system config` safely displays the active
+profile path, deployment ports and roots, scanner paths, and identity states;
+it never displays the database URL, PostgreSQL password, HMAC key, or tokens.
+
+Configure never sources the input. Operator commands ignore arbitrary
+current-directory `.env` files. Their runtime precedence is process
 environment, the private operator profile, then safe defaults. The explicit
 `system configure --from-env-file` import is the only operator path that reads
 an env file. Legacy v1 application commands retain their existing cwd `.env`
@@ -209,8 +222,11 @@ do not repair descriptor files by hand.
 
 The frozen host tool identities remain:
 
-- Enry helper 0.2.3 with go-enry v2.9.6; its locally built executable is accepted
-  only with the independently trusted digest configured above.
+- Enry helper 0.2.3 with go-enry v2.9.6; `system configure` persists the
+  packaged frozen V1.5 release digest when the controlled input omits an
+  explicit independently trusted digest. Runtime hashing never establishes
+  trust; it only verifies the installed executable against that independent
+  identity.
 - Gitleaks 8.30.1, executable SHA-256
   `88f91962aa2f93ac6ab281d553b9e125f5197bbbce38f9f2437f7299c32e5509`.
 - Syft 1.51.0, executable SHA-256

@@ -16,6 +16,7 @@ from securescan.domain.enums import TargetType
 from securescan.domain.models import TargetProfile
 from securescan.execution.local_executor import LocalProcessExecutor
 from securescan.operator.doctor import Doctor
+from securescan.operator.inspection import operator_configuration_data
 from securescan.operator.manager import OperatorManager
 from securescan.operator.models import DoctorReport, OperatorError, SystemStatus
 from securescan.operator.profile import (
@@ -23,6 +24,7 @@ from securescan.operator.profile import (
     parse_operator_env_file,
     write_operator_profile,
 )
+from securescan.operator.toolchain import TRUSTED_ENRY_HELPER_SHA256
 from securescan.persistence.database import initialize_database
 from securescan.runtime import shutdown_signal_handlers
 from securescan.runtime_storage import (
@@ -167,6 +169,46 @@ def system_status(
         _operator_fail(exc, json_output=json_output)
 
 
+@system_app.command("config")
+def system_config(
+    json_output: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Inspect the active operator configuration without printing secrets."""
+
+    try:
+        data = operator_configuration_data(get_operator_settings())
+        if json_output:
+            typer.echo(canonical_json(data))
+            return
+        deployment = data["deployment"]
+        profile = data["operator_profile"]
+        storage = data["storage"]
+        typer.echo("SecureScan Operator Configuration")
+        typer.echo("---------------------------------")
+        typer.echo(f"Profile             {profile['path']}")
+        typer.echo("Profile format      SecureScan JSON (do not source)")
+        typer.echo(f"Compose project     {deployment['compose_project']}")
+        typer.echo(f"API image tag       {deployment['image_tag']}")
+        typer.echo(f"Compose file        {deployment['compose_file']}")
+        typer.echo(f"API port            {deployment['api_port']}")
+        typer.echo(f"PostgreSQL port     {deployment['postgres_port']}")
+        typer.echo(f"Deployment root     {storage['deployment_root']}")
+        typer.echo(f"Artifact root       {storage['artifact_root']}")
+        typer.echo(f"Workspace root      {storage['workspace_root']}")
+        typer.echo(f"Projection root     {storage['projection_root']}")
+        typer.echo(f"Receipt root        {storage['receipt_root']}")
+        for name, scanner in data["scanners"].items():
+            label = name.capitalize()
+            if "path" in scanner:
+                typer.echo(f"{label + ' path':<20}{scanner['path']}")
+                typer.echo(f"{label + ' path state':<20}{scanner['path_state']}")
+            else:
+                typer.echo(f"{label + ' image':<20}{scanner['image']}")
+            typer.echo(f"{label + ' identity':<20}{scanner['trusted_identity_state']}")
+    except Exception as exc:
+        _operator_fail(exc, json_output=json_output)
+
+
 _PROFILE_PATH_FIELDS = frozenset(
     {
         "deploy_data_root",
@@ -201,10 +243,14 @@ def system_configure(
             path = Path(values[name]).expanduser()
             values[name] = str(path if path.is_absolute() else (base / path).resolve())
         settings = Settings(**values, _env_file=None)
-        profile = write_operator_profile(settings.model_dump(mode="json"))
+        profile_settings = settings.model_dump(mode="json")
+        if profile_settings["source_enry_helper_sha256"] is None:
+            profile_settings["source_enry_helper_sha256"] = TRUSTED_ENRY_HELPER_SHA256
+        profile = write_operator_profile(profile_settings)
         get_operator_settings.cache_clear()
         typer.echo("SecureScan operator profile configured.")
         typer.echo(f"Profile: {profile}")
+        typer.echo("Format: SecureScan application JSON; do not source this file")
         typer.echo("Permissions: directory 0700, file 0600")
     except Exception as exc:
         _operator_fail(exc, json_output=False)

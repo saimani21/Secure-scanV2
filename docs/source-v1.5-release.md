@@ -2,6 +2,11 @@
 
 Status: COMPLETE - FROZEN
 
+This V1.5.0 record remains immutable. The bounded
+[V1.5.1 operator-bootstrap hotfix](source-v1.5.1-release.md) improves profile
+setup, trusted Enry bootstrap, diagnosis, inspection, and clean image builds
+without changing the frozen V1.5 product semantics below.
+
 V1.5 adds threat-informed DevSecOps assurance without changing frozen scanner
 or Product Core meaning. Prompt 1 contributes exact CVE identity, immutable
 NVD/KEV/EPSS evidence, bundles, append-only assessments, assurance views,

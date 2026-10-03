@@ -37,6 +37,7 @@ def compose_environment(settings: Settings) -> dict[str, str]:
         "SECURESCAN_POSTGRES_PASSWORD": settings.postgres_password,
         "SECURESCAN_POSTGRES_PORT": settings.postgres_port,
         "SECURESCAN_API_PORT": settings.api_port,
+        "SECURESCAN_IMAGE_TAG": settings.operator_compose_project,
     }
     environment.update({key: str(value) for key, value in values.items()})
     return environment

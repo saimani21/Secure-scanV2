@@ -5,7 +5,7 @@ import pytest
 
 from securescan.config import Settings
 from securescan.operator.doctor import Doctor
-from securescan.operator.models import CheckState
+from securescan.operator.models import CheckState, OperatorError
 
 
 def _settings(tmp_path: Path) -> Settings:
@@ -66,3 +66,26 @@ def test_doctor_distinguishes_missing_cli_from_daemon_failure(
     assert _by_name(unavailable, "Docker CLI").status is CheckState.PASS
     assert _by_name(unavailable, "Docker daemon").status is CheckState.FAIL
     assert _by_name(unavailable, "Docker Compose").status is CheckState.PASS
+
+
+def test_doctor_preserves_safe_actionable_enry_diagnostic(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    settings = _settings(tmp_path)
+    monkeypatch.setattr("securescan.operator.doctor.shutil.which", lambda *_a, **_k: None)
+
+    def fail_enry(_settings: Settings) -> None:
+        raise OperatorError(
+            "SCANNER_IDENTITY_MISMATCH",
+            "Configured Enry helper digest does not match the trusted release identity",
+        )
+
+    monkeypatch.setattr("securescan.operator.doctor.verify_enry", fail_enry)
+
+    report = Doctor(settings).run()
+    enry = _by_name(report, "Enry helper")
+
+    assert enry.status is CheckState.FAIL
+    assert enry.detail == (
+        "Configured Enry helper digest does not match the trusted release identity"
+    )

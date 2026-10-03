@@ -28,6 +28,8 @@ from securescan.operator.prerequisites import (
 def _check(name: str, action: Callable[[], None], detail: str) -> DoctorCheck:
     try:
         action()
+    except OperatorError as exc:
+        return DoctorCheck(name, CheckState.FAIL, str(exc))
     except Exception:
         return DoctorCheck(name, CheckState.FAIL, f"{detail}; review the configured prerequisite")
     return DoctorCheck(name, CheckState.PASS, detail)

@@ -9,6 +9,10 @@ WORKDIR /build
 
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY alembic.ini compose.yaml ./
+COPY migrations ./migrations
+COPY docs ./docs
+COPY examples ./examples
 
 RUN python -m venv /opt/securescan \
     && /opt/securescan/bin/pip install ".[postgres]"

@@ -1,9 +1,14 @@
 # SecureScan Source V1.5 demo runbook
 
-Prerequisites: a ready isolated V1.5 operator deployment, one durable project,
+Prerequisites: a ready isolated V1.5.1 operator deployment, one durable project,
 one controlled vulnerable repository, an explicitly promoted baseline, an
 eligible intelligence bundle, and a threat-policy JSON file. This is a 5-10
 minute product tour after scanners and fixtures are prepared.
+
+Select the private application profile with
+`export SECURESCAN_OPERATOR_PROFILE=/path/to/operator.profile`, then use
+`securescan system config` and `securescan doctor`. Do not source the profile;
+SecureScan loads its versioned JSON automatically.
 
 1. Run `securescan ci REPOSITORY --project-id ... --bundle-id ... --policy ...`.
 2. Copy the candidate run/proof IDs from `ci-result.json`.

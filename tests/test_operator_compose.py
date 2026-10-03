@@ -60,5 +60,6 @@ def test_compose_environment_is_controlled_and_never_passes_unrelated_secret(
 
     assert "UNRELATED_SECRET" not in client.environment
     assert client.environment["SECURESCAN_POSTGRES_PASSWORD"] == "password"
+    assert client.environment["SECURESCAN_IMAGE_TAG"] == "securescan-source-v11"
     assert client.base[0:2] == ("docker", "compose")
     assert os.path.isabs(client.base[-1])

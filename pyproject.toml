@@ -58,6 +58,7 @@ include = ["securescan*"]
   "docs/security-invariants.md",
   "docs/source-v1-status.md",
   "docs/source-v1.5-*.md",
+  "docs/source-v1.5.1-*.md",
 ]
 
 [tool.pytest.ini_options]

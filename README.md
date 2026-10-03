@@ -13,12 +13,14 @@ Core v0.1 supports local directories only. It does not clone repositories, authe
 users, provide multi-tenant isolation, cover multiple languages, or represent a complete
 Semgrep ruleset. See [limitations](docs/core-v0.1-limitations.md).
 
-SecureScan Source v1.5.0 is the current local frozen release built on this Core.
+SecureScan Source v1.5.1 is the current local release built on this Core. V1.5.1
+is a bounded operator-bootstrap hotfix over the frozen V1.5.0 product behavior.
 The Python distribution and API retain their independent Core version `0.1.0`;
-the annotated Git tag `source-v1.5.0` identifies the Source product release. See the
-[Source v1.5 release notes](docs/source-v1.5-release.md) for supported workflows,
-security boundaries, validation evidence, and limitations. The v1.3 and v1.2
-release notes remain frozen prior records.
+the annotated Git tags identify Source product releases. See the
+[V1.5.1 hotfix note](docs/source-v1.5.1-release.md) and
+[V1.5 release notes](docs/source-v1.5-release.md) for supported workflows,
+security boundaries, and limitations. The v1.3 and v1.2 release notes remain
+frozen prior records.
 
 ## Local setup
 
@@ -31,8 +33,10 @@ source .venv/bin/activate
 pip install -e '.[dev,postgres]'
 cp .env.example .env
 # Edit .env and set the required secrets, host database URL, runtime identity,
-# and independently trusted Enry digest.
+# and scanner paths. system configure supplies the frozen V1.5 Enry identity
+# unless an explicit independently trusted digest is provided.
 ./.venv/bin/securescan system configure --from-env-file .env
+./.venv/bin/securescan system config
 ./.venv/bin/securescan doctor
 ./.venv/bin/securescan system up
 ./.venv/bin/securescan open
@@ -42,11 +46,14 @@ Replace the example secrets and materialized host database URL before running
 initialization. Use a separate database whose name ends in `_test` for destructive
 PostgreSQL integration tests.
 
-The private operator profile lets later shells use `securescan system status`
-without sourcing a shell script. Operator commands ignore unrelated `.env`
-files in the current directory; process `SECURESCAN_*` values can explicitly
-override the profile. Stop the managed host worker and Compose services with
-`securescan system down`; PostgreSQL volumes and deployment data are preserved.
+The private operator profile is SecureScan JSON, not a shell script. Select it
+with `export SECURESCAN_OPERATOR_PROFILE=/path/to/operator.profile`; do **not**
+source it. SecureScan loads it automatically. Operator commands ignore
+unrelated `.env` files in the current directory; process `SECURESCAN_*` values
+can explicitly override the profile. `securescan system config` shows a
+credential-free inventory of the active configuration. Stop the managed host
+worker and Compose services with `securescan system down`; PostgreSQL volumes
+and deployment data are preserved.
 
 ## Tests
 
