@@ -220,7 +220,9 @@ API migration, or persistence changes. See `docs/source-v0.7-unified-evidence.md
 | V1.3P1 | Trust + Components + Interoperability | COMPLETE - FROZEN |
 | V1.3P2 | Validated JS/TS + Research-Grade Validation | COMPLETE - FROZEN |
 | V1.3 | SecureScan Source v1.3.0 | COMPLETE - FROZEN |
-| V1.5P1 | Vulnerability Intelligence + Assurance Core | COMPLETE - CHECKPOINT |
+| V1.5P1 | Vulnerability Intelligence + Assurance Core | COMPLETE - FROZEN |
+| V1.5P2 | DevSecOps Product Experience + Final Release | COMPLETE - FROZEN |
+| V1.5 | SecureScan Source v1.5.0 | COMPLETE - FROZEN |
 
 V1.3 adds the verified published-run gateway, stable security-invariant
 catalog, canonical package/PURL identity, CycloneDX 1.7, deterministic
@@ -251,6 +253,20 @@ or failed. The PostgreSQL migration/concurrency evidence used a disposable
 database, and no preserved deployment was mutated. See
 `docs/source-v1.5-intelligence-assurance-contract.md` and
 `docs/source-v1.5-performance.md`.
+
+V1.5 Prompt 2 adds one authoritative `securescan ci` workflow, six atomic CI
+artifacts, the Assurance Dashboard and Finding Knowledge Cards, deterministic
+verification playbooks and HTML assessment, and an optional non-authoritative
+OpenAI Responses API explanation provider. The final collection contains 3,688
+distinct IDs: 3,625 passing release cases, 62 frozen historical branch-lock
+exclusions, one documented optional second-Checkov-environment reproduction,
+and no unresolved mandatory failure or skip. A disposable PostgreSQL 16.15
+gate passed 171 tests. The final V1.3 compatibility plus V1.5 golden real-scanner
+partition passed 2 tests using the pinned toolchain and proved CI `FAIL`,
+remediation to `PASS`, and intelligence-only reassessment without a source
+rescan. Prompt 2 adds no migration and did not mutate a preserved deployment.
+See `docs/source-v1.5-release.md` and
+`docs/source-v1.5-product-release-contract.md`.
 
 V1.2A audits the frozen v1.1 Evidence/Product Plane before mutable analyst
 state. Future finding governance binds to `(lineage_id, finding_id)`, with

@@ -33,3 +33,25 @@ The harness deliberately measures bounded normalized transforms. Production
 `PolicyDecisionProof` integrity behavior is separately exercised against real
 service/database state; the synthetic scale loops do not claim end-to-end UI or
 network throughput.
+
+## Prompt 2 product-surface characterization
+
+Measured on 2026-10-03 with Python 3.12.3 under WSL2 Linux
+6.6.87.1 (`python -m securescan.benchmarks.product_release_v15`). The controlled
+dashboard contained 500 findings; the bounded AI context contained 50 compact
+finding summaries. Values are medians of 25 in-process iterations and exclude
+scanner and external-provider network time.
+
+| Operation | Median |
+| --- | ---: |
+| deterministic HTML assessment | 2.185 ms |
+| deterministic Markdown CI summary | 0.015 ms |
+| DecisionProof JSON serialization | 0.002 ms |
+| bounded AI context build | 0.870 ms |
+| AI context serialization | 0.064 ms |
+
+The 500-finding HTML was 115,197 bytes; the CI summary was 629 bytes; the
+50-finding AI context was 12,884 bytes against the enforced 64 KiB cap. Peak
+process RSS observed by the harness was 78,484 KiB. These measurements
+characterize SecureScan-owned presentation overhead, not database latency,
+scanner throughput, browser paint time, or OpenAI latency.

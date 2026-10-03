@@ -84,9 +84,11 @@ def test_real_postgres_exact_facts_match_http_cli_json_and_browser(
     @contextmanager
     def services():
         yield SimpleNamespace(
-            queries=SimpleNamespace(get_scan=lambda requested: SimpleNamespace(
-                run_id=requested, project_id=project_id, lineage_id=lineage_id
-            )),
+            queries=SimpleNamespace(
+                get_scan=lambda requested: SimpleNamespace(
+                    run_id=requested, project_id=project_id, lineage_id=lineage_id
+                )
+            ),
             product_findings=product,
             baseline=baseline,
             delta=delta,
@@ -113,22 +115,49 @@ def test_real_postgres_exact_facts_match_http_cli_json_and_browser(
     assert cli_json["delta"] == delta_json
     # Current/evaluation-time reads have their own wall-clock instant; all
     # durable and derived security facts must still agree exactly.
-    assert {key: value for key, value in cli_json["governance"].items() if key != "evaluated_at"} == {
-        key: value for key, value in effective_json.items() if key != "evaluated_at"
-    }
-    for key in ("candidate_run_id", "baseline_id", "baseline_revision", "policy_id", "policy_version", "policy_digest", "result", "decisions"):
+    assert {
+        key: value for key, value in cli_json["governance"].items() if key != "evaluated_at"
+    } == {key: value for key, value in effective_json.items() if key != "evaluated_at"}
+    for key in (
+        "candidate_run_id",
+        "baseline_id",
+        "baseline_revision",
+        "policy_id",
+        "policy_version",
+        "policy_digest",
+        "result",
+        "decisions",
+    ):
         assert cli_json["policy"][key] == policy_json[key], key
 
-    for name in ("api.js", "assurance.js", "assurance_api.js", "components.js", "format.js", "router.js", "state.js"):
+    for name in (
+        "api.js",
+        "assurance.js",
+        "assurance_api.js",
+        "components.js",
+        "format.js",
+        "product_release.js",
+        "product_release_api.js",
+        "router.js",
+        "state.js",
+    ):
         source = (_WEB / name).read_text(encoding="utf-8")
         (tmp_path / name).write_text(source.replace('"/assets/', '"./'), encoding="utf-8")
     (tmp_path / "package.json").write_text('{"type":"module"}', encoding="utf-8")
-    (tmp_path / "facts.json").write_text(json.dumps({
-        "scope": {"projectId": project_id, "lineageId": lineage_id, "runId": run_id},
-        "baseline": baseline_json, "delta": delta_json, "policy": policy_json,
-        "finding": finding, "effective": effective_json,
-    }), encoding="utf-8")
-    harness = r'''
+    (tmp_path / "facts.json").write_text(
+        json.dumps(
+            {
+                "scope": {"projectId": project_id, "lineageId": lineage_id, "runId": run_id},
+                "baseline": baseline_json,
+                "delta": delta_json,
+                "policy": policy_json,
+                "finding": finding,
+                "effective": effective_json,
+            }
+        ),
+        encoding="utf-8",
+    )
+    harness = r"""
 import { readFileSync } from "node:fs";
 import { beginRoute } from "./state.js";
 import { renderAssurancePage } from "./assurance.js";
@@ -176,9 +205,13 @@ for (const truth of [facts.policy.result, facts.policy.policy_id, facts.policy.b
 }
 if (calls.filter((call) => call === "evaluate").length !== 1 || calls.includes("promote")) throw Error("wrong browser mutation count");
 page.dispose();
-'''
+"""
     harness_path = tmp_path / "postgres-parity.mjs"
     harness_path.write_text(harness, encoding="utf-8")
-    windows_harness = subprocess.run(["wslpath", "-w", str(harness_path)], check=True, capture_output=True, text=True).stdout.strip()
-    result = subprocess.run([str(_NODE), windows_harness], check=False, capture_output=True, text=True, timeout=40)
+    windows_harness = subprocess.run(
+        ["wslpath", "-w", str(harness_path)], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    result = subprocess.run(
+        [str(_NODE), windows_harness], check=False, capture_output=True, text=True, timeout=40
+    )
     assert result.returncode == 0, result.stderr

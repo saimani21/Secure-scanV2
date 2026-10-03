@@ -14,11 +14,21 @@ _NODE = Path("/mnt/c/Program Files/nodejs/node.exe")
 def test_assurance_is_explicit_scoped_and_does_not_turn_unknown_into_clean(tmp_path: Path) -> None:
     if not _NODE.is_file() or shutil.which("wslpath") is None:
         pytest.skip("Windows Node/WSL bridge is unavailable")
-    for name in ("api.js", "assurance.js", "assurance_api.js", "components.js", "format.js", "router.js", "state.js"):
+    for name in (
+        "api.js",
+        "assurance.js",
+        "assurance_api.js",
+        "components.js",
+        "format.js",
+        "product_release.js",
+        "product_release_api.js",
+        "router.js",
+        "state.js",
+    ):
         source = (_ROOT / name).read_text(encoding="utf-8")
         (tmp_path / name).write_text(source.replace('"/assets/', '"./'), encoding="utf-8")
     (tmp_path / "package.json").write_text('{"type":"module"}', encoding="utf-8")
-    harness = r'''
+    harness = r"""
 import { beginRoute } from "./state.js";
 import { renderAssurancePage } from "./assurance.js";
 
@@ -100,7 +110,7 @@ await tick();
 if (!region.textContent.includes("no configured blocking rule was violated")) throw Error("PASS policy outcome masked");
 if (calls.filter((call) => call === "evaluatePolicy").length !== 3) throw Error("evaluation was not explicit per click");
 controller.dispose();
-'''
+"""
     harness_path = tmp_path / "assurance-runtime.mjs"
     harness_path.write_text(harness, encoding="utf-8")
     windows_harness = subprocess.run(

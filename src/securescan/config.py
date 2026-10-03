@@ -12,14 +12,13 @@ from pydantic_settings import (
 )
 
 from securescan.operator.profile import read_operator_profile
+from securescan.runtime_assets import runtime_asset_path
 
 
 def _default_securescan_data_root() -> Path:
     configured_root = Path(os.environ.get("XDG_DATA_HOME", "")).expanduser()
     data_root = (
-        configured_root
-        if configured_root.is_absolute()
-        else Path.home() / ".local" / "share"
+        configured_root if configured_root.is_absolute() else Path.home() / ".local" / "share"
     )
     return (data_root / "securescan").resolve(strict=False)
 
@@ -56,12 +55,9 @@ class Settings(BaseSettings):
         default_factory=lambda: _default_securescan_data_root() / "source-workspaces"
     )
     source_runtime_receipt_root: Path = Field(
-        default_factory=lambda: _default_securescan_data_root()
-        / "source-runtime-receipts"
+        default_factory=lambda: _default_securescan_data_root() / "source-runtime-receipts"
     )
-    source_enry_helper_path: Path = Path(
-        "./tools/enry-helper/bin/securescan-enry-helper"
-    )
+    source_enry_helper_path: Path = Path("./tools/enry-helper/bin/securescan-enry-helper")
     source_enry_helper_sha256: str | None = None
     source_scan_deadline_seconds: int = Field(default=1_800, ge=300, le=86_400)
     source_worker_poll_seconds: float = Field(default=1.0, ge=0.1, le=60)
@@ -79,12 +75,13 @@ class Settings(BaseSettings):
     postgres_password: str = ""
     postgres_port: int = Field(default=55_432, ge=1, le=65_535)
     api_port: int = Field(default=8_000, ge=1, le=65_535)
-    operator_compose_file: Path = Field(
-        default_factory=lambda: Path(__file__).resolve().parents[2] / "compose.yaml"
-    )
+    operator_compose_file: Path = Field(default_factory=lambda: runtime_asset_path("compose.yaml"))
     operator_compose_project: str = "securescan-source-v11"
     operator_startup_timeout_seconds: float = Field(default=120.0, ge=5, le=600)
     operator_shutdown_timeout_seconds: float = Field(default=15.0, ge=1, le=120)
+    ai_enabled: bool = False
+    ai_model: str | None = Field(default=None, max_length=200)
+    ai_allow_source_snippets: bool = False
 
     @field_validator(
         "deploy_data_root",
@@ -124,6 +121,17 @@ class Settings(BaseSettings):
     def validate_postgres_value(cls, value: str) -> str:
         if any(ord(character) < 32 or ord(character) == 127 for character in value):
             raise ValueError("PostgreSQL configuration contains control characters")
+        return value
+
+    @field_validator("ai_model")
+    @classmethod
+    def validate_ai_model(cls, value: str | None) -> str | None:
+        if value is not None and (
+            not value.strip()
+            or value != value.strip()
+            or any(ord(character) < 32 or ord(character) == 127 for character in value)
+        ):
+            raise ValueError("AI model identifier is invalid")
         return value
 
     @classmethod

@@ -43,20 +43,32 @@ def _case(name: str):
     elif name == "effective_false_positive":
         delta = _delta(SecurityDeltaState.INTRODUCED)
         facts = _facts(high, FindingLifecycleState.EXISTING)
-        effective = _effective(false_positive_effective=True, disposition=AnalystDisposition.FALSE_POSITIVE)
+        effective = _effective(
+            false_positive_effective=True, disposition=AnalystDisposition.FALSE_POSITIVE
+        )
         expected = PolicyResult.PASS
     elif name == "expired_accepted_risk":
         delta = _delta(SecurityDeltaState.INTRODUCED)
         facts = _facts(high, FindingLifecycleState.EXISTING)
-        effective = _effective(disposition=AnalystDisposition.ACCEPTED_RISK, accepted_risk_expires_at=_NOW)
+        effective = _effective(
+            disposition=AnalystDisposition.ACCEPTED_RISK, accepted_risk_expires_at=_NOW
+        )
         expected = PolicyResult.FAIL
     elif name == "reopened_old_suppression":
         delta = _delta(SecurityDeltaState.INTRODUCED)
         facts = _facts(high, FindingLifecycleState.REOPENED)
-        effective = _effective(lifecycle_state=FindingLifecycleState.REOPENED, suppression_present=True, review_required=True)
+        effective = _effective(
+            lifecycle_state=FindingLifecycleState.REOPENED,
+            suppression_present=True,
+            review_required=True,
+        )
         expected = PolicyResult.FAIL
     elif name == "not_comparable":
-        delta = _delta(SecurityDeltaState.NOT_COMPARABLE, status=SecurityDeltaComparisonStatus.NOT_COMPARABLE, reasons=("CANDIDATE_NODE_FAILED",))
+        delta = _delta(
+            SecurityDeltaState.NOT_COMPARABLE,
+            status=SecurityDeltaComparisonStatus.NOT_COMPARABLE,
+            reasons=("CANDIDATE_NODE_FAILED",),
+        )
         facts = ()
         effective = ()
         expected = PolicyResult.ERROR
@@ -69,8 +81,10 @@ def _case(name: str):
         raise AssertionError(name)
     decisions = SourcePolicyService._decide(spec, delta, facts, effective)
     result = (
-        PolicyResult.ERROR if any(item.kind is PolicyDecisionKind.ERROR for item in decisions)
-        else PolicyResult.FAIL if any(item.kind is PolicyDecisionKind.VIOLATION for item in decisions)
+        PolicyResult.ERROR
+        if any(item.kind is PolicyDecisionKind.ERROR for item in decisions)
+        else PolicyResult.FAIL
+        if any(item.kind is PolicyDecisionKind.VIOLATION for item in decisions)
         else PolicyResult.PASS
     )
     assert result is expected, name
@@ -92,7 +106,9 @@ def _case(name: str):
     assert {key: value for key, value in api.items() if key != "evaluated_at"} == {
         key: value for key, value in cli.items() if key != "evaluated_at"
     }
-    assert datetime.fromisoformat(api["evaluated_at"].replace("Z", "+00:00")) == datetime.fromisoformat(cli["evaluated_at"])
+    assert datetime.fromisoformat(
+        api["evaluated_at"].replace("Z", "+00:00")
+    ) == datetime.fromisoformat(cli["evaluated_at"])
     return {
         "name": name,
         "delta": SecurityDeltaResponse.model_validate(delta).model_dump(mode="json"),
@@ -104,20 +120,37 @@ def _case(name: str):
 def test_frozen_policy_cases_have_matching_api_cli_and_web_presentation(tmp_path: Path) -> None:
     if not _NODE.is_file() or shutil.which("wslpath") is None:
         pytest.skip("Windows Node/WSL bridge is unavailable")
-    cases = [_case(name) for name in (
-        "high_introduced_existing", "effective_false_positive", "expired_accepted_risk",
-        "reopened_old_suppression", "not_comparable", "removed",
-    )]
+    cases = [
+        _case(name)
+        for name in (
+            "high_introduced_existing",
+            "effective_false_positive",
+            "expired_accepted_risk",
+            "reopened_old_suppression",
+            "not_comparable",
+            "removed",
+        )
+    ]
     assert [item["expected"] for item in cases] == ["FAIL", "PASS", "FAIL", "FAIL", "ERROR", "PASS"]
     assert cases[1]["evaluation"]["decisions"][0]["kind"] == "EXCLUSION"
     assert not any(item["kind"] == "EXCLUSION" for item in cases[3]["evaluation"]["decisions"])
     assert not any(item["kind"] == "VIOLATION" for item in cases[5]["evaluation"]["decisions"])
-    for name in ("api.js", "assurance.js", "assurance_api.js", "components.js", "format.js", "router.js", "state.js"):
+    for name in (
+        "api.js",
+        "assurance.js",
+        "assurance_api.js",
+        "components.js",
+        "format.js",
+        "product_release.js",
+        "product_release_api.js",
+        "router.js",
+        "state.js",
+    ):
         source = (_WEB / name).read_text(encoding="utf-8")
         (tmp_path / name).write_text(source.replace('"/assets/', '"./'), encoding="utf-8")
     (tmp_path / "package.json").write_text('{"type":"module"}', encoding="utf-8")
     (tmp_path / "facts.json").write_text(json.dumps(cases), encoding="utf-8")
-    harness = r'''
+    harness = r"""
 import { readFileSync } from "node:fs";
 import { beginRoute } from "./state.js";
 import { renderAssurancePage } from "./assurance.js";
@@ -167,9 +200,13 @@ for (const item of cases) {
   if (item.name === "effective_false_positive" && !region.textContent.includes("Excluded by effective governance")) throw Error("exclusion hidden");
   page.dispose();
 }
-'''
+"""
     harness_path = tmp_path / "parity-matrix.mjs"
     harness_path.write_text(harness, encoding="utf-8")
-    windows_harness = subprocess.run(["wslpath", "-w", str(harness_path)], check=True, capture_output=True, text=True).stdout.strip()
-    result = subprocess.run([str(_NODE), windows_harness], check=False, capture_output=True, text=True, timeout=40)
+    windows_harness = subprocess.run(
+        ["wslpath", "-w", str(harness_path)], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    result = subprocess.run(
+        [str(_NODE), windows_harness], check=False, capture_output=True, text=True, timeout=40
+    )
     assert result.returncode == 0, result.stderr

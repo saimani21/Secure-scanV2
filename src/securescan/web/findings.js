@@ -33,9 +33,12 @@ import {
   priorityPresentation,
 } from "/assets/format.js";
 import { beginRequest, registerRouteCleanup } from "/assets/state.js";
+import { askAssistant, getFindingKnowledgeCard, v15Scope } from "/assets/product_release_api.js";
+import { renderKnowledgeCard } from "/assets/product_release.js";
 
 export const FINDING_PAGE_LIMIT = 50;
 export const FINDING_ID_PATTERN = /^[0-9a-f]{64}$/;
+const PRODUCT_ID_PATTERN = /^[0-9a-f]{64}$/;
 
 const FILTERS = Object.freeze({
   priority: Object.freeze([
@@ -94,6 +97,8 @@ export function readFindingUrlState(search) {
     lifecycle_state: knownFilter("lifecycle_state", query.get("lifecycle_state")),
     offset: Number.isSafeInteger(offset) && offset >= 0 ? offset : 0,
     finding: finding && FINDING_ID_PATTERN.test(finding) ? finding : null,
+    bundle: PRODUCT_ID_PATTERN.test(query.get("bundle") || "") ? query.get("bundle") : null,
+    proof: PRODUCT_ID_PATTERN.test(query.get("proof") || "") ? query.get("proof") : null,
   };
 }
 
@@ -111,6 +116,8 @@ export function findingQuery(state) {
   if (FINDING_ID_PATTERN.test(state.finding || "")) {
     query.set("finding", state.finding);
   }
+  if (PRODUCT_ID_PATTERN.test(state.bundle || "")) query.set("bundle", state.bundle);
+  if (PRODUCT_ID_PATTERN.test(state.proof || "")) query.set("proof", state.proof);
   const rendered = query.toString();
   return rendered ? `?${rendered}` : "";
 }
@@ -420,7 +427,9 @@ function technicalEvidence(summary, correlation) {
   ]);
 }
 
-function findingDetail(summary, reportState, guidanceState, governanceState, governanceActions) {
+function findingDetail(
+  summary, reportState, guidanceState, governanceState, governanceActions, knowledgeState,
+) {
   const correlation = reportState.payload
     ? correlateFindingEvidence(summary, reportState.payload)
     : null;
@@ -483,6 +492,18 @@ function findingDetail(summary, reportState, guidanceState, governanceState, gov
     governanceState, governanceActions.mutate, governanceActions.refresh,
   );
   if (governance) content.push(governance);
+  if (knowledgeState.loading) {
+    content.push(loadingState("Loading Finding Knowledge Card"));
+  } else if (knowledgeState.failed) {
+    content.push(errorState(
+      "Knowledge Card unavailable",
+      "The selected intelligence bundle and proof could not be verified for this finding.",
+      "KNOWLEDGE_CARD_UNAVAILABLE",
+    ));
+  } else {
+    const card = renderKnowledgeCard(knowledgeState.payload, knowledgeState.ask);
+    if (card) content.push(card);
+  }
   return createElement("article", {
     className: "finding-detail",
     attributes: { "aria-labelledby": "finding-detail-title" },
@@ -531,7 +552,8 @@ export function renderFindingsPage({
   route,
   services = { getFindings, getScanReport, getScanSummary, getFindingGuidance, getRunProductFindings,
     getEffectiveGovernance, getFindingGovernance, getFindingSuppression,
-    putFindingGovernance, putFindingSuppression, revokeFindingSuppression },
+    putFindingGovernance, putFindingSuppression, revokeFindingSuppression,
+    getFindingKnowledgeCard, askAssistant },
   navigation = {
     search: () => window.location.search,
     push: (url) => window.history.pushState({ securescanRoute: "findings" }, "", url),
@@ -631,6 +653,10 @@ export function renderFindingsPage({
     payload: null,
     promise: null,
   };
+  const knowledgeState = {
+    findingId: null, loading: false, failed: false, payload: null, ask: null,
+  };
+  let knowledgeRequest = null;
 
   const guidanceController = createGuidanceController({
     runId, services,
@@ -647,6 +673,7 @@ export function renderFindingsPage({
     disposed = true;
     guidanceController.dispose();
     governanceController.dispose();
+    if (knowledgeRequest) knowledgeRequest.cancel();
     for (const remove of removeResponsiveListeners) remove();
     if (detailDialog.open) {
       suppressDialogClose = true;
@@ -678,6 +705,7 @@ export function renderFindingsPage({
           selected, reportState, guidanceController.stateFor(selected.finding_id),
           governanceController.stateFor(selected),
           { mutate: governanceController.mutate, refresh: governanceController.refresh },
+          knowledgeState,
         )
         : missingSelectedFinding()
       : noFindingSelected();
@@ -752,6 +780,48 @@ export function renderFindingsPage({
     return reportState.promise;
   }
 
+  async function ensureKnowledgeCard(selected) {
+    const productScope = v15Scope({
+      projectId: selected.project_id,
+      lineageId: selected.lineage_id,
+      runId,
+    }, navigation.search());
+    if (productScope === null) {
+      knowledgeState.findingId = null;
+      knowledgeState.loading = false;
+      knowledgeState.failed = false;
+      knowledgeState.payload = null;
+      knowledgeState.ask = null;
+      return;
+    }
+    if (knowledgeRequest) knowledgeRequest.cancel();
+    const request = beginRequest();
+    knowledgeRequest = request;
+    knowledgeState.findingId = selected.finding_id;
+    knowledgeState.loading = true;
+    knowledgeState.failed = false;
+    knowledgeState.payload = null;
+    knowledgeState.ask = (task, question) => services.askAssistant(productScope, {
+      task, question, finding_id: selected.finding_id,
+    });
+    renderDetailTarget();
+    try {
+      const payload = await services.getFindingKnowledgeCard(
+        productScope, selected.finding_id, { signal: request.signal },
+      );
+      if (request.isCurrent() && !disposed && knowledgeState.findingId === selected.finding_id) {
+        knowledgeState.payload = payload;
+      }
+    } catch (error) {
+      if (!isAbortError(error) && request.isCurrent() && !disposed) knowledgeState.failed = true;
+    } finally {
+      if (request.isCurrent()) knowledgeState.loading = false;
+      if (knowledgeRequest === request) knowledgeRequest = null;
+      request.finish();
+      if (!disposed && state.finding === selected.finding_id) renderDetailTarget();
+    }
+  }
+
   function selectFinding(findingId, { historyMode = "push" } = {}) {
     if (!FINDING_ID_PATTERN.test(findingId || "")) return;
     state.finding = findingId;
@@ -762,6 +832,7 @@ export function renderFindingsPage({
       void ensureReport();
       void guidanceController.select(selectedSummary().finding_id, selectedSummary().authority);
       governanceController.select(selectedSummary());
+      void ensureKnowledgeCard(selectedSummary());
     }
   }
 
@@ -959,6 +1030,7 @@ export function renderFindingsPage({
         void ensureReport();
         void guidanceController.select(selectedSummary().finding_id, selectedSummary().authority);
         governanceController.select(selectedSummary());
+        void ensureKnowledgeCard(selectedSummary());
       }
     } catch (error) {
       if (isAbortError(error) || !request.isCurrent() || disposed) return;

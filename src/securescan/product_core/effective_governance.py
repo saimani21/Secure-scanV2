@@ -111,6 +111,31 @@ class EffectiveGovernanceService:
         except (SQLAlchemyError, TypeError, ValueError):
             raise EffectiveGovernancePersistenceError from None
 
+    def get_many(
+        self,
+        *,
+        project_id: str,
+        lineage_id: str,
+        finding_ids: tuple[str, ...],
+        evaluated_at: datetime | None = None,
+    ) -> tuple[EffectiveGovernance, ...]:
+        """Project a bounded finding set without one query per finding."""
+
+        at = self._now() if evaluated_at is None else self._explicit_evaluated_at(evaluated_at)
+        try:
+            with self._sessions() as session:
+                return self.get_many_in_session(
+                    session,
+                    project_id=project_id,
+                    lineage_id=lineage_id,
+                    finding_ids=finding_ids,
+                    evaluated_at=at,
+                )
+        except EffectiveGovernanceError:
+            raise
+        except (SQLAlchemyError, TypeError, ValueError):
+            raise EffectiveGovernancePersistenceError from None
+
     def get_many_in_session(
         self,
         session: Session,

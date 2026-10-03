@@ -19,6 +19,7 @@ from securescan.advisories.osv import (
 from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.config import Settings, get_settings
 from securescan.execution.docker_sandbox import DockerSandboxExecutor
+from securescan.intelligence import AssuranceService, IntelligenceService
 from securescan.observability.readiness import _bootstrap_database_schema
 from securescan.orchestration.models import frozen_source_v1_authority_roster
 from securescan.persistence.database import create_session_factory, utc_now
@@ -206,6 +207,8 @@ class SourceCliServices:
     delta: SourceSecurityDeltaService | None = None
     effective_governance: EffectiveGovernanceService | None = None
     interoperability: SourceInteroperabilityService | None = None
+    intelligence: IntelligenceService | None = None
+    assurance: AssuranceService | None = None
     monotonic: Callable[[], float] = time.monotonic
     sleep: Callable[[float], None] = time.sleep
 
@@ -389,6 +392,8 @@ def create_source_cli_services() -> Iterator[SourceCliServices]:
             delta=SourceSecurityDeltaService(session_factory, artifacts),
             effective_governance=EffectiveGovernanceService(session_factory),
             interoperability=SourceInteroperabilityService(session_factory, artifacts),
+            intelligence=IntelligenceService(session_factory, artifacts),
+            assurance=AssuranceService(session_factory, artifacts),
         )
     finally:
         engine.dispose()

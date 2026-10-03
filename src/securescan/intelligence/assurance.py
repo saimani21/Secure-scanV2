@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from securescan.artifacts.store import ContentAddressedArtifactStore
 from securescan.evidence import (
+    CoverageState,
     EvidenceKind,
     FindingCategory,
     OsvAdvisoryGroupEvidencePayload,
@@ -47,6 +48,16 @@ from .service import (
     IntelligenceIntegrityError,
     IntelligenceNotFoundError,
     IntelligenceService,
+    IntelligenceServiceError,
+)
+
+_COMPLETE_COVERAGE_STATES = frozenset(
+    {
+        CoverageState.COMPLETE,
+        CoverageState.COMPLETE_WITH_FINDINGS,
+        CoverageState.COMPLETE_WITH_SUPPRESSIONS,
+        CoverageState.NOT_APPLICABLE,
+    }
 )
 
 
@@ -240,7 +251,10 @@ class AssuranceService:
             lineage_id=lineage_id,
             run_id=run_id,
             report_artifact_sha256=verified.report_artifact_sha256,
-            coverage_complete=all(item.complete for item in verified.report.coverage_outcomes),
+            coverage_complete=all(
+                item.state in _COMPLETE_COVERAGE_STATES
+                for item in verified.report.coverage_outcomes
+            ),
             gap_count=len(verified.report.gaps),
             finding_intelligence=findings,
             delta=delta,
@@ -399,6 +413,32 @@ class AssuranceService:
             raise
         except (IntegrityError, SQLAlchemyError, TypeError, ValueError) as error:
             raise IntelligenceIntegrityError("policy decision proof failed") from error
+
+    def get_policy_proof(self, proof_id: str) -> PolicyDecisionProof:
+        """Read and integrity-check one immutable policy decision proof."""
+        try:
+            with self._sessions() as session:
+                row = session.get(SourcePolicyDecisionProofRow, proof_id)
+                if row is None:
+                    raise IntelligenceNotFoundError("policy decision proof is unavailable")
+                proof_bytes = canonical_json(row.proof_json)
+                proof_sha = hashlib.sha256(proof_bytes).hexdigest()
+                expected_id = hashlib.sha256(
+                    b"securescan-policy-decision-proof-v1\0" + proof_bytes
+                ).hexdigest()
+                if expected_id != row.proof_id or proof_sha != row.proof_sha256:
+                    raise IntelligenceIntegrityError("policy decision proof is corrupt")
+                return PolicyDecisionProof(
+                    proof_id=row.proof_id,
+                    proof_sha256=row.proof_sha256,
+                    result=row.result,
+                    evaluated_at=as_utc(row.evaluated_at),
+                    proof=dict(row.proof_json),
+                )
+        except IntelligenceServiceError:
+            raise
+        except (SQLAlchemyError, TypeError, ValueError) as error:
+            raise IntelligenceIntegrityError("policy decision proof read failed") from error
 
     @staticmethod
     def _threat_decisions(

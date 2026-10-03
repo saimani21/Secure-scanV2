@@ -28,6 +28,7 @@ from securescan.jobs.mappers import job_record_from_row
 from securescan.jobs.models import JobRecord
 from securescan.jobs.repository import JobNotFoundError, JobStateConflictError
 from securescan.jobs.result_commit import AnalysisRunNotFoundError
+from securescan.jobs.transaction_retry import run_with_bounded_transaction_retry
 from securescan.persistence.database import (
     JobRow,
     ToolExecutionRow,
@@ -297,109 +298,14 @@ class JobFailureCommitService:
         failed_execution = _normalize_failed_execution(request.tool_execution)
 
         try:
-            with self._session_factory.begin() as session:
-                operation_timestamp = self._clock()
-                guarded_job = session.execute(
-                    _guarded_failure_update(
-                        request.job_id,
-                        normalized_worker_id,
-                        normalized_lease_token,
-                        operation_timestamp,
-                    )
-                ).one_or_none()
-                if guarded_job is None:
-                    _classify_terminal_update_failure(
-                        session,
-                        request.job_id,
-                        normalized_worker_id,
-                        normalized_lease_token,
-                        operation_timestamp,
-                    )
-                    raise JobFailureCommitError(
-                        f"Job {request.job_id!r} failure commitment failed due to "
-                        "an internal lifecycle conflict"
-                    )
-
-                retry_scheduled = (
-                    failed_execution.retryable
-                    and guarded_job.attempt_count < guarded_job.max_attempts
+            return run_with_bounded_transaction_retry(
+                lambda: self._commit_failure_once(
+                    request,
+                    normalized_worker_id=normalized_worker_id,
+                    normalized_lease_token=normalized_lease_token,
+                    failed_execution=failed_execution,
                 )
-                requested_status = JobStatus.RETRY_PENDING if retry_scheduled else JobStatus.FAILED
-                validate_job_transition(JobStatus.RUNNING, requested_status)
-                retry_delay = (
-                    _validated_retry_delay(
-                        self._retry_delay_seconds,
-                        guarded_job.attempt_count,
-                    )
-                    if retry_scheduled
-                    else None
-                )
-
-                update_result = session.execute(
-                    _failure_decision_update(
-                        request.job_id,
-                        normalized_worker_id,
-                        normalized_lease_token,
-                        operation_timestamp,
-                        failed_execution.error,
-                        retry_scheduled=retry_scheduled,
-                        retry_delay_seconds=retry_delay,
-                    )
-                )
-                if update_result.rowcount == 0:
-                    _classify_terminal_update_failure(
-                        session,
-                        request.job_id,
-                        normalized_worker_id,
-                        normalized_lease_token,
-                        operation_timestamp,
-                    )
-                    raise JobFailureCommitError(
-                        f"Job {request.job_id!r} failure commitment lost its lifecycle guard"
-                    )
-                if update_result.rowcount != 1:
-                    raise JobFailureCommitError(
-                        f"Job {request.job_id!r} failure commitment affected an "
-                        "unexpected number of rows"
-                    )
-
-                execution_id = str(self._execution_id_factory())
-                execution_row = ToolExecutionRow(
-                    id=execution_id,
-                    run_id=guarded_job.run_id,
-                    job_id=request.job_id,
-                    attempt_number=guarded_job.attempt_count,
-                    adapter_id=guarded_job.adapter_id,
-                    tool_version=failed_execution.tool_version,
-                    adapter_version=failed_execution.adapter_version,
-                    outcome=failed_execution.outcome,
-                    exit_code=failed_execution.exit_code,
-                    duration_ms=failed_execution.duration_ms,
-                    warning_json=deepcopy(failed_execution.warning_json),
-                    error=failed_execution.error,
-                    failure_category=failed_execution.failure_category.value,
-                    retryable=failed_execution.retryable,
-                )
-                session.add(execution_row)
-                recompute_analysis_run_status(
-                    session,
-                    guarded_job.run_id,
-                    changed_at=operation_timestamp,
-                )
-                session.flush()
-
-                job_row = session.get(JobRow, request.job_id)
-                if job_row is None:
-                    raise JobNotFoundError(request.job_id)
-                result = JobFailureCommitResult(
-                    job=job_record_from_row(job_row),
-                    run_id=guarded_job.run_id,
-                    tool_execution_id=execution_id,
-                    attempt_number=guarded_job.attempt_count,
-                    retry_scheduled=retry_scheduled,
-                    retry_delay_seconds=retry_delay,
-                    failure_category=failed_execution.failure_category,
-                )
+            )
         except (
             InvalidWorkerRequestError,
             InvalidLeaseTokenError,
@@ -419,4 +325,113 @@ class JobFailureCommitService:
                 f"Failed to commit failure for job {request.job_id!r}"
             ) from None
 
-        return result
+    def _commit_failure_once(
+        self,
+        request: JobFailureCommitRequest,
+        *,
+        normalized_worker_id: str,
+        normalized_lease_token: str,
+        failed_execution: FailedToolExecutionCommit,
+    ) -> JobFailureCommitResult:
+        with self._session_factory.begin() as session:
+            operation_timestamp = self._clock()
+            guarded_job = session.execute(
+                _guarded_failure_update(
+                    request.job_id,
+                    normalized_worker_id,
+                    normalized_lease_token,
+                    operation_timestamp,
+                )
+            ).one_or_none()
+            if guarded_job is None:
+                _classify_terminal_update_failure(
+                    session,
+                    request.job_id,
+                    normalized_worker_id,
+                    normalized_lease_token,
+                    operation_timestamp,
+                )
+                raise JobFailureCommitError(
+                    f"Job {request.job_id!r} failure commitment failed due to "
+                    "an internal lifecycle conflict"
+                )
+
+            retry_scheduled = (
+                failed_execution.retryable and guarded_job.attempt_count < guarded_job.max_attempts
+            )
+            requested_status = JobStatus.RETRY_PENDING if retry_scheduled else JobStatus.FAILED
+            validate_job_transition(JobStatus.RUNNING, requested_status)
+            retry_delay = (
+                _validated_retry_delay(
+                    self._retry_delay_seconds,
+                    guarded_job.attempt_count,
+                )
+                if retry_scheduled
+                else None
+            )
+
+            update_result = session.execute(
+                _failure_decision_update(
+                    request.job_id,
+                    normalized_worker_id,
+                    normalized_lease_token,
+                    operation_timestamp,
+                    failed_execution.error,
+                    retry_scheduled=retry_scheduled,
+                    retry_delay_seconds=retry_delay,
+                )
+            )
+            if update_result.rowcount == 0:
+                _classify_terminal_update_failure(
+                    session,
+                    request.job_id,
+                    normalized_worker_id,
+                    normalized_lease_token,
+                    operation_timestamp,
+                )
+                raise JobFailureCommitError(
+                    f"Job {request.job_id!r} failure commitment lost its lifecycle guard"
+                )
+            if update_result.rowcount != 1:
+                raise JobFailureCommitError(
+                    f"Job {request.job_id!r} failure commitment affected an "
+                    "unexpected number of rows"
+                )
+
+            execution_id = str(self._execution_id_factory())
+            execution_row = ToolExecutionRow(
+                id=execution_id,
+                run_id=guarded_job.run_id,
+                job_id=request.job_id,
+                attempt_number=guarded_job.attempt_count,
+                adapter_id=guarded_job.adapter_id,
+                tool_version=failed_execution.tool_version,
+                adapter_version=failed_execution.adapter_version,
+                outcome=failed_execution.outcome,
+                exit_code=failed_execution.exit_code,
+                duration_ms=failed_execution.duration_ms,
+                warning_json=deepcopy(failed_execution.warning_json),
+                error=failed_execution.error,
+                failure_category=failed_execution.failure_category.value,
+                retryable=failed_execution.retryable,
+            )
+            session.add(execution_row)
+            recompute_analysis_run_status(
+                session,
+                guarded_job.run_id,
+                changed_at=operation_timestamp,
+            )
+            session.flush()
+
+            job_row = session.get(JobRow, request.job_id)
+            if job_row is None:
+                raise JobNotFoundError(request.job_id)
+            return JobFailureCommitResult(
+                job=job_record_from_row(job_row),
+                run_id=guarded_job.run_id,
+                tool_execution_id=execution_id,
+                attempt_number=guarded_job.attempt_count,
+                retry_scheduled=retry_scheduled,
+                retry_delay_seconds=retry_delay,
+                failure_category=failed_execution.failure_category,
+            )

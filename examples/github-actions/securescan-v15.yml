@@ -1,0 +1,80 @@
+# SecureScan Source v1.5 reference integration. This intentionally lives outside
+# .github/workflows. Copy it only after reading docs/source-v1.5-ci-cd.md.
+name: SecureScan v1.5 security gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  securescan:
+    # V1.5 requires a trusted, self-hosted runner with SecureScan v1.5, its
+    # frozen scanner toolchain, and an isolated operator deployment installed.
+    runs-on: [self-hosted, linux, x64, securescan-v15]
+    env:
+      SECURESCAN_OPERATOR_PROFILE: ${{ vars.SECURESCAN_OPERATOR_PROFILE }}
+      SECURESCAN_CI_OUTPUT: ${{ runner.temp }}/securescan-v15
+    steps:
+      - name: Check out the candidate
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Verify the trusted SecureScan installation
+        run: |
+          set -euo pipefail
+          securescan --help >/dev/null
+          securescan doctor
+
+      - name: Run the authoritative gate
+        id: gate
+        shell: bash
+        env:
+          SECURESCAN_PROJECT_ID: ${{ vars.SECURESCAN_PROJECT_ID }}
+          SECURESCAN_INTELLIGENCE_BUNDLE_ID: ${{ vars.SECURESCAN_INTELLIGENCE_BUNDLE_ID }}
+        run: |
+          set +e
+          securescan ci "$GITHUB_WORKSPACE" \
+            --project-id "$SECURESCAN_PROJECT_ID" \
+            --bundle-id "$SECURESCAN_INTELLIGENCE_BUNDLE_ID" \
+            --policy "$GITHUB_WORKSPACE/.securescan/threat-policy.json" \
+            --output "$SECURESCAN_CI_OUTPUT"
+          gate_exit=$?
+          set -e
+          if [[ "$gate_exit" != 0 && "$gate_exit" != 1 && "$gate_exit" != 2 ]]; then
+            gate_exit=2
+          fi
+          printf 'exit_code=%s\n' "$gate_exit" >> "$GITHUB_OUTPUT"
+
+      - name: Publish job summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$SECURESCAN_CI_OUTPUT/summary.md" ]]; then
+            cat "$SECURESCAN_CI_OUTPUT/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload SecureScan artifacts
+        if: always() && (steps.gate.outputs.exit_code == '0' || steps.gate.outputs.exit_code == '1')
+        uses: actions/upload-artifact@v6
+        with:
+          name: securescan-v15-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.SECURESCAN_CI_OUTPUT }}/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload SARIF to code scanning
+        if: always() && (steps.gate.outputs.exit_code == '0' || steps.gate.outputs.exit_code == '1')
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ env.SECURESCAN_CI_OUTPUT }}/results.sarif
+
+      - name: Preserve SecureScan decision
+        if: always()
+        shell: bash
+        run: exit "${{ steps.gate.outputs.exit_code || '2' }}"

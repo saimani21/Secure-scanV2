@@ -2063,3 +2063,39 @@
   background: #b892ff;
   color: #b892ff;
 }
+
+.v15-dashboard,
+.finding-knowledge-card,
+.knowledge-cve {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.v15-dashboard > h3,
+.finding-knowledge-card > h3,
+.knowledge-cve > h4 {
+  margin: var(--space-3) 0 0;
+}
+
+.finding-knowledge-card {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-5);
+}
+
+.ai-assistant-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ai-assistant-output {
+  white-space: pre-wrap;
+}
+
+.knowledge-cve {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-1);
+  padding: var(--space-4);
+}

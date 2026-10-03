@@ -26,6 +26,7 @@ dependencies = [
 
 [project.optional-dependencies]
 postgres = ["psycopg[binary]>=3.2,<4"]
+ai = ["openai>=1.66,<3"]
 dev = [
   "pytest>=8.3,<10",
   "pytest-cov>=6,<8",
@@ -47,6 +48,17 @@ include = ["securescan*"]
 "securescan.advisories.osv" = ["schema/*.json"]
 "securescan.intelligence" = ["schema/*.json"]
 "securescan.web" = ["*.html", "*.js", "*.css"]
+
+[tool.setuptools.data-files]
+"share/securescan" = ["alembic.ini", "compose.yaml"]
+"share/securescan/migrations" = ["migrations/env.py", "migrations/script.py.mako"]
+"share/securescan/migrations/versions" = ["migrations/versions/*.py"]
+"share/securescan/examples/github-actions" = ["examples/github-actions/securescan-v15.yml"]
+"share/securescan/docs" = [
+  "docs/security-invariants.md",
+  "docs/source-v1-status.md",
+  "docs/source-v1.5-*.md",
+]
 
 [tool.pytest.ini_options]
 addopts = "-q"

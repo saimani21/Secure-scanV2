@@ -16,12 +16,10 @@ _REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 _WEB_ROOT = _REPOSITORY_ROOT / "src" / "securescan" / "web"
 _HTML = (_WEB_ROOT / "index.html").read_text(encoding="utf-8")
 _JAVASCRIPT = {
-    path.name: path.read_text(encoding="utf-8")
-    for path in sorted(_WEB_ROOT.glob("*.js"))
+    path.name: path.read_text(encoding="utf-8") for path in sorted(_WEB_ROOT.glob("*.js"))
 }
 _STYLESHEETS = {
-    path.name: path.read_text(encoding="utf-8")
-    for path in sorted(_WEB_ROOT.glob("*.css"))
+    path.name: path.read_text(encoding="utf-8") for path in sorted(_WEB_ROOT.glob("*.css"))
 }
 _ALL_JAVASCRIPT = "\n".join(_JAVASCRIPT.values())
 _ALL_STYLES = "\n".join(_STYLESHEETS.values())
@@ -142,6 +140,8 @@ def test_static_assets_are_strictly_allowlisted_and_no_cache(client: TestClient)
         "projects.js": "text/javascript",
         "project_mutations.js": "text/javascript",
         "product_api.js": "text/javascript",
+        "product_release.js": "text/javascript",
+        "product_release_api.js": "text/javascript",
         "report.js": "text/javascript",
         "router.js": "text/javascript",
         "scan.js": "text/javascript",
@@ -220,7 +220,7 @@ def test_browser_code_remains_get_only_and_uses_only_frozen_read_apis() -> None:
     assert 'path.includes("\\\\")' in api
     assert "url.origin !== window.location.origin" in api
     assert 'getJson("/health/ready"' in api
-    assert 'acceptedStatuses: [503]' in api
+    assert "acceptedStatuses: [503]" in api
     for forbidden in ('method: "POST"', 'method: "PUT"', 'method: "PATCH"', 'method: "DELETE"'):
         assert forbidden not in api
     mutation = _JAVASCRIPT["project_mutations.js"]
@@ -243,6 +243,8 @@ def test_browser_code_remains_get_only_and_uses_only_frozen_read_apis() -> None:
         "/v1/scans/${segment}/gaps?",
     ):
         assert endpoint in api
+
+
 def test_router_has_exact_history_api_and_uuid_security_contract() -> None:
     router = _JAVASCRIPT["router.js"]
     for marker in (
@@ -294,9 +296,9 @@ def test_accessibility_foundations_cover_mobile_dialog_and_route_states() -> Non
     for marker in (
         'sidebar.setAttribute("role", "dialog")',
         'sidebar.setAttribute("aria-modal", "true")',
-        'main.inert = true',
-        'sidebar.inert = true',
-        'sidebar.inert = false',
+        "main.inert = true",
+        "sidebar.inert = true",
+        "sidebar.inert = false",
         'sidebar.setAttribute("aria-hidden", "true")',
         'event.key === "Escape"',
         'event.key !== "Tab"',

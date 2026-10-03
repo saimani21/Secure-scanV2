@@ -31,6 +31,7 @@ from securescan.jobs.finalization import (
 from securescan.jobs.mappers import job_record_from_row
 from securescan.jobs.models import JobRecord
 from securescan.jobs.repository import JobNotFoundError, JobStateConflictError
+from securescan.jobs.transaction_retry import run_with_bounded_transaction_retry
 from securescan.persistence.database import (
     AnalysisRunRow,
     JobRow,
@@ -187,74 +188,15 @@ class JobResultCommitService:
         canonical_report = _canonicalize_report(request.report_json)
 
         try:
-            with self._session_factory.begin() as session:
-                operation_timestamp = self._clock()
-                update_result = session.execute(
-                    _build_terminal_update(
-                        request.job_id,
-                        normalized_worker_id,
-                        normalized_lease_token,
-                        request.final_status,
-                        operation_timestamp,
-                    )
+            return run_with_bounded_transaction_retry(
+                lambda: self._commit_result_once(
+                    request,
+                    normalized_worker_id=normalized_worker_id,
+                    normalized_lease_token=normalized_lease_token,
+                    tool_execution=tool_execution,
+                    canonical_report=canonical_report,
                 )
-                if update_result.rowcount == 0:
-                    _classify_terminal_update_failure(
-                        session,
-                        request.job_id,
-                        normalized_worker_id,
-                        normalized_lease_token,
-                        operation_timestamp,
-                    )
-                    raise JobResultCommitError(
-                        f"Job {request.job_id!r} result commitment failed due to "
-                        "an internal lifecycle conflict"
-                    )
-                if update_result.rowcount != 1:
-                    raise JobResultCommitError(
-                        f"Job {request.job_id!r} result commitment affected an "
-                        "unexpected number of rows"
-                    )
-
-                job_row = session.get(JobRow, request.job_id)
-                if job_row is None:
-                    raise JobNotFoundError(request.job_id)
-                analysis_run = session.get(AnalysisRunRow, job_row.run_id)
-                if analysis_run is None:
-                    raise AnalysisRunNotFoundError(job_row.run_id)
-
-                execution_id = str(self._execution_id_factory())
-                execution_row = ToolExecutionRow(
-                    id=execution_id,
-                    run_id=job_row.run_id,
-                    job_id=job_row.id,
-                    attempt_number=job_row.attempt_count,
-                    adapter_id=job_row.adapter_id,
-                    tool_version=tool_execution.tool_version,
-                    adapter_version=tool_execution.adapter_version,
-                    outcome=tool_execution.outcome,
-                    exit_code=tool_execution.exit_code,
-                    duration_ms=tool_execution.duration_ms,
-                    warning_json=deepcopy(tool_execution.warning_json),
-                    error=tool_execution.error,
-                )
-                session.add(execution_row)
-                analysis_run.report_json = deepcopy(canonical_report)
-                recompute_analysis_run_status(
-                    session,
-                    job_row.run_id,
-                    changed_at=operation_timestamp,
-                )
-                session.flush()
-
-                job = job_record_from_row(job_row)
-                result = JobResultCommitResult(
-                    job=job,
-                    run_id=job_row.run_id,
-                    tool_execution_id=execution_id,
-                    attempt_number=job_row.attempt_count,
-                    report_json=deepcopy(canonical_report),
-                )
+            )
         except (
             InvalidJobFinalStatusError,
             InvalidWorkerRequestError,
@@ -274,4 +216,79 @@ class JobResultCommitService:
                 f"Failed to commit result for job {request.job_id!r}"
             ) from None
 
-        return result
+    def _commit_result_once(
+        self,
+        request: JobResultCommitRequest,
+        *,
+        normalized_worker_id: str,
+        normalized_lease_token: str,
+        tool_execution: ToolExecutionCommit,
+        canonical_report: dict[str, Any],
+    ) -> JobResultCommitResult:
+        with self._session_factory.begin() as session:
+            operation_timestamp = self._clock()
+            update_result = session.execute(
+                _build_terminal_update(
+                    request.job_id,
+                    normalized_worker_id,
+                    normalized_lease_token,
+                    request.final_status,
+                    operation_timestamp,
+                )
+            )
+            if update_result.rowcount == 0:
+                _classify_terminal_update_failure(
+                    session,
+                    request.job_id,
+                    normalized_worker_id,
+                    normalized_lease_token,
+                    operation_timestamp,
+                )
+                raise JobResultCommitError(
+                    f"Job {request.job_id!r} result commitment failed due to "
+                    "an internal lifecycle conflict"
+                )
+            if update_result.rowcount != 1:
+                raise JobResultCommitError(
+                    f"Job {request.job_id!r} result commitment affected an "
+                    "unexpected number of rows"
+                )
+
+            job_row = session.get(JobRow, request.job_id)
+            if job_row is None:
+                raise JobNotFoundError(request.job_id)
+            analysis_run = session.get(AnalysisRunRow, job_row.run_id)
+            if analysis_run is None:
+                raise AnalysisRunNotFoundError(job_row.run_id)
+
+            execution_id = str(self._execution_id_factory())
+            execution_row = ToolExecutionRow(
+                id=execution_id,
+                run_id=job_row.run_id,
+                job_id=job_row.id,
+                attempt_number=job_row.attempt_count,
+                adapter_id=job_row.adapter_id,
+                tool_version=tool_execution.tool_version,
+                adapter_version=tool_execution.adapter_version,
+                outcome=tool_execution.outcome,
+                exit_code=tool_execution.exit_code,
+                duration_ms=tool_execution.duration_ms,
+                warning_json=deepcopy(tool_execution.warning_json),
+                error=tool_execution.error,
+            )
+            session.add(execution_row)
+            analysis_run.report_json = deepcopy(canonical_report)
+            recompute_analysis_run_status(
+                session,
+                job_row.run_id,
+                changed_at=operation_timestamp,
+            )
+            session.flush()
+
+            return JobResultCommitResult(
+                job=job_record_from_row(job_row),
+                run_id=job_row.run_id,
+                tool_execution_id=execution_id,
+                attempt_number=job_row.attempt_count,
+                report_json=deepcopy(canonical_report),
+            )

@@ -217,6 +217,32 @@ class IntelligenceService:
         except (SQLAlchemyError, OSError, TypeError, ValueError) as error:
             raise IntelligenceIntegrityError("intelligence snapshot read failed") from error
 
+    def get_snapshot(self, snapshot_id: str) -> IntelligenceSnapshot:
+        """Load one immutable snapshot and revalidate its CAS artifact."""
+        try:
+            with self._sessions() as session:
+                row = session.get(SourceIntelligenceSnapshotRow, snapshot_id)
+                if row is None:
+                    raise IntelligenceNotFoundError("intelligence snapshot is unavailable")
+                return self._snapshot(row, verify_artifact=True)
+        except IntelligenceServiceError:
+            raise
+        except (SQLAlchemyError, OSError, TypeError, ValueError) as error:
+            raise IntelligenceIntegrityError("intelligence snapshot read failed") from error
+
+    def get_nvd(self, enrichment_id: str) -> NvdEnrichment:
+        """Load one exact-CVE NVD enrichment and revalidate its CAS artifact."""
+        try:
+            with self._sessions() as session:
+                row = session.get(SourceNvdEnrichmentRow, enrichment_id)
+                if row is None:
+                    raise IntelligenceNotFoundError("NVD enrichment is unavailable")
+                return self._nvd(row, verify_artifact=True)
+        except IntelligenceServiceError:
+            raise
+        except (SQLAlchemyError, OSError, TypeError, ValueError) as error:
+            raise IntelligenceIntegrityError("NVD enrichment read failed") from error
+
     def create_bundle(
         self,
         *,

@@ -13,12 +13,12 @@ Core v0.1 supports local directories only. It does not clone repositories, authe
 users, provide multi-tenant isolation, cover multiple languages, or represent a complete
 Semgrep ruleset. See [limitations](docs/core-v0.1-limitations.md).
 
-SecureScan Source v1.2.0 is the current local product release built on this frozen
-Core. The Python distribution and API retain their independent Core version `0.1.0`;
-the annotated Git tag `source-v1.2.0` identifies the Source product release. See the
-[Source v1.2 release notes](docs/source-v1.2-release.md) for supported workflows,
-security boundaries, validation evidence, and limitations. The
-[v1.1 release notes](docs/source-v1.1-release.md) remain the frozen prior record.
+SecureScan Source v1.5.0 is the current local frozen release built on this Core.
+The Python distribution and API retain their independent Core version `0.1.0`;
+the annotated Git tag `source-v1.5.0` identifies the Source product release. See the
+[Source v1.5 release notes](docs/source-v1.5-release.md) for supported workflows,
+security boundaries, validation evidence, and limitations. The v1.3 and v1.2
+release notes remain frozen prior records.
 
 ## Local setup
 
@@ -373,6 +373,19 @@ deterministically with `securescan sarif RUN_ID --output PATH`; findings never
 become a policy exit failure in V1.1. See the
 [V1.1D CLI, SARIF, and CI guide](docs/source-v1.1d-cli-sarif-ci.md).
 
+Source v1.5 adds the first-class `securescan ci REPOSITORY` security gate. It
+waits for a verified published run, evaluates one explicit immutable threat
+intelligence bundle against trusted baseline and policy state, and atomically
+emits JSON, DecisionProof, SARIF, CycloneDX, Markdown, and HTML artifacts. Exit
+codes are stable: `0` PASS, `1` policy FAIL, and `2` operational/evidence/policy
+ERROR. It never promotes a baseline. See the [V1.5 CI/CD guide](docs/source-v1.5-ci-cd.md).
+
+The same assurance projection drives the Web dashboard, Finding Knowledge
+Cards, verification playbooks, and deterministic HTML assessment. The optional
+AI explanation layer is server-side, read-only, disabled by default, and is not
+a security authority. See the [product guide](docs/source-v1.5-product-experience.md)
+and [AI security guide](docs/source-v1.5-ai-assistant.md).
+
 The read-only navigation API exposes bounded `GET /v1/projects`,
 `GET /v1/projects/{project_id}`, `GET /v1/projects/{project_id}/scans`, and
 `GET /v1/scans` views. Clients can discover durable project and run IDs without
@@ -386,6 +399,13 @@ ephemeral pre-provisioned runner with the frozen scanner toolchain; it is not an
 active workflow and does not claim universal GitHub-hosted-runner portability.
 SecureScan findings remain authoritative and GitHub Code Scanning is a one-way
 presentation surface.
+
+The separate inert [V1.5 GitHub Actions template](examples/github-actions/securescan-v15.yml)
+uses the current major action contracts (`actions/checkout@v6`, artifact upload
+v6, and CodeQL SARIF upload v4), publishes artifacts even for policy FAIL, and
+then restores SecureScan's original exit result. It assumes a trusted
+self-hosted runner with the V1.5 wheel and frozen scanner toolchain already
+installed; SecureScan is not claimed to be available from public PyPI.
 
 V1.1D CLI, deterministic SARIF, and the inert CI example are complete and
 frozen after isolated real scanning, empty-result, fail-closed output,

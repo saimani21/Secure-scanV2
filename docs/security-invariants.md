@@ -47,6 +47,23 @@ hostile regression named for the affected identifier.
 | THR-015 | Intelligence refresh and assessment do not require a source rescan. | Separate import and evaluation services. |
 | THR-016 | Historical assessments are append-only and newer intelligence cannot rewrite them. | Content-derived identity and immutable unique inputs. |
 
+## V1.5 optional AI explanation invariants
+
+| ID | Frozen invariant | Primary enforcement |
+| --- | --- | --- |
+| AI-001 | AI output cannot mutate finding identity. | Provider output has no finding write path. |
+| AI-002 | AI output cannot mutate severity or CVSS. | Read-only bounded response contract. |
+| AI-003 | AI output cannot mutate lifecycle. | No lifecycle service is exposed to the provider. |
+| AI-004 | AI output cannot create or revoke governance. | No governance mutation is exposed. |
+| AI-005 | AI output cannot promote or revoke a trusted baseline. | No baseline mutation is exposed. |
+| AI-006 | AI output cannot change OSV, NVD, KEV, EPSS, or scanner evidence. | Context contains immutable selected evidence only. |
+| AI-007 | AI output cannot influence deterministic policy. | Policy is evaluated before and independently of explanation. |
+| AI-008 | Raw secret material never enters AI context. | Secret/source/raw fields are excluded and hostile canaries are tested. |
+| AI-009 | Missing verified evidence remains missing or unknown. | Grounding instruction and typed read-model context. |
+| AI-010 | Source transmission follows explicit snippet policy. | Snippets default off; current V1.5 cards provide no arbitrary source text. |
+| AI-011 | Provider failure degrades only AI explanation. | Disabled/failure states leave scan, CI, dashboard, and report intact. |
+| AI-012 | Returned evidence references must have been supplied. | Unknown provider references are dropped before presentation. |
+
 ## Prompt 1 acceptance mapping
 
 `tests/test_v13_trust_components_interop.py` covers IDN-001/002, EVI-004, EXE-002/003/004,

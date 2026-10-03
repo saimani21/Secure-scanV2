@@ -37,6 +37,7 @@ from securescan.source_runtime import (
     create_source_runtime,
 )
 
+from .ci import register_ci_command
 from .developer import (
     DEFAULT_POLL_SECONDS,
     project_page_data,
@@ -194,15 +195,11 @@ def system_configure(
     try:
         values = parse_operator_env_file(from_env_file)
         if not values.keys() <= Settings.model_fields.keys():
-            raise OperatorProfileError(
-                "Configuration contains unsupported SecureScan settings"
-            )
+            raise OperatorProfileError("Configuration contains unsupported SecureScan settings")
         base = from_env_file.resolve().parent
         for name in _PROFILE_PATH_FIELDS & values.keys():
             path = Path(values[name]).expanduser()
-            values[name] = str(
-                path if path.is_absolute() else (base / path).resolve()
-            )
+            values[name] = str(path if path.is_absolute() else (base / path).resolve())
         settings = Settings(**values, _env_file=None)
         profile = write_operator_profile(settings.model_dump(mode="json"))
         get_operator_settings.cache_clear()
@@ -238,9 +235,7 @@ def _open_ui(url: str) -> None:
     except Exception:
         opened = False
     if not opened:
-        typer.echo(
-            "Browser launch was unavailable; open the URL above manually.", err=True
-        )
+        typer.echo("Browser launch was unavailable; open the URL above manually.", err=True)
         raise typer.Exit(5)
 
 
@@ -259,9 +254,7 @@ def open_ui() -> None:
 def _fail(error: SourceCliError, *, json_output: bool) -> None:
     if json_output:
         typer.echo(
-            canonical_json(
-                {"error": {"code": error.code, "message": str(error)}}
-            ),
+            canonical_json({"error": {"code": error.code, "message": str(error)}}),
             err=True,
         )
     else:
@@ -303,9 +296,7 @@ def _display_findings(data: dict[str, object], *, json_output: bool) -> None:
     if json_output:
         typer.echo(canonical_json(data))
         return
-    typer.echo(
-        f"Findings: {data['total']} (limit {data['limit']}, offset {data['offset']})"
-    )
+    typer.echo(f"Findings: {data['total']} (limit {data['limit']}, offset {data['offset']})")
     for item in data["items"]:  # type: ignore[union-attr]
         typer.echo(
             " | ".join(
@@ -370,9 +361,7 @@ def project_list(
             typer.echo("Projects")
             for project in page.items:
                 created = project.created_at.isoformat()
-                typer.echo(
-                    f"{terminal_text(project.name)}    {project.project_id}    {created}"
-                )
+                typer.echo(f"{terminal_text(project.name)}    {project.project_id}    {created}")
             first = 0 if page.total == 0 else page.offset + 1
             last = page.offset + len(page.items)
             typer.echo(f"Showing {first}–{last} of {page.total}")
@@ -415,14 +404,10 @@ def scan(
 
     if not project_id:
         _fail(
-            SourceCliError(
-                "SUBMISSION_CONFLICT", "An existing --project-id is required", 2
-            ),
+            SourceCliError("SUBMISSION_CONFLICT", "An existing --project-id is required", 2),
             json_output=json_output,
         )
-    if not wait and (
-        wait_timeout_seconds is not None or poll_seconds != DEFAULT_POLL_SECONDS
-    ):
+    if not wait and (wait_timeout_seconds is not None or poll_seconds != DEFAULT_POLL_SECONDS):
         _fail(
             SourceCliError("INVALID_WAIT_OPTIONS", "Wait options require --wait", 2),
             json_output=json_output,
@@ -475,9 +460,7 @@ def scan(
         )
     except Exception:
         _fail(
-            SourceCliError(
-                "SUBMISSION_UNAVAILABLE", "Source scan submission is unavailable", 5
-            ),
+            SourceCliError("SUBMISSION_UNAVAILABLE", "Source scan submission is unavailable", 5),
             json_output=json_output,
         )
 
@@ -520,8 +503,14 @@ def findings(
         with create_source_cli_services() as services:
             if exact_run:
                 product_page = query_exact_run_findings(
-                    services, run_id, authority=authority, category=category,
-                    priority=priority, lifecycle_state=lifecycle, limit=limit, offset=offset,
+                    services,
+                    run_id,
+                    authority=authority,
+                    category=category,
+                    priority=priority,
+                    lifecycle_state=lifecycle,
+                    limit=limit,
+                    offset=offset,
                 )
             else:
                 page = query_findings(
@@ -712,6 +701,7 @@ register_product_commands(app, lambda: create_source_cli_services(), _fail)
 register_assurance_commands(app, lambda: create_source_cli_services(), _fail)
 register_guidance_commands(app, lambda: create_source_cli_services(), _fail)
 register_intelligence_commands(app)
+register_ci_command(app, lambda: create_source_cli_services())
 
 
 if __name__ == "__main__":

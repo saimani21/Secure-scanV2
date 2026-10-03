@@ -11,6 +11,8 @@ import {
 } from "/assets/components.js";
 import { boundedDisplayText, formatDateTime } from "/assets/format.js";
 import { beginRequest, registerRouteCleanup } from "/assets/state.js";
+import { getV15Assurance, v15Scope } from "/assets/product_release_api.js";
+import { renderV15Dashboard } from "/assets/product_release.js";
 
 const DELTA_STATES = ["INTRODUCED", "PRESENT", "REMOVED", "NOT_COMPARABLE"];
 const POLICY_KINDS = ["VIOLATION", "WARNING", "EXCLUSION", "ERROR"];
@@ -208,8 +210,10 @@ function renderCoverageContext(runId, coverage, gaps) {
 export function renderAssurancePage({
   region, route,
   services = { runScope, getBaseline, getBaselineHistory, promoteBaseline,
-    getSecurityDelta, getTrustedPolicy, evaluatePolicy, getCoverage, getGaps },
+    getSecurityDelta, getTrustedPolicy, evaluatePolicy, getCoverage, getGaps,
+    getV15Assurance },
 }) {
+  const v15Region = createElement("div", {}, [loadingState("Loading threat-informed assurance")]);
   const baselineRegion = createElement("div", {}, [loadingState("Loading trusted baseline")]);
   const deltaRegion = createElement("div", {}, [loadingState("Loading Security Delta")]);
   const policyRegion = createElement("div", {}, [loadingState("Loading trusted policy")]);
@@ -219,6 +223,7 @@ export function renderAssurancePage({
     pageHeader({ eyebrow: "Assurance", title: "Baseline, delta and policy",
       description: "Exact run decisions and current trusted configuration are labeled separately." }),
     notice,
+    section("Threat-informed Assurance Dashboard", "assurance-v15", v15Region),
     section("Coverage and gaps", "assurance-coverage", coverageRegion),
     section("Trusted baseline", "assurance-baseline", baselineRegion),
     section("Security Delta", "assurance-delta", deltaRegion),
@@ -332,6 +337,31 @@ export function renderAssurancePage({
       coverageRegion.replaceChildren(renderCoverageContext(route.runId,
         coverage.status === "fulfilled" ? coverage.value : null,
         gaps.status === "fulfilled" ? gaps.value : null));
+      const productScope = v15Scope(scope);
+      if (productScope === null) {
+        v15Region.replaceChildren(emptyState(
+          "No V1.5 decision selected",
+          "Select an immutable intelligence bundle and PolicyDecisionProof using the bundle and proof URL parameters.",
+          "No decision is inferred from scan completion alone.",
+        ));
+      } else {
+        try {
+          const dashboard = await services.getV15Assurance(productScope, {
+            signal: initial.signal,
+          });
+          if (initial.isCurrent() && !disposed) {
+            v15Region.replaceChildren(renderV15Dashboard(dashboard));
+          }
+        } catch (_error) {
+          if (initial.isCurrent() && !disposed) {
+            v15Region.replaceChildren(notReady(
+              "Threat-informed assurance unavailable",
+              "The selected bundle and proof could not be verified for this run.",
+              "ASSURANCE_UNAVAILABLE",
+            ));
+          }
+        }
+      }
     } catch (_error) {
       if (initial.isCurrent() && !disposed) region.replaceChildren(notReady(
         "Run assurance unavailable", "This run could not be scoped to an admitted project and lineage.",

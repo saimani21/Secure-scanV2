@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from securescan.api.intelligence_routes import router as intelligence_router
 from securescan.api.job_routes import router as job_router
 from securescan.api.operations_routes import router as operations_router
 from securescan.api.policy_routes import router as policy_router
+from securescan.api.product_release_routes import router as product_release_router
 from securescan.api.product_view_routes import router as product_view_router
 from securescan.api.project_routes import router as project_router
 from securescan.api.run_routes import router as run_router
@@ -56,16 +58,23 @@ from securescan.product_core import (
     SourceTrustedTargetSubmissionService,
 )
 from securescan.product_core.guidance import FindingGuidanceService
+from securescan.product_core.interoperability import SourceInteroperabilityService
 from securescan.product_core.product_view import SourceFindingProductViewService
+from securescan.product_release import (
+    AIContextBuilder,
+    DisabledProvider,
+    OpenAIProvider,
+    ProductAssuranceService,
+)
 from securescan.runs import RunQueryService
+from securescan.runtime_assets import runtime_asset_path
 from securescan.runtime_storage import initialize_source_runtime_storage
 from securescan.services.scan_service import ScanService
 from securescan.source.projection import SourceProjectionManager
 from securescan.web.routes import router as frontend_router
 from securescan.workspaces import RepositoryWorkspaceManager
 
-_REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
-_ALEMBIC_CONFIG_PATH = _REPOSITORY_ROOT / "alembic.ini"
+_ALEMBIC_CONFIG_PATH = runtime_asset_path("alembic.ini")
 
 
 @asynccontextmanager
@@ -106,8 +115,8 @@ async def lifespan(application: FastAPI):
         application.state.finding_guidance_service = FindingGuidanceService(
             session_factory, artifact_store
         )
-        application.state.source_finding_product_view_service = (
-            SourceFindingProductViewService(session_factory, artifact_store)
+        application.state.source_finding_product_view_service = SourceFindingProductViewService(
+            session_factory, artifact_store
         )
         application.state.source_project_service = SourceProjectService(session_factory)
         application.state.source_finding_governance_service = SourceFindingGovernanceService(
@@ -130,6 +139,26 @@ async def lifespan(application: FastAPI):
             session_factory, artifact_store
         )
         application.state.assurance_service = AssuranceService(session_factory, artifact_store)
+        application.state.source_interoperability_service = SourceInteroperabilityService(
+            session_factory, artifact_store
+        )
+        application.state.product_assurance_service = ProductAssuranceService(
+            application.state.assurance_service,
+            application.state.intelligence_service,
+            application.state.effective_governance_service,
+            application.state.finding_guidance_service,
+            application.state.source_interoperability_service,
+        )
+        application.state.ai_context_builder = AIContextBuilder()
+        application.state.ai_allow_source_snippets = settings.ai_allow_source_snippets
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if settings.ai_enabled and api_key and settings.ai_model:
+            application.state.ai_provider = OpenAIProvider(
+                api_key=api_key,
+                model=settings.ai_model,
+            )
+        else:
+            application.state.ai_provider = DisabledProvider()
         application.state.source_orchestration_coordinator_service = (
             SourceOrchestrationCoordinatorService(
                 session_factory,
@@ -156,6 +185,7 @@ app.include_router(effective_governance_router)
 app.include_router(guidance_router)
 app.include_router(trusted_baseline_router)
 app.include_router(policy_router)
+app.include_router(product_release_router)
 app.include_router(intelligence_router)
 app.include_router(product_view_router)
 app.include_router(source_scan_router)

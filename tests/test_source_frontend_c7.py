@@ -10,14 +10,8 @@ import pytest
 
 _ROOT = Path(__file__).resolve().parents[1]
 _WEB = _ROOT / "src" / "securescan" / "web"
-_JAVASCRIPT = {
-    path.name: path.read_text(encoding="utf-8")
-    for path in sorted(_WEB.glob("*.js"))
-}
-_STYLES = {
-    path.name: path.read_text(encoding="utf-8")
-    for path in sorted(_WEB.glob("*.css"))
-}
+_JAVASCRIPT = {path.name: path.read_text(encoding="utf-8") for path in sorted(_WEB.glob("*.js"))}
+_STYLES = {path.name: path.read_text(encoding="utf-8") for path in sorted(_WEB.glob("*.css"))}
 _ALL_JAVASCRIPT = "\n".join(_JAVASCRIPT.values())
 _ALL_STYLES = "\n".join(_STYLES.values())
 
@@ -25,9 +19,7 @@ _ALL_STYLES = "\n".join(_STYLES.values())
 def _luminance(value: str) -> float:
     channels = [int(value[index : index + 2], 16) / 255 for index in (1, 3, 5)]
     linear = [
-        channel / 12.92
-        if channel <= 0.04045
-        else ((channel + 0.055) / 1.055) ** 2.4
+        channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
         for channel in channels
     ]
     return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
@@ -81,10 +73,13 @@ def test_c7_hostile_text_and_browser_security_invariants_are_global() -> None:
     assert 'name.toLowerCase().startsWith("on")' in _JAVASCRIPT["components.js"]
     assert 'method: "GET"' in _JAVASCRIPT["api.js"]
     read_only_modules = "\n".join(
-        source for name, source in _JAVASCRIPT.items() if name != "project_mutations.js"
+        source
+        for name, source in _JAVASCRIPT.items()
+        if name not in {"project_mutations.js", "product_release_api.js"}
     )
     assert not re.search(r'method:\s*"(?:POST|PUT|PATCH|DELETE)"', read_only_modules)
     assert _JAVASCRIPT["project_mutations.js"].count('method: "POST"') == 1
+    assert _JAVASCRIPT["product_release_api.js"].count('method: "POST"') == 1
     assert "unicode-bidi: isolate" in _ALL_STYLES
     assert "overflow-wrap: anywhere" in _ALL_STYLES
     assert "api.osv.dev" not in _ALL_JAVASCRIPT
@@ -116,7 +111,7 @@ def test_c7_accessibility_and_responsive_contract_remain_explicit() -> None:
         'event.key === "Escape"',
         'event.key !== "Tab"',
         "previousFocus.focus()",
-        'main.inert = true',
+        "main.inert = true",
         'sidebar.setAttribute("aria-modal", "true")',
     ):
         assert marker in application
@@ -177,7 +172,7 @@ def test_c7_navigation_deep_links_history_and_new_tabs_execute(tmp_path: Path) -
     router.write_text(_JAVASCRIPT["router.js"], encoding="utf-8")
     harness = tmp_path / "navigation.mjs"
     harness.write_text(
-        r'''
+        r"""
 import { pathToFileURL } from "node:url";
 class FakeElement {
   constructor(href, { target = "", download = false } = {}) { this.href = href; this.target = target; this.download = download; }
@@ -216,7 +211,7 @@ if (click(new FakeElement(`${location.origin}/projects?offset=50`))) throw new E
 location.pathname = `/scans/${run}/report`; location.href = `${location.origin}${location.pathname}`;
 listeners.get("popstate")();
 if (navigated.at(-1).name !== "report") throw new Error("Back/forward route restoration changed");
-''',
+""",
         encoding="utf-8",
     )
     windows_harness = subprocess.run(
