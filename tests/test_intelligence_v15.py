@@ -84,10 +84,15 @@ def kev_payload(*, cve: str = "CVE-2025-12345", count: int = 1) -> bytes:
     ).encode()
 
 
-def epss_payload(*, cve: str = "CVE-2025-12345", score: str = "0.42") -> bytes:
+def epss_payload(
+    *,
+    cve: str = "CVE-2025-12345",
+    score: str = "0.42",
+    score_date: str = "2026-10-01",
+) -> bytes:
     return gzip.compress(
         (
-            "#model_version:v2025.03.14,score_date:2026-10-01\n"
+            f"#model_version:v2025.03.14,score_date:{score_date}\n"
             "cve,epss,percentile\n"
             f"{cve},{score},0.91\n"
         ).encode()
@@ -252,11 +257,21 @@ def test_hostile_kev_documents_fail_closed(payload: bytes) -> None:
 def test_epss_parser_preserves_probability_and_metadata() -> None:
     parsed = parse_epss_snapshot(epss_payload())
     assert parsed.source is IntelligenceSource.FIRST_EPSS
+    assert parsed.source_effective_at.isoformat() == "2026-10-01T00:00:00+00:00"
+    assert parsed.parser_contract_version == "securescan-first-epss-v1"
     assert parsed.source_metadata == {
         "model_version": "v2025.03.14",
         "score_date": "2026-10-01",
     }
     assert parsed.records[0]["epss"] == 0.42
+
+
+def test_epss_parser_accepts_rfc3339_score_date() -> None:
+    parsed = parse_epss_snapshot(epss_payload(score_date="2026-10-03T12:00:21Z"))
+
+    assert parsed.source_effective_at.isoformat() == "2026-10-03T12:00:21+00:00"
+    assert parsed.parser_contract_version == "securescan-first-epss-v1"
+    assert parsed.source_metadata["score_date"] == "2026-10-03T12:00:21Z"
 
 
 @pytest.mark.parametrize(

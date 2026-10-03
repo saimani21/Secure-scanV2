@@ -173,7 +173,18 @@ def parse_epss_snapshot(payload: bytes) -> ParsedSnapshot:
     if not model_version or not score_date:
         raise IntelligenceIngestionError("EPSS metadata is invalid")
     try:
-        effective = datetime.combine(date.fromisoformat(score_date), datetime.min.time(), UTC)
+        if "T" in score_date:
+            timestamp = score_date[:-1] + "+00:00" if score_date.endswith("Z") else score_date
+            effective = datetime.fromisoformat(timestamp)
+            if effective.tzinfo is None:
+                raise ValueError
+            effective = effective.astimezone(UTC)
+        else:
+            effective = datetime.combine(
+                date.fromisoformat(score_date),
+                datetime.min.time(),
+                UTC,
+            )
     except ValueError:
         raise IntelligenceIngestionError("EPSS score date is invalid") from None
     reader = csv.DictReader(lines[1:], strict=True)
