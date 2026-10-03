@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🔐 SecureScan
+# 🔐 SecureScan V2
 
 ### Evidence-Driven Source Repository Security Analysis
 
