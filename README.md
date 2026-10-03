@@ -1,427 +1,575 @@
-# SecureScan Core
+<div align="center">
 
-SecureScan Core v0.1.0 is a source-repository security-analysis orchestrator. It accepts
-local repository directories, creates a deterministic read-only snapshot, runs Semgrep
-Community Edition in an isolated Docker sandbox, normalizes findings, and commits a
-canonical report as durable evidence.
+# 🔐 SecureScan
 
-The bundled baseline contains exactly three Python demonstration rules: dangerous
-`eval`, `subprocess` with `shell=True`, and unsafe `yaml.load`. Partial analysis is
-explicit: scanner diagnostics become analysis gaps rather than a false clean result.
+### Evidence-Driven Source Repository Security Analysis
 
-Core v0.1 supports local directories only. It does not clone repositories, authenticate
-users, provide multi-tenant isolation, cover multiple languages, or represent a complete
-Semgrep ruleset. See [limitations](docs/core-v0.1-limitations.md).
+**SecureScan is a local-first application security platform that orchestrates multiple security engines, normalizes their evidence, enriches vulnerabilities with threat intelligence, manages security decisions over time, and produces deterministic security outcomes.**
 
-SecureScan Source v1.5.1 is the current local release built on this Core. V1.5.1
-is a bounded operator-bootstrap hotfix over the frozen V1.5.0 product behavior.
-The Python distribution and API retain their independent Core version `0.1.0`;
-the annotated Git tags identify Source product releases. See the
-[V1.5.1 hotfix note](docs/source-v1.5.1-release.md) and
-[V1.5 release notes](docs/source-v1.5-release.md) for supported workflows,
-security boundaries, and limitations. The v1.3 and v1.2 release notes remain
-frozen prior records.
+![Release](https://img.shields.io/badge/release-v1.5.2-blue)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Persistence-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Deployment-2496ED?logo=docker&logoColor=white)
+![Security](https://img.shields.io/badge/Application-Security-red)
 
-## Local setup
+**SAST · Secret Detection · SCA · SBOM · IaC Security · Threat Intelligence · Governance · Security Delta · Policy**
 
-Python 3.12+, Docker Desktop or a compatible local Docker daemon, and PostgreSQL 16 are
-required for the complete release gate.
+</div>
+
+---
+
+## Overview
+
+Modern repositories are rarely secured by a single scanner.
+
+A real source repository may contain application code, dependencies, infrastructure definitions, credentials, configuration files, generated assets, and multiple programming languages. Each security tool understands only part of that picture.
+
+SecureScan provides a security analysis pipeline around those specialized tools.
+
+Instead of simply collecting scanner output, SecureScan builds a trusted repository snapshot, determines what can be evaluated, executes appropriate security engines, validates their evidence, converts findings into a canonical model, tracks governance decisions, enriches vulnerabilities with external intelligence, compares results against trusted baselines, and produces deterministic security decisions.
+
+The central idea is simple:
+
+> **Scanner output is evidence, not the final security decision.**
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+
+    A[Source Repository] --> B[Bounded Repository Ingestion]
+    B --> C[Immutable Repository Snapshot]
+
+    C --> D[Language & Repository Profiling]
+    D --> E[Scan Planning]
+
+    E --> F1[Semgrep<br/>SAST]
+    E --> F2[Gitleaks<br/>Secrets]
+    E --> F3[Syft<br/>Package Inventory & SBOM]
+    E --> F4[Checkov<br/>IaC / Configuration]
+
+    F3 --> G1[OSV<br/>Dependency Vulnerability Matching]
+
+    F1 --> H[Parser & Evidence Validation]
+    F2 --> H
+    F4 --> H
+    G1 --> H
+
+    H --> I[Canonical Findings]
+    I --> J[Identity & Coverage Model]
+
+    J --> K[Lifecycle]
+    K --> L[Governance & Suppression]
+
+    L --> M[Threat Intelligence]
+
+    M --> M1[NVD / CVE]
+    M --> M2[CISA KEV]
+    M --> M3[FIRST EPSS]
+
+    M --> N[Priority Projection]
+
+    N --> O[Trusted Baseline]
+    O --> P[Security Delta]
+
+    P --> Q[Deterministic Policy Engine]
+
+    Q --> R1[FastAPI]
+    Q --> R2[CLI]
+    Q --> R3[Web UI]
+    Q --> R4[SARIF]
+    Q --> R5[CycloneDX]
+```
+
+---
+
+## Security Capabilities
+
+| Security Layer | Engine / Component | Purpose |
+|---|---|---|
+| Repository profiling | Enry | Language-aware repository analysis |
+| SAST | Semgrep | Detect insecure source-code patterns |
+| Secret detection | Gitleaks | Detect exposed credentials and secrets |
+| Package inventory | Syft | Discover software packages and generate SBOM data |
+| Dependency analysis | OSV | Match packages against known vulnerabilities |
+| IaC security | Checkov | Detect insecure infrastructure and configuration |
+| Vulnerability intelligence | NVD / CVE | Vulnerability metadata and severity context |
+| Exploitation evidence | CISA KEV | Identify vulnerabilities known to be exploited |
+| Exploit probability | FIRST EPSS | Estimate exploitation probability |
+| Governance | SecureScan Core | False-positive and accepted-risk decisions |
+| Suppression | SecureScan Core | Time-bounded suppression with expiry and revocation |
+| Baselines | SecureScan Core | Maintain trusted historical security states |
+| Security Delta | SecureScan Core | Identify meaningful security changes |
+| Policy | SecureScan Core | Deterministic security decision generation |
+| Interoperability | SARIF / CycloneDX | Standard security and SBOM output formats |
+
+---
+
+## What Makes SecureScan Different
+
+SecureScan is deliberately not designed as a thin wrapper around several command-line scanners.
+
+Its main engineering work happens between the scanner and the final security decision.
+
+```text
+Tool Output
+    ↓
+Evidence Validation
+    ↓
+Normalization
+    ↓
+Finding Identity
+    ↓
+Coverage Tracking
+    ↓
+Lifecycle
+    ↓
+Governance
+    ↓
+Threat Intelligence
+    ↓
+Priority
+    ↓
+Baseline Comparison
+    ↓
+Security Delta
+    ↓
+Policy Decision
+```
+
+This separation is important because a scanner finding, analyst decision, vulnerability intelligence record, baseline state, and policy outcome represent different types of information and should not be collapsed into a single severity field.
+
+---
+
+## Evidence-First Analysis
+
+SecureScan distinguishes between what was actually evaluated and what cannot be concluded.
+
+A scanner that fails, times out, cannot inspect a file, or does not support a language does not silently produce a clean result.
+
+```text
+No finding
+≠
+No vulnerability
+≠
+Not evaluated
+≠
+Scanner failure
+```
+
+Unknown or incomplete evidence remains explicit instead of being converted into false confidence.
+
+---
+
+## Canonical Finding Model
+
+Different security engines describe findings differently.
+
+SecureScan converts tool-specific results into structured findings with consistent concepts for identity, location, evidence, severity, source engine, repository lineage, lifecycle state, governance state, and prioritization.
+
+This allows downstream components to reason about findings independently from the scanner that originally generated them.
+
+---
+
+## Finding Lifecycle and Governance
+
+Security findings change over time.
+
+SecureScan separates immutable scanner evidence from human security decisions.
+
+Supported governance concepts include:
+
+| Governance State | Meaning |
+|---|---|
+| `UNREVIEWED` | No analyst decision has been applied |
+| `FALSE_POSITIVE` | Finding has been reviewed and rejected with justification |
+| `ACCEPTED_RISK` | Risk has been consciously accepted with a reason and expiry |
+| Revocation | Existing governance decision is withdrawn |
+| Suppression | Finding is temporarily suppressed with explicit expiry |
+
+Governance operations use revision-aware updates and maintain append-only audit history.
+
+This prevents scanner reruns from silently rewriting analyst decisions.
+
+---
+
+## Suppression With Expiry
+
+Suppressions are treated as independent security decisions rather than deleted findings.
+
+Each suppression contains explicit justification, expiration information, revision history, and revocation state.
+
+Expired or revoked suppressions no longer hide future findings.
+
+---
+
+## Effective Governance
+
+A finding may disappear and later return.
+
+SecureScan therefore evaluates governance decisions relative to the finding lifecycle rather than assuming that an old decision automatically applies forever.
+
+For example, a false-positive decision made before a finding is resolved does not automatically govern a later reopened instance unless the lifecycle relationship allows it.
+
+---
+
+## Dependency Vulnerability Analysis
+
+SecureScan combines software inventory from Syft with vulnerability intelligence from OSV.
+
+```text
+Repository
+    ↓
+Syft
+    ↓
+Package Observation
+    ↓
+PURL / Name / Version Validation
+    ↓
+OSV Query
+    ↓
+Advisory Validation
+    ↓
+Affected Package Binding
+    ↓
+Normalized Dependency Finding
+```
+
+The matching pipeline validates package identity and advisory relationships before creating a vulnerability finding.
+
+Supported ecosystem handling includes package coordinates such as PyPI, npm, and Go where the required package identity is available.
+
+---
+
+## Vulnerability Intelligence
+
+Known vulnerabilities can be enriched using several independent intelligence sources.
+
+### NVD / CVE
+
+Provides vulnerability metadata and severity information.
+
+### CISA Known Exploited Vulnerabilities
+
+Provides evidence that a vulnerability is known to have been exploited in real-world attacks.
+
+### FIRST EPSS
+
+Provides probabilistic estimates for exploitation activity.
+
+SecureScan keeps these signals separate because they answer different questions.
+
+```text
+CVSS
+How severe could exploitation be?
+
+KEV
+Is this vulnerability known to be actively exploited?
+
+EPSS
+How likely is exploitation activity?
+```
+
+The current `v1.5.2` release includes hardened FIRST EPSS ingestion supporting RFC3339 `score_date` timestamps while preserving compatibility with date-only values.
+
+---
+
+## Trusted Security Baselines
+
+SecureScan can promote completed security analyses into trusted baselines.
+
+A baseline represents a previously accepted security state rather than simply the immediately preceding scan.
+
+Baseline promotion is guarded by validation rules so incomplete or unsuitable runs cannot silently become trusted reference points.
+
+---
+
+## Security Delta
+
+Once a trusted baseline exists, SecureScan can evaluate the security difference between that baseline and a new candidate analysis.
+
+Conceptually:
+
+```text
+Trusted Baseline
+        +
+Candidate Scan
+        ↓
+Finding Identity Comparison
+        ↓
+Lifecycle / Governance Evaluation
+        ↓
+Security Delta
+```
+
+This changes the question from:
+
+> "How many findings exist?"
+
+to:
+
+> "What security-relevant changes occurred?"
+
+That distinction is particularly useful for future pull-request and CI security workflows.
+
+---
+
+## Deterministic Security Policy
+
+SecureScan's decision layer is deterministic.
+
+Policy outcomes depend on explicit evidence and security state rather than opaque AI scoring.
+
+The policy layer can distinguish successful decisions from analysis errors and incomplete evidence.
+
+```text
+Evidence
+   ↓
+Governance
+   ↓
+Threat Intelligence
+   ↓
+Priority
+   ↓
+Security Delta
+   ↓
+Policy
+   ↓
+PASS / FAIL / ERROR
+```
+
+The same validated input produces the same decision.
+
+---
+
+## Local-First Security
+
+SecureScan was designed around controlled source processing.
+
+Repository analysis begins from a bounded snapshot rather than allowing scanners unrestricted access to arbitrary paths.
+
+External intelligence integrations send the minimum required vulnerability or package identifiers rather than repository source code.
+
+The platform also keeps scanner execution, normalized evidence, governance decisions, and external intelligence as separate trust boundaries.
+
+---
+
+## Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| Core platform | Python |
+| API | FastAPI |
+| Persistence | PostgreSQL |
+| Language intelligence | Go / Enry |
+| SAST | Semgrep |
+| Secret scanning | Gitleaks |
+| SBOM / package discovery | Syft |
+| Dependency vulnerabilities | OSV |
+| IaC security | Checkov |
+| Vulnerability intelligence | NVD, CVE, CISA KEV, FIRST EPSS |
+| Containerization | Docker / Docker Compose |
+| Database migrations | Alembic |
+| Security interchange | SARIF, CycloneDX |
+| Testing | Pytest |
+| Python quality | Ruff |
+
+---
+
+## Quick Start
+
+The project was developed and validated in Linux / WSL2 environments.
+
+Clone the repository:
+
+```bash
+git clone https://github.com/saimani21/Secure-scanV2.git
+cd Secure-scanV2
+```
+
+Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e '.[dev,postgres]'
+```
+
+Install the project and PostgreSQL development dependencies:
+
+```bash
+python -m pip install -e '.[dev,postgres]'
+```
+
+Create the local environment configuration:
+
+```bash
 cp .env.example .env
-# Edit .env and set the required secrets, host database URL, runtime identity,
-# and scanner paths. system configure supplies the frozen V1.5 Enry identity
-# unless an explicit independently trusted digest is provided.
+```
+
+Initialize SecureScan:
+
+```bash
+./.venv/bin/securescan init
+```
+
+Configure the local system:
+
+```bash
 ./.venv/bin/securescan system configure --from-env-file .env
-./.venv/bin/securescan system config
+```
+
+Validate the environment:
+
+```bash
 ./.venv/bin/securescan doctor
+```
+
+Start the SecureScan system:
+
+```bash
 ./.venv/bin/securescan system up
+```
+
+Check service status:
+
+```bash
+./.venv/bin/securescan system status
+```
+
+Open the application:
+
+```bash
 ./.venv/bin/securescan open
 ```
 
-Replace the example secrets and materialized host database URL before running
-initialization. Use a separate database whose name ends in `_test` for destructive
-PostgreSQL integration tests.
+---
 
-The private operator profile is SecureScan JSON, not a shell script. Select it
-with `export SECURESCAN_OPERATOR_PROFILE=/path/to/operator.profile`; do **not**
-source it. SecureScan loads it automatically. Operator commands ignore
-unrelated `.env` files in the current directory; process `SECURESCAN_*` values
-can explicitly override the profile. `securescan system config` shows a
-credential-free inventory of the active configuration. Stop the managed host
-worker and Compose services with `securescan system down`; PostgreSQL volumes
-and deployment data are preserved.
+## Running a Repository Scan
 
-## Tests
-
-Ordinary tests do not require PostgreSQL or Docker:
+After creating a SecureScan project through the CLI or API, a source repository can be submitted using:
 
 ```bash
-pytest
+./.venv/bin/securescan scan /absolute/path/to/repository \
+  --project-id <project-uuid>
 ```
 
-Strict integration runs require already-present, digest-pinned local images:
+SecureScan will profile the repository, determine applicable security engines, execute the analysis pipeline, normalize evidence, persist findings, and expose the resulting security state.
+
+---
+
+## API
+
+SecureScan exposes application functionality through FastAPI.
+
+When running the standard local deployment, API readiness can be checked using:
 
 ```bash
-SECURESCAN_REQUIRE_POSTGRES_TESTS=1 \
-SECURESCAN_TEST_POSTGRES_URL='postgresql+psycopg://.../securescan_test' \
-pytest -m postgres
-
-SECURESCAN_REQUIRE_DOCKER_TESTS=1 \
-SECURESCAN_TEST_DOCKER_IMAGE='local/image@sha256:...' \
-pytest -m docker
-
-SECURESCAN_REQUIRE_DOCKER_TESTS=1 \
-SECURESCAN_REQUIRE_SEMGREP_TESTS=1 \
-SECURESCAN_TEST_DOCKER_IMAGE='local/image@sha256:...' \
-SECURESCAN_TEST_SEMGREP_IMAGE='semgrep/semgrep@sha256:...' \
-pytest -m semgrep
+curl http://127.0.0.1:8000/health/ready
 ```
 
-## Release benchmark
+FastAPI also provides interactive API documentation when enabled by the application configuration.
 
-The image must already exist locally; the evaluator never pulls or builds it.
+---
+
+## Development
+
+Run the Python test suite:
 
 ```bash
-python -m securescan.release.core_v01 \
-  --corpus-root "$PWD/tests/fixtures/release_benchmark" \
-  --output-directory "$PWD/release-evidence" \
-  --semgrep-image 'semgrep/semgrep@sha256:...' \
-  --workspace-base "$PWD/.release-workspaces"
+python -m pytest
 ```
 
-The acceptance statement is deliberately narrow: 100% precision and recall on the
-bundled three-rule curated micro-benchmark. Read the
-[benchmark methodology](docs/core-v0.1-benchmark-methodology.md),
-[operations guide](docs/core-v0.1-operations.md), and
-[failure matrix](docs/core-v0.1-failure-matrix.md) before release.
+Run static checks:
 
-## Source Python SAST evaluation
+```bash
+python -m ruff check .
+```
 
-Source v0.3F2E5 is the authoritative corrected controlled real-world Python
-SAST execution checkpoint. F2E3 exposed drift between provisional claim prose
-and production behavior; F2E4 corrected the versioned claim contract and
-applicability evidence without changing the production rules. F2E5 binds its
-scoring only to those frozen v2 inputs and records new v2 evidence filenames.
-Historical F2E3 metrics remain provisional and superseded. `PYTHON_SAST`
-remains `SCANNABLE`; the maturity decision belongs to F2F. See the
-[Source status](docs/source-v1-status.md) for the exact evidence and result
-boundaries.
+Check formatting:
 
-## Source Gitleaks real-world selection
+```bash
+python -m ruff format --check .
+```
 
-Source v0.4F5B2R2 freezes a metadata-only, six-repository selection for the
-future bounded Gitleaks real-world evaluation. Each public upstream is pinned
-to an exact commit and a commit-addressed HTTPS archive resource:
+Database migrations are managed with Alembic:
 
-| Role | Repository | Commit |
-|---|---|---|
-| Small application | `charmbracelet/gum` | `4d089f95507708a71f64dacfe7ca513219dd5267` |
-| Library/package | `pallets/click` | `36baa15ff831b939a22bc527cd76ce653ef6f66d` |
-| Documentation/examples-heavy | `pallets/flask` | `d318b683471101618febed18996405ad26462110` |
-| Dependency/generated-path-heavy | `Quad4-Software/Reticulum-Go` | `5bf60debb7fdcd27b175d4db2585dd994a3d1b66` |
-| Multi-language | `golang/go` | `c5941983810b68ba93c30f0ef22c91ad63fb3e5c` |
-| Binary/config assets | `SSLMate/go-pkcs12` | `c0472edb16891765fbc86573ea468365b7fd2197` |
+```bash
+alembic upgrade head
+alembic current
+alembic check
+```
 
-At the F5B2R2 selection checkpoint, selection used only public upstream
-metadata and pre-scan role evidence from the frozen F5B1 vocabulary. No archive
-had been downloaded or extracted, no repository code or Gitleaks process had
-run, all archive/snapshot measurement fields remained unresolved, and no
-real-world result existed. `SECRET_DETECTION` remained `SCANNABLE`.
+---
 
-F5B2R1 corrects only the small-application selection after the frozen Miniflux
-archive failed the F5B1 acquisition policy because it contained a symlink.
-Gum was selected from repository metadata, not scanner output; its exact Git
-tree has 142 entries, no symlink or submodule modes, a maximum path length of
-37 bytes, and a maximum depth of three.
+## Current Release
 
-F5B2R2 consolidates the remaining acquisition-policy compatibility corrections
-before another acquisition attempt. Click replaces Requests after the frozen
-Requests archive exposed two symlinks during complete pre-materialization
-validation. Go replaces Git after complete provider tree metadata exposed three
-symlinks and one gitlink. Click, Flask, Reticulum-Go, Go, and go-pkcs12 each
-passed a complete metadata-only tree preflight with no symlink, gitlink, or
-unexpected modes. These choices were made without scanner execution or result
-data; the manifest remains `SELECTED` and all acquisition fields remain null.
+```text
+SecureScan Source v1.5.2
+Tag:    source-v1.5.2
+Commit: 4c1f0969cb16bfc9e548eeb701b61ab0cb788626
+```
 
-F5B3 subsequently acquired those exact six commit-addressed archives through
-the bounded hostile-archive path and froze their archive receipts and
-`RepositoryWorkspaceManager` snapshot identities. The acquisition manifest is
-now `ACQUIRED` with SHA-256
-`3a7f55e43210427974985c4e4009a1027fc4db12f3d94e119b490df8f0fc3b52`.
-At the F5B3 checkpoint, no repository code or Gitleaks process had run and no
-real-world result existed. `SECRET_DETECTION` remained `SCANNABLE`.
+`v1.5.2` is a compatibility hardening release for FIRST EPSS ingestion.
 
-The first F5C production-path execution attempt then failed closed at RW04:
-the frozen parser rejected completed scanner output as
-`GITLEAKS_OUTPUT_INVALID_SCHEMA`. RW01 and RW02 completed with no findings and
-RW03 produced six sanitized structural findings, but no partial run is treated
-as complete or clean. No F5C result was recorded, F5D did not start, and no
-accuracy or credential-validity claim is made.
+It accepts RFC3339 timestamps in EPSS `score_date` values while retaining compatibility with date-only values and preserving the existing intelligence contract.
 
-A second full restart passed RW04 after v0.4C1 but failed closed at RW05 when
-the parser rejected two legitimate multiline, line-relative column tuples.
-That attempt likewise produced no canonical result and did not start F5D.
+---
 
-After the v0.4C1 Match-layout and v0.4C2 multiline-location parser
-compatibility corrections, F5C completed against all six frozen F5B3
-snapshots. It recorded 138 sanitized structural findings, all content findings,
-with 138 unique identities and zero duplicate observations. Immediate F5D
-run #2 reproduced every per-repository canonical set with zero missing or new
-identities. These operational observations are not accuracy metrics;
-`SECRET_DETECTION` remains `SCANNABLE`.
+## Design Principles
 
-## Source Gitleaks Target-1 closure
+| Principle | SecureScan Approach |
+|---|---|
+| Evidence before conclusions | Scanner output is validated before becoming trusted evidence |
+| Unknown is not clean | Missing evaluation is represented explicitly |
+| Separation of concerns | Evidence, governance, intelligence, and policy remain distinct |
+| Reproducibility | Security decisions use deterministic inputs |
+| Auditability | Governance decisions preserve historical events |
+| Conservative correlation | Findings are correlated only when identity evidence supports it |
+| Local-first analysis | Source processing remains controlled and bounded |
+| Explicit coverage | Unsupported or incomplete analysis is visible |
 
-Source v0.4F6 reconciles the frozen Gitleaks evidence into the canonical
-[`final-capability-v1.json`](benchmarks/gitleaks/final-capability-v1.json)
-claim matrix. SecureScan provides pinned Gitleaks 8.30.1 current-snapshot
-execution, repository-wide applicability planning, bounded lifecycle behavior,
-fail-closed confidential parsing, sanitized content and validated path-only
-findings, stable structural identity, and canonical evidence. The controlled
-F3B corpus recorded 22 TP, 23 TN, 0 FP, and 3 FN across seven representative
-detectors. F4 reproduced 13/13 adversarial characterization outcomes. F5C
-recorded 138 sanitized content observations across six immutable repository
-snapshots, and F5D reproduced every structural set with zero missing or new
-identities.
+---
 
-Real repositories established compatibility with multiline `Match` values and
-line-relative multiline coordinates; unsupported output still fails closed.
-The evidence does not establish Git-history coverage, live credential validity,
-exploitability, universal detector accuracy, inspection of every selected byte,
-or zero false negatives. F3B is bounded, F4 documents material upstream
-limitations, and F5 has no complete ground truth and observed only three rule
-IDs. The final maturity is therefore `SECRET_DETECTION = SCANNABLE`, and the
-Gitleaks Target-1 integration is complete without promotion to `BENCHMARKED`.
+## What SecureScan Is Not
 
-## Source Syft package inventory
+SecureScan is a source-repository security analysis platform.
 
-Source S1 adds pinned Syft 1.51.0 directory-mode inventory for the immutable
-Source projection. The trusted binding verifies the official Linux amd64
-executable and frozen configuration, disables update checks, enrichment, remote
-license searches, and host-cache lookups, and invokes only explicit `dir` source
-behavior with bounded execution. It never installs dependencies, builds or
-runs repository code, invokes Git, or uses an image/registry/container daemon.
-No network-dependent operation is requested; S1 does not claim an OS-level
-egress sandbox.
+It does not claim that static analysis proves an application secure.
 
-Defensive `syft-json` parsing retains only normalized package coordinates,
-standards-valid PURLs, cataloger names, and authorized repository-relative
-locations. Arbitrary package metadata and raw scanner streams remain transient.
-`package_key` groups package coordinates for later advisory work, while
-`package_observation_id` also includes the cataloger and location set so
-structurally distinct evidence is preserved. Exact repeated Syft artifacts that
-normalize to the same complete observation are represented once; contradictory
-observations with the same identity fail closed. `package_count` is the number
-of unique normalized observations, not the raw Syft artifact-array length.
+It does not replace dynamic application security testing, penetration testing, runtime monitoring, cloud runtime detection, or manual security review.
 
-The controlled S1 evidence covers Python, npm, and Go fixtures, including
-multiple manifests and generated/test/vendor paths, plus a successful
-zero-package fixture and repeatable normalized output. This supports
-`PACKAGE_INVENTORY = SCANNABLE`. It does not establish dependency kind,
-installation, runtime use, reachability, exhaustive discovery, vulnerability,
-or CVE status. OSV matching is deliberately not part of the frozen S1 evidence.
+It also does not automatically treat every scanner result as an exploitable vulnerability.
 
-## Source OSV dependency intelligence
+The goal is to make security evidence more trustworthy, explainable, reproducible, and useful.
 
-Source S2 consumes the frozen Syft package observations and queries OSV only for exact,
-versioned, package-name-consistent PyPI, npm, and Go PURLs. The trusted client is fixed to `api.osv.dev`, bounded
-for batches, pagination, response sizes, timeouts, retries, and advisory counts, and
-fails closed on transport, schema, pagination, or mutable-record inconsistencies. Full
-records are validated against a frozen OSV 1.9.0 schema before alias-aware normalized
-dependency vulnerability findings are produced.
+---
 
-The project-owned controlled snapshot covers affected and same-package fixed-boundary
-queries for three ecosystems: six package versions, six advisory records, four alias
-groups/findings, and three explicit zero-advisory boundary results. Ordinary
-evaluation is deterministic and offline. Online matching sends package coordinates to
-OSV but no repository contents and does not provide an OS-level egress sandbox.
-`DEPENDENCY_ADVISORY_MATCHING = SCANNABLE`; it does not claim reachability,
-exploitability, runtime relevance, universal advisory completeness, NVD, EPSS, or VEX.
-See [the Source v0.5 claim matrix](docs/source-v0.5-dependency-intelligence.md).
+## Project Direction
 
-## Source Checkov configuration security
+SecureScan's architecture is designed to support later development in areas such as pull-request security analysis, CI security gates, dependency reachability, VEX-aware dependency decisions, validated container-security profiles, organization-level security views, and carefully bounded assistance for remediation.
 
-Source v0.6 S3 adds a pinned, isolated Checkov 3.3.16 CLI integration for
-exactly Terraform, CloudFormation, Kubernetes, Dockerfile, and GitHub Actions
-files from the frozen Source projection. A SecureScan-owned configuration and
-explicit CLI overrides prevent repository Checkov configuration, external
-policies, external Terraform modules, secrets, SCA, images, and platform mode
-from changing the S3 authority boundary.
+These capabilities are future directions and are not presented as functionality of the current `v1.5.2` release.
 
-The binding freezes CPython 3.12.3 and all 97 Checkov distributions through a
-wheel-hash lock; the generated launcher hash is a local file-integrity guard, not a
-portable scanner identity. Its venv-local shebang and normalized launcher template
-are verified separately. A narrow denylist excludes direct secret-material
-policies while retaining secret-management configuration controls. Variable
-evaluation is disabled because projection-confined filesystem access could not be
-proven.
+---
 
-Strict parsing emits normalized active configuration findings, separate inline
-suppression observations, framework completion aggregates, and explicit parse
-gaps. Raw Checkov JSON, source code blocks, evaluated variables, connected-node
-data, and host paths are not persisted. Missing filename-deterministic framework
-reports fail closed. Generic YAML/JSON remain conservative discovery candidates;
-unrelated files are accepted as not applicable only for Checkov's exact all-zero
-summary shape. The controlled 13-file corpus provides
-one selected fail/pass relation per framework plus suppression and malformed
-input coverage. It is controlled integration evidence, not a broad accuracy
-benchmark. `CONFIGURATION_SECURITY = SCANNABLE`; deployed state, runtime
-posture, exploitability, reachability, external-module contents, Terraform
-plans, Helm, and Kustomize remain outside the claim. See the
-[Source v0.6 claim matrix](docs/source-v0.6-configuration-security.md).
+## Author
 
-## Source unified evidence
+**Sai Mani Kumar Pemmanaboina**
 
-Source v0.7 S4 adds a typed, deterministic unified representation generated
-from validated Semgrep, Gitleaks, Syft, OSV, and Checkov native models. The
-report keeps findings, evidence, logical repository/package components,
-suppressions, gaps, and coverage outcomes separate. Finding and evidence IDs
-are authority-qualified and run-independent; a concrete occurrence is addressed
-by its Source run ID plus finding ID.
+Cyber Security  
+National Forensic Sciences University, Gandhinagar
 
-Gitleaks duplicate structural observations retain explicit native multiplicity
-without changing stable finding identity. OSV supporting Syft evidence is
-validated as an exact package/projection/snapshot/binding producer-consumer
-chain, coverage identities are component/scope sensitive, and Semgrep retains
-safe sanitized-artifact metadata without artifact bytes or storage paths.
+GitHub: [@saimani21](https://github.com/saimani21)
 
-The four finding categories are code security, secret exposure, dependency
-vulnerability, and configuration security. Package inventory remains package
-component/evidence data. Severity is optional and authority-qualified, OSV CVSS
-remains typed advisory evidence, and no confidence or global risk score is
-invented.
+---
 
-S4 does not replace `ScanReport`, native scanner results, historical assessment,
-or API formats. It adds no scanner parsing or execution, cross-engine merging or
-correlation, lifecycle, persistence migration, or maturity change. Its offline
-controlled replay is bound to the frozen F1/F5D/S1/S2/S3 evidence digests and
-does not run scanners or access the network. See the
-[Source v0.7 unified-evidence contract](docs/source-v0.7-unified-evidence.md).
+<div align="center">
 
-## Source orchestration foundation
+### SecureScan
 
-Source v0.8 S6A adds the durable control-plane foundation for one Source
-orchestration per AnalysisRun. It preserves the complete canonical planning truth
-in content-addressed storage, pins the five trusted Source authorities, derives
-deterministic runnable nodes, stores the Syft-to-OSV dependency edge, and uses a
-monotonic parent version to linearize cancellation and reject stale coordinators.
+**From scanner output to defensible security decisions.**
 
-S6A executes no scanner, calls no network service, creates no scanner Job or
-ToolExecution, accepts no native result, and does not assemble or publish the S4
-report. Process containment and cleanup belong to S6B. See the
-[S6A durable orchestration contract](docs/source-v0.8-s6a-orchestration.md).
-
-The S6B implementation connects runnable local S6A nodes to durable scanner `Job`
-identities, retains attempt history, supervises local scanner process trees
-independently of worker liveness, and accepts only canonical safe native results
-after cleanup and projection revalidation. Frozen local bridges use an attempt-bound
-process supervisor; Semgrep uses an attempt-bound Docker identity and Docker-specific
-cleanup/reconciliation proof. S6B excludes OSV scheduling and never assembles or
-writes the final Source report. See the
-[S6B scanner-execution contract](docs/source-v0.8-s6b-scanner-execution.md).
-
-S6C-A adds the dependency release decision between accepted Syft evidence and
-future OSV execution. It derives scope only from the frozen S6A snapshot,
-classifies complete package observations as in-scope, outside-scope, or mixed,
-and passes only unchanged in-scope observations to the frozen S2 candidate
-builder. It persists one canonical evaluation and may only release the OSV node
-to `READY` or terminalize it as not applicable/partial. S6C-A creates no OSV Job,
-does not access the network, and does not publish a report. See the
-[S6C-A dependency-evaluation contract](docs/source-v0.8-s6ca-dependency-evaluation.md).
-
-Engine Closure adds the remaining dependency execution and lifecycle path:
-one dependency-gated OSV Job runs in an attempt-bound helper, every frozen S2
-transport invocation requires a committed durable request permit, and parent
-cancellation/deadline state prevents later permits, results, or retries. A
-short-lived coordinator creates the four initial local Jobs, advances the
-Syft-to-OSV edge, promotes only safely reconciled retries, resolves dependency
-blocking, and enters `ASSEMBLY_READY` only after every node is durably terminal.
-An immutable per-run lease ceiling defaults to two active Jobs and is enforced
-under the parent database lock. The production Source dispatcher composes the
-frozen Semgrep Docker adapter, local Gitleaks/Syft/Checkov bridges, and OSV helper;
-test-injected handlers are not used as evidence of that production wiring.
-
-S6D then consumes only accepted canonical CAS evidence and terminal node state,
-projects the five authorities through the frozen S4 model, records one canonical
-assembly artifact, and publishes `AnalysisRun.report_json` exactly once. Explicitly
-cancelled runs never publish. Scanner failure, timeout, dependency blocking, and
-limited dependency coverage remain explicit and cannot become a clean result.
-See the [Engine Closure contract](docs/source-v0.9-engine-closure.md).
-
-## API and CLI
-
-Start the API with `uvicorn securescan.api.main:app`. The existing `securescan` CLI
-retains database initialization and fake-scanner development commands; the release gate
-is separate and never runs during API startup.
-
-For the practical single-node Source v1 deployment, run PostgreSQL, Alembic, and
-the API with Docker Compose while keeping `securescan worker` on the trusted
-scanning host. See the [Source v1 deployment guide](docs/source-v1-deployment.md).
-The supported sequence starts with `securescan init`, which creates or validates
-the private shared runtime roots and projection ownership descriptor. It refuses
-unsafe or conflicting existing directories; do not delete or recreate descriptor
-files by hand. Both API and worker remain non-root.
-
-The API also serves a dependency-free, same-origin Source analysis console at
-`http://127.0.0.1:<SECURESCAN_API_PORT>/`. Submit repositories with the trusted-host
-`securescan scan` CLI, then use Overview, Projects, and scan history to open the
-result in the console. Normal browser navigation does not require pasting a run
-ID. The browser does not accept repository paths or upload source trees.
-
-The host CLI also provides `securescan project create` and `securescan project
-list`, authoritative paginated scan/stage/dependency/coverage/gap views, and a
-bounded `scan --wait` mode, so a supported local scan never requires direct SQL
-or knowledge of the internal persistence model. A completed run can be exported
-deterministically with `securescan sarif RUN_ID --output PATH`; findings never
-become a policy exit failure in V1.1. See the
-[V1.1D CLI, SARIF, and CI guide](docs/source-v1.1d-cli-sarif-ci.md).
-
-Source v1.5 adds the first-class `securescan ci REPOSITORY` security gate. It
-waits for a verified published run, evaluates one explicit immutable threat
-intelligence bundle against trusted baseline and policy state, and atomically
-emits JSON, DecisionProof, SARIF, CycloneDX, Markdown, and HTML artifacts. Exit
-codes are stable: `0` PASS, `1` policy FAIL, and `2` operational/evidence/policy
-ERROR. It never promotes a baseline. See the [V1.5 CI/CD guide](docs/source-v1.5-ci-cd.md).
-
-The same assurance projection drives the Web dashboard, Finding Knowledge
-Cards, verification playbooks, and deterministic HTML assessment. The optional
-AI explanation layer is server-side, read-only, disabled by default, and is not
-a security authority. See the [product guide](docs/source-v1.5-product-experience.md)
-and [AI security guide](docs/source-v1.5-ai-assistant.md).
-
-The read-only navigation API exposes bounded `GET /v1/projects`,
-`GET /v1/projects/{project_id}`, `GET /v1/projects/{project_id}/scans`, and
-`GET /v1/scans` views. Clients can discover durable project and run IDs without
-pasting a previously known UUID. Repository submission remains the trusted-host
-CLI workflow; the browser/API cannot submit arbitrary host filesystem paths. See
-the [V1.1B1 navigation contract](docs/source-v1.1b1-product-navigation.md).
-
-The repository includes an inert, immutable-action-pinned
-[GitHub Actions example](examples/github-actions/securescan.yml). It requires an
-ephemeral pre-provisioned runner with the frozen scanner toolchain; it is not an
-active workflow and does not claim universal GitHub-hosted-runner portability.
-SecureScan findings remain authoritative and GitHub Code Scanning is a one-way
-presentation surface.
-
-The separate inert [V1.5 GitHub Actions template](examples/github-actions/securescan-v15.yml)
-uses the current major action contracts (`actions/checkout@v6`, artifact upload
-v6, and CodeQL SARIF upload v4), publishes artifacts even for policy FAIL, and
-then restores SecureScan's original exit result. It assumes a trusted
-self-hosted runner with the V1.5 wheel and frozen scanner toolchain already
-installed; SecureScan is not claimed to be available from public PyPI.
-
-V1.1D CLI, deterministic SARIF, and the inert CI example are complete and
-frozen after isolated real scanning, empty-result, fail-closed output,
-filesystem safety, restart persistence, PostgreSQL parity, static, and wheel
-acceptance. Vulnerability findings—including `HIGH` and `CRITICAL`—remain
-successful analysis results rather than a policy exit condition.
-
-The [Source v1 release-acceptance runbook](docs/source-v1-release-acceptance.md)
-defines the four-run, five-authority acceptance path and its sanitized evidence
-summary. The committed RA1 fixtures and offline verifier do not themselves constitute
-acceptance; the completed V1.1R product gate is recorded in the
-[Source v1.1 release notes](docs/source-v1.1-release.md).
+</div>
